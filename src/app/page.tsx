@@ -1,78 +1,97 @@
 "use client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { client } from "@/lib/client"
-import { SignedIn, SignedOut } from "@clerk/nextjs"
-import { useMutation, useQuery } from "@tanstack/react-query"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useState } from "react"
+import { useSession, signOut } from "next-auth/react"
 
 export default function HomePage() {
-  const [content, setContent] = useState("")
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const [isLoading, setIsLoading] = useState(true)
 
-  const { data: post, refetch } = useQuery({
-    queryKey: ["post"],
-    queryFn: async () => {
-      const response = await client.post.recent.$get()
-      const json = await response.json()
-      return json
-    },
-  })
+  useEffect(() => {
+    if (status !== "loading") {
+      setIsLoading(false)
+    }
+  }, [status])
 
-  const { mutate: createNote, isPending } = useMutation({
-    mutationFn: (content: string) => client.post.create.$post({ name: content }),
-    onSuccess: () => {
-      setContent("")
-      refetch()
-    },
-  })
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
+    router.push("/login")
+  }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!content.trim()) return
-    createNote(content)
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Carregando...</h1>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-4">
-      <h1 className="text-4xl font-bold">Welcome to Next.js Template</h1>
-
-      <SignedIn>
-        <Link href="/dashboard" className="rounded-md bg-primary px-4 py-2 text-white hover:bg-primary/90">
-          Go to Dashboard
-        </Link>
-      </SignedIn>
-
-      <div className="w-full max-w-lg space-y-6">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write a note..."
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Adding..." : "Add Note"}
-          </Button>
-        </form>
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      <div className="mb-8 text-center">
+        <h1 className="mb-4 text-4xl font-bold">Bem-vindo ao Demoday</h1>
+        <p className="text-xl">
+          Plataforma para submissão e votação de projetos acadêmicos
+        </p>
       </div>
 
-      <div className="space-y-4">
-        <div key={post?.id} className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-          <p>{post?.name}</p>
-        </div>
+      <div className="flex flex-col gap-4 md:flex-row">
+        {!session ? (
+          <>
+            <Link
+              href="/login"
+              className="rounded-md bg-blue-600 px-6 py-2 text-center text-white hover:bg-blue-700"
+            >
+              Entrar
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-md border border-blue-600 px-6 py-2 text-center text-blue-600 hover:bg-blue-50"
+            >
+              Cadastrar
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/dashboard"
+              className="rounded-md bg-blue-600 px-6 py-2 text-center text-white hover:bg-blue-700"
+            >
+              Dashboard
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="rounded-md border border-red-600 px-6 py-2 text-center text-red-600 hover:bg-red-50"
+            >
+              Sair
+            </button>
+          </>
+        )}
       </div>
 
-      <SignedOut>
-        <div className="flex gap-4">
-          <Button variant="outline">
-            <Link href="/sign-in">Sign In</Link>
-          </Button>
-          <Button variant="outline">
-            <Link href="/sign-up">Sign Up</Link>
-          </Button>
+      {session && (
+        <div className="mt-4 text-center">
+          <p>
+            Logado como: <strong>{session.user?.name}</strong>{" "}
+            {session.user?.role && `(${session.user.role})`}
+          </p>
         </div>
-      </SignedOut>
+      )}
+
+      <div className="mt-16">
+        <h2 className="mb-4 text-2xl font-bold">Sobre o Demoday</h2>
+        <p className="max-w-2xl text-center">
+          Demoday é um evento no qual estudantes de graduação e pós-graduação
+          podem submeter os seus projetos desenvolvidos em Disciplina, Iniciação
+          Científica, TCC, Mestrado ou Doutorado e participar de uma votação
+          para o público escolher os mais interessantes.
+        </p>
+      </div>
     </div>
   )
 }

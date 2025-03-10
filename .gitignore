@@ -41,7 +41,3 @@ next-env.d.ts
 
 # wrangler
 .wrangler
-
-# cursor
-.cursor/*
-.cursorrules

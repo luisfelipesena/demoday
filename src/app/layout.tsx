@@ -1,24 +1,26 @@
-import type { Metadata } from "next"
-import { Providers } from "./components/providers"
+import "@/app/globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Providers } from "./providers";
 
-import "./globals.css"
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "JStack App",
-  description: "Created using JStack",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
-}
+  title: "Demoday - Projetos Acadêmicos",
+  description:
+    "Plataforma para submissão e votação de projetos acadêmicos desenvolvidos em disciplinas, IC, TCC, mestrado ou doutorado.",
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="pt-BR">
+      <body className={`${inter.className} min-h-screen`}>
         <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }

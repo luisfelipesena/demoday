@@ -1,0 +1,60 @@
+---
+description: Code Rules for a Next.js Project with Tailwind, Shadcn, Drizzle, Node.js, and PostgreSQL
+globs: 
+alwaysApply: false
+---
+Following [project-description.mdc](mdc:.cursor/rules/project-description.mdc):
+
+### Code Rules for a Next.js Project with Tailwind, Shadcn, Drizzle, Node.js, and PostgreSQL
+
+#### General Guidelines
+- **Consistency**: Maintain consistent coding styles across the project. Use tools like Prettier and ESLint to enforce code formatting and linting.
+- **Modularity**: Break down the application into small, reusable components and modules.
+- **Documentation**: Use JSDoc or similar tools to document functions, components, and modules.
+- **Version Control**: Use Git for version control. Follow a branching strategy like Git Flow or GitHub Flow.
+- **Avoid leaving coments into the code**: Always try to avoid leaving comments into the code
+- **Always write using englisg**: Avoid the code to have ptBr names normally, some texts and components it's okay though
+
+#### Directory Structure
+1. **src/**: Main directory for the application's source code.
+   - **components/**: Reusable UI components.
+   - **containers/**: Components that connect business logic with the UI.
+   - **services/**: Services handling business logic and API communication.
+   - **models/**: Data model definitions and interfaces.
+   - **utils/**: Utility functions and helpers.
+   - **hooks/**: Custom hooks for state logic and effects.
+   - **styles/**: Tailwind CSS files and custom styles.
+   - **pages/**: Next.js pages for routing.
+   - **api/**: API routes for server-side logic.
+
+2. **tests/**: Directory for unit and integration tests.
+   - **unit/**: Unit tests for individual functions and components.
+   - **integration/**: Integration tests to verify interaction between different parts of the system.
+
+3. **public/**: Public files not processed by the bundler, like images and static files.
+
+4. **config/**: Configuration files for different environments (development, production, etc.).
+
+5. **docs/**: Project documentation, including contribution guides and API documentation.
+
+6. **scripts/**: Auxiliary scripts for task automation.
+
+#### Coding Practices
+- **Type Safety**: Use TypeScript for type safety and to catch errors at compile time.
+- **State Management**: Use React hooks and context for state management. Consider libraries like Redux or Zustand if needed.
+- **Styling**: Use Tailwind CSS for styling. Follow a consistent design system.
+- **Database**: Use Drizzle ORM for database interactions with PostgreSQL. Keep database queries optimized.
+- **API**: Use Next.js API routes for server-side logic. Ensure APIs are RESTful and follow best practices.
+- **Security**: Implement security best practices, such as input validation, authentication, and authorization.
+- **Performance**: Optimize images, use lazy loading, and ensure fast page loads.
+
+#### Testing
+- **Unit Tests**: Write unit tests for all components and functions using Jest or a similar framework.
+- **Integration Tests**: Write integration tests to ensure different parts of the application work together.
+- **End-to-End Tests**: Use tools like Cypress for end-to-end testing of user flows.
+
+#### Deployment
+- **CI/CD**: Set up continuous integration and deployment pipelines using tools like GitHub Actions or Jenkins.
+- **Environment Management**: Use environment variables for configuration. Keep sensitive data out of the codebase.
+
+These rules and structure will help maintain a clean, scalable, and efficient project. Let me know if you need more specific details or adjustments!
