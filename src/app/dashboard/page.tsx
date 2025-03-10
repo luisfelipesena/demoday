@@ -77,12 +77,12 @@ export default function DashboardPage() {
               </p>
             </Link>
             <Link
-              href="/admin/settings"
+              href="/admin/demoday"
               className="rounded-lg bg-white p-4 shadow hover:shadow-md"
             >
-              <h3 className="mb-2 font-medium">Configurações</h3>
+              <h3 className="mb-2 font-medium">Gerenciar Demodays</h3>
               <p className="text-sm text-gray-600">
-                Altere as configurações do sistema.
+                Crie e gerencie eventos Demoday e seus critérios.
               </p>
             </Link>
           </div>
