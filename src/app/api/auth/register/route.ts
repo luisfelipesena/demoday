@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       .returning({ id: users.id, name: users.name, email: users.email, role: users.role });
 
     return NextResponse.json(
-      { message: "Usuário criado com sucesso", user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role } },
+      { message: "Usuário criado com sucesso", user: { id: newUser?.id, name: newUser?.name, email: newUser?.email, role: newUser?.role } },
       { status: 201 }
     );
   } catch (error) {
