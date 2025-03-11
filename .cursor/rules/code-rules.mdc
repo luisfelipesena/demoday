@@ -20,7 +20,7 @@ Following [project-description.mdc](mdc:.cursor/rules/project-description.mdc):
    - **components/**: Reusable UI components.
    - **containers/**: Components that connect business logic with the UI.
    - **services/**: Services handling business logic and API communication.
-   - **models/**: Data model definitions and interfaces.
+   - **server/**: Server files
    - **utils/**: Utility functions and helpers.
    - **hooks/**: Custom hooks for state logic and effects.
    - **styles/**: Tailwind CSS files and custom styles.

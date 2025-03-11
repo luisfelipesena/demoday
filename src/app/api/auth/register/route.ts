@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcrypt";
-import { db } from "@/db";
-import { users } from "@/db/schema";
+import { db } from "@/server/db";
+import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 const registerSchema = z.object({

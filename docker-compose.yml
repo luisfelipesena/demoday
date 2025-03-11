@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: nextjs-template-db
+    container_name: demoday
     ports:
       - "5432:5432"
     environment:

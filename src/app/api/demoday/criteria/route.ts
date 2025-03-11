@@ -1,5 +1,5 @@
-import { db } from "@/db";
-import { evaluationCriteria, registrationCriteria } from "@/db/schema";
+import { db } from "@/server/db";
+import { evaluationCriteria, registrationCriteria } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";

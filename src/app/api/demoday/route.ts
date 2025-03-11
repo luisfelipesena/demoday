@@ -1,5 +1,5 @@
-import { db } from "@/db";
-import { demodays, demoDayPhases } from "@/db/schema";
+import { db } from "@/server/db";
+import { demodays, demoDayPhases } from "@/server/db/schema";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
