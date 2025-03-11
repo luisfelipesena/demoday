@@ -1,21 +1,23 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CreateDemodayInput, Phase, useCreateDemoday } from "@/hooks/useDemoday";
-import { useSubmitCriteriaBatch } from "@/hooks/useCriteria";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { CreateDemodayInput, Phase, useCreateDemoday } from "@/hooks/useDemoday"
+import { useSubmitCriteriaBatch } from "@/hooks/useCriteria"
+import { useRouter } from "next/navigation"
+import { FormEvent, useState } from "react"
+import { useSession } from "next-auth/react"
+import Link from "next/link"
+import { DatePicker } from "@/components/ui/datepicker"
+import moment from "moment"
 
 export default function NewDemodayPage() {
-  const router = useRouter();
-  const { data: session, status } = useSession();
-  const { mutate: createDemoday, isPending: isCreatingDemoday } = useCreateDemoday();
-  const { mutate: submitCriteria, isPending: isSubmittingCriteria } = useSubmitCriteriaBatch();
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const { mutate: createDemoday, isPending: isCreatingDemoday } = useCreateDemoday()
+  const { mutate: submitCriteria, isPending: isSubmittingCriteria } = useSubmitCriteriaBatch()
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState("")
   const [phases, setPhases] = useState<Phase[]>([
     {
       name: "Fase 1",
@@ -45,27 +47,27 @@ export default function NewDemodayPage() {
       startDate: "",
       endDate: "",
     },
-  ]);
+  ])
 
   // Registration and evaluation criteria
   const [registrationCriteria, setRegistrationCriteria] = useState<{ name: string; description: string }[]>([
     { name: "", description: "" },
-  ]);
+  ])
   const [evaluationCriteria, setEvaluationCriteria] = useState<{ name: string; description: string }[]>([
     { name: "", description: "" },
-  ]);
+  ])
 
   // Form validation error
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Check if user is admin
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = session?.user?.role === "admin"
 
   // Redirect to login if not authenticated
   if (status === "unauthenticated") {
-    router.push("/login");
-    return null;
+    router.push("/login")
+    return null
   }
 
   // Show loading during session check
@@ -76,152 +78,153 @@ export default function NewDemodayPage() {
           <h1 className="text-2xl font-bold">Carregando...</h1>
         </div>
       </div>
-    );
+    )
   }
 
   // Redirect to dashboard if not admin
   if (!isAdmin) {
-    router.push("/dashboard");
-    return null;
+    router.push("/dashboard")
+    return null
   }
 
   const updatePhase = (index: number, field: keyof Phase, value: string | number) => {
-    const updatedPhases = [...phases];
+    const updatedPhases = [...phases]
     updatedPhases[index] = {
       ...updatedPhases[index],
       [field]: value,
-    } as Phase;
-    setPhases(updatedPhases);
-  };
+    } as Phase
+    setPhases(updatedPhases)
+  }
 
-  const updateRegistrationCriteria = (index: number, field: keyof { name: string; description: string }, value: string) => {
-    const updated = [...registrationCriteria];
+  const updateRegistrationCriteria = (
+    index: number,
+    field: keyof { name: string; description: string },
+    value: string
+  ) => {
+    const updated = [...registrationCriteria]
     updated[index] = {
       ...updated[index],
       [field]: value,
-    } as { name: string; description: string };
-    setRegistrationCriteria(updated);
-  };
+    } as { name: string; description: string }
+    setRegistrationCriteria(updated)
+  }
 
-  const updateEvaluationCriteria = (index: number, field: keyof { name: string; description: string }, value: string) => {
-    const updated = [...evaluationCriteria];
+  const updateEvaluationCriteria = (
+    index: number,
+    field: keyof { name: string; description: string },
+    value: string
+  ) => {
+    const updated = [...evaluationCriteria]
     updated[index] = {
       ...updated[index],
       [field]: value,
-    } as { name: string; description: string };
-    setEvaluationCriteria(updated);
-  };
+    } as { name: string; description: string }
+    setEvaluationCriteria(updated)
+  }
 
   const addRegistrationCriteria = () => {
-    setRegistrationCriteria([...registrationCriteria, { name: "", description: "" }]);
-  };
+    setRegistrationCriteria([...registrationCriteria, { name: "", description: "" }])
+  }
 
   const addEvaluationCriteria = () => {
-    setEvaluationCriteria([...evaluationCriteria, { name: "", description: "" }]);
-  };
+    setEvaluationCriteria([...evaluationCriteria, { name: "", description: "" }])
+  }
 
   const removeRegistrationCriteria = (index: number) => {
     if (registrationCriteria.length > 1) {
-      setRegistrationCriteria(registrationCriteria.filter((_, i) => i !== index));
+      setRegistrationCriteria(registrationCriteria.filter((_, i) => i !== index))
     }
-  };
+  }
 
   const removeEvaluationCriteria = (index: number) => {
     if (evaluationCriteria.length > 1) {
-      setEvaluationCriteria(evaluationCriteria.filter((_, i) => i !== index));
+      setEvaluationCriteria(evaluationCriteria.filter((_, i) => i !== index))
     }
-  };
+  }
 
   const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+    e.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
 
     // Validation
     if (!name.trim()) {
-      setError("O nome do Demoday é obrigatório");
-      setIsSubmitting(false);
-      return;
+      setError("O nome do Demoday é obrigatório")
+      setIsSubmitting(false)
+      return
     }
 
-    const invalidPhase = phases.find(
-      (phase) => !phase.startDate || !phase.endDate
-    );
+    const invalidPhase = phases.find((phase) => !phase.startDate || !phase.endDate)
     if (invalidPhase) {
-      setError("Todas as fases precisam ter datas de início e fim");
-      setIsSubmitting(false);
-      return;
+      setError("Todas as fases precisam ter datas de início e fim")
+      setIsSubmitting(false)
+      return
     }
 
     // Filter out empty criteria
-    const validRegistrationCriteria = registrationCriteria.filter(
-      (c) => c.name.trim() && c.description.trim()
-    );
-    
-    const validEvaluationCriteria = evaluationCriteria.filter(
-      (c) => c.name.trim() && c.description.trim()
-    );
+    const validRegistrationCriteria = registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
+
+    const validEvaluationCriteria = evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
 
     if (validRegistrationCriteria.length === 0) {
-      setError("Adicione pelo menos um critério de inscrição");
-      setIsSubmitting(false);
-      return;
+      setError("Adicione pelo menos um critério de inscrição")
+      setIsSubmitting(false)
+      return
     }
 
     // Create the demoday
     const demodayData: CreateDemodayInput = {
       name,
       phases,
-    };
+    }
 
     createDemoday(demodayData, {
       onSuccess: (data) => {
-        console.log("Demoday criado com sucesso:", data);
-        
+        console.log("Demoday criado com sucesso:", data)
+
         // Now submit the criteria
-        submitCriteria({
-          demodayId: data.id,
-          registration: validRegistrationCriteria,
-          evaluation: validEvaluationCriteria,
-        }, {
-          onSuccess: () => {
-            console.log("Critérios adicionados com sucesso");
-            router.push("/admin/demoday");
+        submitCriteria(
+          {
+            demodayId: data.id,
+            registration: validRegistrationCriteria,
+            evaluation: validEvaluationCriteria,
           },
-          onError: (error) => {
-            console.error("Erro ao adicionar critérios:", error);
-            setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`);
-            setIsSubmitting(false);
+          {
+            onSuccess: () => {
+              console.log("Critérios adicionados com sucesso")
+              router.push("/dashboard/admin/demoday")
+            },
+            onError: (error) => {
+              console.error("Erro ao adicionar critérios:", error)
+              setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
+              setIsSubmitting(false)
+            },
           }
-        });
+        )
       },
       onError: (error) => {
-        setError(error.message);
-        setIsSubmitting(false);
+        setError(error.message)
+        setIsSubmitting(false)
       },
-    });
-  };
+    })
+  }
 
   // Determine if form is submitting
-  const isPending = isCreatingDemoday || isSubmittingCriteria || isSubmitting;
+  const isPending = isCreatingDemoday || isSubmittingCriteria || isSubmitting
 
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Criar novo demoday</h1>
         <Link
-          href="/admin/demoday"
+          href="/dashboard/admin/demoday"
           className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300"
         >
           Voltar
         </Link>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-md bg-red-100 p-4 text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <div className="mb-4 rounded-md bg-red-100 p-4 text-red-700">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Nome do Demoday */}
@@ -242,10 +245,7 @@ export default function NewDemodayPage() {
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {phases.map((phase, index) => (
-              <div
-                key={index}
-                className="space-y-4 rounded-lg border p-4 shadow-sm"
-              >
+              <div key={index} className="space-y-4 rounded-lg border p-4 shadow-sm">
                 <h3 className="font-medium">
                   Fase {phase.phaseNumber}: {phase.name}
                 </h3>
@@ -253,35 +253,25 @@ export default function NewDemodayPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label
-                      htmlFor={`start-date-${index}`}
-                      className="mb-1 block text-sm"
-                    >
+                    <label htmlFor={`start-date-${index}`} className="mb-1 block text-sm">
                       Início:
                     </label>
-                    <Input
+                    <DatePicker
                       id={`start-date-${index}`}
-                      type="date"
-                      value={phase.startDate}
-                      onChange={(e) =>
-                        updatePhase(index, "startDate", e.target.value)
+                      value={phase.startDate ? moment(phase.startDate).toDate() : undefined}
+                      onChange={(date) =>
+                        updatePhase(index, "startDate", date ? moment(date).format("YYYY-MM-DD") : "")
                       }
                     />
                   </div>
                   <div>
-                    <label
-                      htmlFor={`end-date-${index}`}
-                      className="mb-1 block text-sm"
-                    >
+                    <label htmlFor={`end-date-${index}`} className="mb-1 block text-sm">
                       Fim:
                     </label>
-                    <Input
+                    <DatePicker
                       id={`end-date-${index}`}
-                      type="date"
-                      value={phase.endDate}
-                      onChange={(e) =>
-                        updatePhase(index, "endDate", e.target.value)
-                      }
+                      value={phase.endDate ? moment(phase.endDate).toDate() : undefined}
+                      onChange={(date) => updatePhase(index, "endDate", date ? moment(date).format("YYYY-MM-DD") : "")}
                     />
                   </div>
                 </div>
@@ -293,7 +283,7 @@ export default function NewDemodayPage() {
         {/* Critérios de Inscrição */}
         <div className="space-y-4 rounded-lg border p-6 shadow-sm">
           <h2 className="text-xl font-semibold">Critérios de inscrição</h2>
-          
+
           <div className="space-y-4">
             {registrationCriteria.map((criteria, index) => (
               <div key={index} className="flex space-x-2">
@@ -301,16 +291,12 @@ export default function NewDemodayPage() {
                   <Input
                     placeholder="Nome do critério"
                     value={criteria.name}
-                    onChange={(e) =>
-                      updateRegistrationCriteria(index, "name", e.target.value)
-                    }
+                    onChange={(e) => updateRegistrationCriteria(index, "name", e.target.value)}
                   />
                   <Input
                     placeholder="Descrição do critério de inscrição"
                     value={criteria.description}
-                    onChange={(e) =>
-                      updateRegistrationCriteria(index, "description", e.target.value)
-                    }
+                    onChange={(e) => updateRegistrationCriteria(index, "description", e.target.value)}
                   />
                 </div>
                 <button
@@ -323,7 +309,7 @@ export default function NewDemodayPage() {
               </div>
             ))}
           </div>
-          
+
           <Button
             type="button"
             onClick={addRegistrationCriteria}
@@ -336,7 +322,7 @@ export default function NewDemodayPage() {
         {/* Critérios de Avaliação */}
         <div className="space-y-4 rounded-lg border p-6 shadow-sm">
           <h2 className="text-xl font-semibold">Critérios de avaliação</h2>
-          
+
           <div className="space-y-4">
             {evaluationCriteria.map((criteria, index) => (
               <div key={index} className="flex space-x-2">
@@ -344,16 +330,12 @@ export default function NewDemodayPage() {
                   <Input
                     placeholder="Nome do critério de avaliação"
                     value={criteria.name}
-                    onChange={(e) =>
-                      updateEvaluationCriteria(index, "name", e.target.value)
-                    }
+                    onChange={(e) => updateEvaluationCriteria(index, "name", e.target.value)}
                   />
                   <Input
                     placeholder="Descrição do critério"
                     value={criteria.description}
-                    onChange={(e) =>
-                      updateEvaluationCriteria(index, "description", e.target.value)
-                    }
+                    onChange={(e) => updateEvaluationCriteria(index, "description", e.target.value)}
                   />
                 </div>
                 <button
@@ -366,7 +348,7 @@ export default function NewDemodayPage() {
               </div>
             ))}
           </div>
-          
+
           <Button
             type="button"
             onClick={addEvaluationCriteria}
@@ -377,14 +359,10 @@ export default function NewDemodayPage() {
         </div>
 
         {/* Submit Button */}
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 text-white hover:bg-blue-700"
-          disabled={isPending}
-        >
+        <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700" disabled={isPending}>
           {isPending ? "Criando..." : "Criar Demoday"}
         </Button>
       </form>
     </div>
-  );
-} 
+  )
+}

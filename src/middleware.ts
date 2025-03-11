@@ -16,7 +16,7 @@ export default withAuth(
     }
 
     // Rotas de admin só podem ser acessadas por admins
-    if (path.startsWith("/admin") && !isAdmin) {
+    if (path.startsWith("/dashboard/admin") && !isAdmin) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
@@ -39,7 +39,6 @@ export default withAuth(
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/admin/:path*",
     "/professor/:path*",
     "/api/protected/:path*",
   ],

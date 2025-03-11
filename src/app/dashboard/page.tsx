@@ -1,142 +1,127 @@
-"use client";
+"use client"
 
-import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import Link from "next/link"
+import { useSession } from "next-auth/react"
+import { Award, FileText, PlusCircle, Users } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useDemodays } from "@/hooks/useDemoday"
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
+  const { data: session } = useSession()
+  const userRole = session?.user?.role || "user"
+  const { data: demodays, isLoading, error } = useDemodays()
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
-      <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
-
-      <div className="mb-8 flex items-center justify-between rounded-lg bg-white p-4 shadow">
-        <div>
-          <p className="text-lg">
-            Bem-vindo,{" "}
-            <span className="font-semibold">{session.user?.name}</span>
-          </p>
-          <p className="text-sm text-gray-600">
-            Tipo de usuário: {session.user?.role || "Usuário"}
-          </p>
-        </div>
-        <Link
-          href="/"
-          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-        >
-          Página Inicial
-        </Link>
+    <div className="w-full space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">Bem-vindo ao Demoday, {session?.user?.name}!</p>
       </div>
 
-      {/* Conteúdo específico para cada role */}
-      {session.user?.role === "admin" && (
-        <div className="rounded-lg bg-blue-50 p-4 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-blue-800">
-            Área do Administrador
-          </h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Link
-              href="/admin/users"
-              className="rounded-lg bg-white p-4 shadow hover:shadow-md"
-            >
-              <h3 className="mb-2 font-medium">Gerenciar Usuários</h3>
-              <p className="text-sm text-gray-600">
-                Visualize, edite ou remova usuários do sistema.
-              </p>
-            </Link>
-            <Link
-              href="/admin/projects"
-              className="rounded-lg bg-white p-4 shadow hover:shadow-md"
-            >
-              <h3 className="mb-2 font-medium">Gerenciar Projetos</h3>
-              <p className="text-sm text-gray-600">
-                Aprove, rejeite ou edite projetos submetidos.
-              </p>
-            </Link>
-            <Link
-              href="/admin/demoday"
-              className="rounded-lg bg-white p-4 shadow hover:shadow-md"
-            >
-              <h3 className="mb-2 font-medium">Gerenciar Demodays</h3>
-              <p className="text-sm text-gray-600">
-                Crie e gerencie eventos Demoday e seus critérios.
-              </p>
-            </Link>
-          </div>
-        </div>
-      )}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Meus Projetos</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-muted-foreground">Projetos cadastrados</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Demodays</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div>Loading...</div>
+            ) : error ? (
+              <div>Error loading demodays</div>
+            ) : (
+              <div className="text-2xl font-bold">{demodays?.length || 0}</div>
+            )}
+            <p className="text-xs text-muted-foreground">Eventos em andamento</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {session.user?.role === "professor" && (
-        <div className="rounded-lg bg-green-50 p-4 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-green-800">
-            Área do Professor
-          </h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Link
-              href="/professor/projects"
-              className="rounded-lg bg-white p-4 shadow hover:shadow-md"
-            >
-              <h3 className="mb-2 font-medium">Avaliar Projetos</h3>
-              <p className="text-sm text-gray-600">
-                Avalie e dê feedback aos projetos dos alunos.
-              </p>
-            </Link>
-            <Link
-              href="/professor/reports"
-              className="rounded-lg bg-white p-4 shadow hover:shadow-md"
-            >
-              <h3 className="mb-2 font-medium">Relatórios</h3>
-              <p className="text-sm text-gray-600">
-                Visualize relatórios de desempenho.
-              </p>
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Mostra para todos os usuários (inclusive admin e professor) */}
-      <div className="mt-6 rounded-lg bg-gray-50 p-4 shadow">
-        <h2 className="mb-4 text-xl font-semibold">Seus Projetos</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Link
-            href="/projects/new"
-            className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-4 text-center hover:border-blue-500"
-          >
-            <div>
-              <span className="mb-2 block text-3xl">+</span>
-              <span className="text-sm font-medium">Adicionar Novo Projeto</span>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Projetos Recentes</CardTitle>
+            <CardDescription>Seus projetos mais recentes</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center p-6">
+            <div className="text-center">
+              <p className="mb-4 text-muted-foreground">Você ainda não tem projetos cadastrados</p>
+              <Button asChild>
+                <Link href="/dashboard/admin/demoday/new">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Criar Projeto
+                </Link>
+              </Button>
             </div>
-          </Link>
-          <div className="rounded-lg bg-white p-4 shadow">
-            <p className="text-center text-gray-500">
-              Nenhum projeto encontrado.
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Próximos Eventos</CardTitle>
+            <CardDescription>Demodays em andamento ou programados</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Award className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Demoday 2025</p>
+                  <p className="text-sm text-muted-foreground">Inscrições abertas até 30/04/2025</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {userRole === "admin" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Estatísticas</CardTitle>
+              <CardDescription>Visão geral do sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Usuários</span>
+                  </div>
+                  <span className="font-medium">1</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Projetos</span>
+                  </div>
+                  <span className="font-medium">0</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Demodays</span>
+                  </div>
+                  <span className="font-medium">1</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
-  );
-} 
+  )
+}
