@@ -1,10 +1,11 @@
 import { db } from "@/server/db";
-import { evaluationCriteria, registrationCriteria } from "@/server/db/schema";
+import { evaluationCriteria, registrationCriteria, demodays } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { PgTable } from "drizzle-orm/pg-core";
 
 // Schema for validating batch criteria creation
 const batchCriteriaSchema = z.object({
@@ -48,7 +49,7 @@ export async function POST(
 
     // Validate that the demoday exists
     const existingDemoday = await db.query.demodays.findFirst({
-      where: (demodays) => eq(demodays.id, demodayId),
+      where: (demdays: typeof demodays) => eq(demdays.id, demodayId),
     });
 
     if (!existingDemoday) {
@@ -71,7 +72,7 @@ export async function POST(
     const { registration, evaluation } = result.data;
 
     // Insert all criteria in a transaction
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: typeof db) => {
       // Insert registration criteria
       for (const criteria of registration) {
         if (criteria.name.trim() && criteria.description.trim()) {

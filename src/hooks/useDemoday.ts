@@ -1,20 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Demoday, Phase } from "@/types";
 
-// Types
-export type Phase = {
-  name: string;
-  description: string;
-  phaseNumber: number;
-  startDate: string;
-  endDate: string;
-};
-
-export type DemoDay = {
-  id: string;
-  name: string;
-  createdById: string;
-  createdAt: string;
-  updatedAt: string;
+// Type for error responses
+type ErrorResponse = {
+  error: string;
 };
 
 export type CreateDemodayInput = {
@@ -22,14 +11,9 @@ export type CreateDemodayInput = {
   phases: Phase[];
 };
 
-// Type for error responses
-type ErrorResponse = {
-  error: string;
-};
-
 // Fetch all demodays
 export function useDemodays() {
-  return useQuery({
+  return useQuery<Demoday[], Error>({
     queryKey: ["demodays"],
     queryFn: async () => {
       const response = await fetch("/api/demoday");
@@ -37,7 +21,7 @@ export function useDemodays() {
         const errorData = await response.json() as ErrorResponse;
         throw new Error(errorData.error || "Erro ao buscar demodays");
       }
-      return response.json() as Promise<DemoDay[]>;
+      return response.json();
     },
   });
 }
@@ -46,7 +30,7 @@ export function useDemodays() {
 export function useCreateDemoday() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<Demoday, Error, CreateDemodayInput>({
     mutationFn: async (demoday: CreateDemodayInput) => {
       const response = await fetch("/api/demoday", {
         method: "POST",
@@ -61,7 +45,7 @@ export function useCreateDemoday() {
         throw new Error(errorData.error || "Erro ao criar demoday");
       }
 
-      return response.json() as Promise<DemoDay>;
+      return response.json();
     },
     onSuccess: () => {
       // Invalidate and refetch demodays after successful creation
@@ -72,7 +56,7 @@ export function useCreateDemoday() {
 
 // Fetch demoday phases
 export function useDemodayPhases(demodayId: string | null) {
-  return useQuery({
+  return useQuery<Phase[], Error>({
     queryKey: ["demodayPhases", demodayId],
     queryFn: async () => {
       if (!demodayId) {
