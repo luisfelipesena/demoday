@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { Award, FileText, PlusCircle, Users } from "lucide-react"
@@ -7,11 +8,43 @@ import { Award, FileText, PlusCircle, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useDemodays } from "@/hooks/useDemoday"
+import { Project, Demoday } from "@/types"
 
 export default function DashboardPage() {
   const { data: session } = useSession()
   const userRole = session?.user?.role || "user"
   const { data: demodays, isLoading, error } = useDemodays()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loadingProjects, setLoadingProjects] = useState(true)
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoadingProjects(true)
+        // Buscar projetos do usuário
+        const response = await fetch("/api/projects")
+        
+        if (!response.ok) {
+          throw new Error("Falha ao buscar projetos")
+        }
+        
+        const data = await response.json()
+        setProjects(data)
+        setLoadingProjects(false)
+      } catch (error) {
+        console.error("Erro ao buscar projetos:", error)
+        setLoadingProjects(false)
+      }
+    }
+
+    if (session?.user?.id) {
+      fetchProjects()
+    }
+  }, [session?.user?.id])
+
+  // Links corretos para criar projetos e visualizar projetos
+  const newProjectRoute = "/dashboard/projects/new"
+  const projectsRoute = "/dashboard/projects"
 
   return (
     <div className="w-full space-y-6">
@@ -27,7 +60,11 @@ export default function DashboardPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            {loadingProjects ? (
+              <div>Carregando...</div>
+            ) : (
+              <div className="text-2xl font-bold">{projects.length}</div>
+            )}
             <p className="text-xs text-muted-foreground">Projetos cadastrados</p>
           </CardContent>
         </Card>
@@ -38,9 +75,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div>Loading...</div>
+              <div>Carregando...</div>
             ) : error ? (
-              <div>Error loading demodays</div>
+              <div>Erro ao carregar demodays</div>
             ) : (
               <div className="text-2xl font-bold">{demodays?.length || 0}</div>
             )}
@@ -56,15 +93,35 @@ export default function DashboardPage() {
             <CardDescription>Seus projetos mais recentes</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center p-6">
-            <div className="text-center">
-              <p className="mb-4 text-muted-foreground">Você ainda não tem projetos cadastrados</p>
-              <Button asChild>
-                <Link href="/dashboard/admin/demoday/new">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Criar Projeto
-                </Link>
-              </Button>
-            </div>
+            {loadingProjects ? (
+              <div>Carregando projetos...</div>
+            ) : projects.length > 0 ? (
+              <div className="w-full">
+                {projects.slice(0, 3).map((project) => (
+                  <div key={project.id} className="border-b pb-3 mb-3 last:border-0 last:mb-0 last:pb-0">
+                    <Link href={`/dashboard/projects/${project.id}`} className="font-medium hover:underline">
+                      {project.title}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{project.type}</p>
+                  </div>
+                ))}
+                <Button asChild size="sm" variant="outline" className="mt-4 w-full">
+                  <Link href={projectsRoute}>
+                    Ver todos
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="mb-4 text-muted-foreground">Você ainda não tem projetos cadastrados</p>
+                <Button asChild>
+                  <Link href={newProjectRoute}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Criar Projeto
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -108,14 +165,14 @@ export default function DashboardPage() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">Projetos</span>
                   </div>
-                  <span className="font-medium">0</span>
+                  <span className="font-medium">{projects.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">Demodays</span>
                   </div>
-                  <span className="font-medium">1</span>
+                  <span className="font-medium">{demodays?.length || 0}</span>
                 </div>
               </div>
             </CardContent>

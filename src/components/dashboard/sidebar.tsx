@@ -59,8 +59,8 @@ export function DashboardSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/admin/demoday/new")}>
-                  <Link href="/dashboard/admin/demoday/new">
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/projects/new")}>
+                  <Link href="/dashboard/projects/new">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     <span>Novo Projeto</span>
                   </Link>
