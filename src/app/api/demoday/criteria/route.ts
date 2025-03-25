@@ -14,6 +14,23 @@ const criteriaSchema = z.object({
   type: z.enum(["registration", "evaluation"]),
 });
 
+// Schema para validar envio em lote de critérios
+const batchCriteriaSchema = z.object({
+  demodayId: z.string().min(1, "ID do demoday é obrigatório"),
+  registration: z.array(
+    z.object({
+      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
+    })
+  ).optional(),
+  evaluation: z.array(
+    z.object({
+      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
+    })
+  ).optional(),
+});
+
 // GET - Fetch criteria for a specific demoday
 export async function GET(req: NextRequest) {
   try {
@@ -30,22 +47,22 @@ export async function GET(req: NextRequest) {
 
     if (type === "registration") {
       const criteria = await db.query.registrationCriteria.findMany({
-        where: (criteria: typeof registrationCriteria) => eq(criteria.demoday_id, demodayId),
+        where: eq(registrationCriteria.demoday_id, demodayId),
       });
       return NextResponse.json(criteria);
     } else if (type === "evaluation") {
       const criteria = await db.query.evaluationCriteria.findMany({
-        where: (criteria: typeof evaluationCriteria) => eq(criteria.demoday_id, demodayId),
+        where: eq(evaluationCriteria.demoday_id, demodayId),
       });
       return NextResponse.json(criteria);
     } else {
       // Fetch both types if type is not specified
       const registrationCriteriaList = await db.query.registrationCriteria.findMany({
-        where: (criteria: typeof registrationCriteria) => eq(criteria.demoday_id, demodayId),
+        where: eq(registrationCriteria.demoday_id, demodayId),
       });
-      
+
       const evaluationCriteriaList = await db.query.evaluationCriteria.findMany({
-        where: (criteria: typeof evaluationCriteria) => eq(criteria.demoday_id, demodayId),
+        where: eq(evaluationCriteria.demoday_id, demodayId),
       });
 
       return NextResponse.json({
@@ -67,7 +84,7 @@ export async function POST(req: NextRequest) {
   try {
     // Get the session to check if user is authenticated
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -84,43 +101,88 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const result = criteriaSchema.safeParse(body);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", details: result.error.format() },
-        { status: 400 }
-      );
-    }
+    // Verificar se estamos recebendo um lote de critérios
+    if (body.demodayId !== undefined && (body.registration !== undefined || body.evaluation !== undefined)) {
+      const batchResult = batchCriteriaSchema.safeParse(body);
 
-    const { demoday_id, name, description, type } = result.data;
+      if (!batchResult.success) {
+        return NextResponse.json(
+          { error: "Dados inválidos", details: batchResult.error.format() },
+          { status: 400 }
+        );
+      }
 
-    let newCriteria;
+      const { demodayId, registration, evaluation } = batchResult.data;
 
-    if (type === "registration") {
-      const [criteria] = await db
-        .insert(registrationCriteria)
-        .values({
-          demoday_id,
-          name,
-          description,
-        })
-        .returning();
-      newCriteria = criteria;
+      // Processar em uma transação
+      const result = await db.transaction(async (tx: any) => {
+        // Adicionar critérios de inscrição
+        if (registration && registration.length > 0) {
+          for (const criteria of registration) {
+            await tx.insert(registrationCriteria).values({
+              demoday_id: demodayId,
+              name: criteria.name,
+              description: criteria.description,
+            });
+          }
+        }
+
+        // Adicionar critérios de avaliação
+        if (evaluation && evaluation.length > 0) {
+          for (const criteria of evaluation) {
+            await tx.insert(evaluationCriteria).values({
+              demoday_id: demodayId,
+              name: criteria.name,
+              description: criteria.description,
+            });
+          }
+        }
+
+        return { success: true };
+      });
+
+      return NextResponse.json(result, { status: 201 });
     } else {
-      // type === "evaluation"
-      const [criteria] = await db
-        .insert(evaluationCriteria)
-        .values({
-          demoday_id,
-          name,
-          description,
-        })
-        .returning();
-      newCriteria = criteria;
-    }
+      // Processamento individual de critério
+      const result = criteriaSchema.safeParse(body);
 
-    return NextResponse.json(newCriteria, { status: 201 });
+      if (!result.success) {
+        return NextResponse.json(
+          { error: "Dados inválidos", details: result.error.format() },
+          { status: 400 }
+        );
+      }
+
+      const { demoday_id, name, description, type } = result.data;
+
+      let newCriteria;
+
+      if (type === "registration") {
+        const [criteria] = await db
+          .insert(registrationCriteria)
+          .values({
+            demoday_id,
+            name,
+            description,
+          })
+          .returning();
+        newCriteria = criteria;
+      } else {
+        // type === "evaluation"
+        const [criteria] = await db
+          .insert(evaluationCriteria)
+          .values({
+            demoday_id,
+            name,
+            description,
+          })
+          .returning();
+        newCriteria = criteria;
+      }
+
+      return NextResponse.json(newCriteria, { status: 201 });
+    }
   } catch (error) {
     console.error("Error creating criteria:", error);
     return NextResponse.json(
@@ -134,7 +196,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },

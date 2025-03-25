@@ -62,7 +62,7 @@ export function useDemodayPhases(demodayId: string | null) {
       if (!demodayId) {
         return [];
       }
-      
+
       const response = await fetch(`/api/demoday/phases?demodayId=${demodayId}`);
       if (!response.ok) {
         const errorData = await response.json() as ErrorResponse;
