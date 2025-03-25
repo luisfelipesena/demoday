@@ -30,22 +30,22 @@ export async function GET(req: NextRequest) {
 
     if (type === "registration") {
       const criteria = await db.query.registrationCriteria.findMany({
-        where: (criteria, { eq }) => eq(criteria.demoday_id, demodayId),
+        where: (criteria: typeof registrationCriteria) => eq(criteria.demoday_id, demodayId),
       });
       return NextResponse.json(criteria);
     } else if (type === "evaluation") {
       const criteria = await db.query.evaluationCriteria.findMany({
-        where: (criteria, { eq }) => eq(criteria.demoday_id, demodayId),
+        where: (criteria: typeof evaluationCriteria) => eq(criteria.demoday_id, demodayId),
       });
       return NextResponse.json(criteria);
     } else {
       // Fetch both types if type is not specified
       const registrationCriteriaList = await db.query.registrationCriteria.findMany({
-        where: (criteria, { eq }) => eq(criteria.demoday_id, demodayId),
+        where: (criteria: typeof registrationCriteria) => eq(criteria.demoday_id, demodayId),
       });
       
       const evaluationCriteriaList = await db.query.evaluationCriteria.findMany({
-        where: (criteria, { eq }) => eq(criteria.demoday_id, demodayId),
+        where: (criteria: typeof evaluationCriteria) => eq(criteria.demoday_id, demodayId),
       });
 
       return NextResponse.json({
