@@ -1,0 +1,44 @@
+# Requisitos de Negócio - Demoday
+
+## Visão Geral
+O Demoday é uma plataforma web que permite a submissão e avaliação de projetos acadêmicos por estudantes de graduação e pós-graduação. O sistema deve suportar apenas um Demoday ativo por vez, com a possibilidade de exibir o histórico de eventos anteriores.
+
+## Requisitos Funcionais
+
+### 1. Gestão de Demoday
+- **Criação de Demoday**: Apenas administradores podem criar um novo Demoday. Cada Demoday deve ter:
+  - Nome
+  - Fases (com datas de início e fim)
+  - Critérios de inscrição e avaliação
+- **Demoday Ativo**: Apenas um Demoday pode estar ativo por vez. O sistema deve garantir que não haja sobreposição de eventos.
+- **Histórico de Demodays**: Exibir todos os Demodays anteriores com informações básicas (nome, datas, projetos participantes).
+
+### 2. Submissão de Projetos
+- **Submissão**: Estudantes podem submeter projetos durante a fase de inscrição do Demoday ativo. Cada projeto deve ter:
+  - Título
+  - Descrição
+  - Tipo (Disciplina, Iniciação Científica, TCC, Mestrado, Doutorado)
+- **Validação**: Projetos devem ser validados pelos administradores antes de serem exibidos publicamente.
+
+### 3. Avaliação e Votação
+- **Critérios de Avaliação**: Administradores definem critérios de avaliação para o Demoday ativo.
+- **Votação Pública**: Durante a fase de votação, o público pode votar nos projetos mais interessantes.
+- **Resultados**: Exibir os resultados finais após o término do Demoday.
+
+### 4. Dashboard de Administração
+- **Gestão de Usuários**: Administradores podem gerenciar usuários e suas permissões.
+- **Monitoramento**: Visualizar estatísticas e status do Demoday ativo.
+
+## Requisitos Não Funcionais
+- **Segurança**: Autenticação e autorização robustas para garantir que apenas usuários autorizados realizem ações específicas.
+- **Desempenho**: O sistema deve suportar um grande número de submissões e votos sem degradação de desempenho.
+- **Usabilidade**: Interface intuitiva e responsiva para facilitar a navegação e interação dos usuários.
+
+## Regras de Negócio
+- **Único Demoday Ativo**: Apenas um Demoday pode estar ativo por vez. A criação de um novo Demoday deve encerrar automaticamente o anterior.
+- **Fases do Demoday**: Cada Demoday deve ter fases bem definidas (inscrição, avaliação, votação, resultados) com datas específicas.
+- **Critérios Obrigatórios**: Cada Demoday deve ter pelo menos um critério de inscrição e um critério de avaliação.
+
+## Exceções
+- **Demoday Ativo Existente**: Se já houver um Demoday ativo, a criação de um novo deve ser bloqueada até que o atual seja encerrado.
+- **Projetos Fora do Prazo**: Projetos submetidos fora da fase de inscrição não devem ser aceitos.
