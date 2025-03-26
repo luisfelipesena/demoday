@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authOptions } from "@/auth/auth-options";
+import { desc } from "drizzle-orm";
 
 // Schema for validating demoday data
 const demodaySchema = z.object({
@@ -26,8 +27,9 @@ const demodaySchema = z.object({
 // GET - Fetch all demodays
 export async function GET() {
   try {
+    // Aplicando a ordem por data de criação mais recente
     const allDemodays = await db.query.demodays.findMany({
-      orderBy: (demodays, { desc }) => [desc(demodays.createdAt)],
+      orderBy: desc(demodays.createdAt),
     });
 
     return NextResponse.json(allDemodays);
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
   try {
     // Get the session to check if user is authenticated
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     // Extract user ID now that we know it exists
     const userId = session.user.id;
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: "ID de usuário não encontrado" },
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     const { name, phases } = result.data;
 
     // Create demoday in a transaction
-    const [newDemoday] = await db.transaction(async (tx) => {
+    const [newDemoday] = await db.transaction(async (tx: any) => {
       // Insert the demoday
       const [createdDemoday] = await tx
         .insert(demodays)

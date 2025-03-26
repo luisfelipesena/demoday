@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { demoDayPhases } from "@/server/db/schema";
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 // GET - Fetch phases for a specific demoday
 export async function GET(req: NextRequest) {
@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
 
     // Get phases
     const phases = await db.query.demoDayPhases.findMany({
-      where: (phases: typeof demoDayPhases) => eq(phases.demoday_id, demodayId),
-      orderBy: (phases: typeof demoDayPhases) => phases.phaseNumber,
+      where: eq(demoDayPhases.demoday_id, demodayId),
+      orderBy: asc(demoDayPhases.phaseNumber),
     });
 
     return NextResponse.json(phases);

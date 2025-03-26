@@ -93,8 +93,8 @@ export function useCreateCriteria() {
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful creation
-      queryClient.invalidateQueries({ 
-        queryKey: ["criteria", variables.demoday_id] 
+      queryClient.invalidateQueries({
+        queryKey: ["criteria", variables.demoday_id]
       });
     },
   });
@@ -105,12 +105,12 @@ export function useDeleteCriteria() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      id, 
-      type, 
-      demodayId 
-    }: { 
-      id: string; 
+    mutationFn: async ({
+      id,
+      type,
+      demodayId
+    }: {
+      id: string;
       type: "registration" | "evaluation";
       demodayId: string;
     }) => {
@@ -127,7 +127,7 @@ export function useDeleteCriteria() {
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful deletion
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ["criteria", variables.demodayId]
       });
     },
@@ -139,21 +139,22 @@ export function useSubmitCriteriaBatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      demodayId, 
-      registration, 
-      evaluation 
-    }: { 
+    mutationFn: async ({
+      demodayId,
+      registration,
+      evaluation
+    }: {
       demodayId: string;
       registration: { name: string; description: string }[];
       evaluation: { name: string; description: string }[];
     }) => {
-      const response = await fetch(`/api/demoday/${demodayId}/criteria`, {
+      const response = await fetch(`/api/demoday/criteria`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          demodayId,
           registration,
           evaluation,
         }),
@@ -168,8 +169,8 @@ export function useSubmitCriteriaBatch() {
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful creation
-      queryClient.invalidateQueries({ 
-        queryKey: ["criteria", variables.demodayId] 
+      queryClient.invalidateQueries({
+        queryKey: ["criteria", variables.demodayId]
       });
     },
   });
