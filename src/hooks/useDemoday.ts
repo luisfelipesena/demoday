@@ -11,6 +11,11 @@ export type CreateDemodayInput = {
   phases: Phase[];
 };
 
+export type UpdateDemodayStatusInput = {
+  id: string;
+  status: 'active' | 'finished' | 'canceled';
+};
+
 // Fetch all demodays
 export function useDemodays() {
   return useQuery<Demoday[], Error>({
@@ -71,5 +76,33 @@ export function useDemodayPhases(demodayId: string | null) {
       return response.json();
     },
     enabled: !!demodayId, // Only run the query if demodayId is provided
+  });
+}
+
+// Update demoday status
+export function useUpdateDemodayStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, Error, UpdateDemodayStatusInput>({
+    mutationFn: async ({ id, status }: UpdateDemodayStatusInput) => {
+      const response = await fetch(`/api/demoday/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as ErrorResponse;
+        throw new Error(errorData.error || `Erro ao atualizar status do demoday para ${status}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch demodays after successful update
+      queryClient.invalidateQueries({ queryKey: ["demodays"] });
+    },
   });
 } 

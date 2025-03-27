@@ -1,10 +1,10 @@
 import { db } from "@/server/db";
-import { demodays, demoDayPhases } from "@/server/db/schema";
+import { demodays, demoDayPhases, demodayStatusEnum } from "@/server/db/schema";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authOptions } from "@/auth/auth-options";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 // Schema for validating demoday data
 const demodaySchema = z.object({
@@ -87,12 +87,23 @@ export async function POST(req: NextRequest) {
 
     // Create demoday in a transaction
     const [newDemoday] = await db.transaction(async (tx: any) => {
+      // Marque todos os demodays existentes como inativos e finalizados
+      await tx
+        .update(demodays)
+        .set({ 
+          active: false,
+          status: "finished" 
+        })
+        .where(eq(demodays.active, true));
+
       // Insert the demoday
       const [createdDemoday] = await tx
         .insert(demodays)
         .values({
           name,
           createdById: userId,
+          active: true,
+          status: "active",
         })
         .returning();
 

@@ -22,6 +22,8 @@ export interface Demoday {
   id: string
   name: string
   phases: Phase[]
+  active: boolean
+  status: 'active' | 'finished' | 'canceled'
   createdAt: string
   updatedAt: string
 }
