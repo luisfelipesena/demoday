@@ -1,4 +1,4 @@
-import { pgTable, unique, text, timestamp, foreignKey, integer, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, unique, text, timestamp, foreignKey, integer, pgEnum, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const role = pgEnum("role", ['admin', 'user', 'professor'])
@@ -112,10 +112,14 @@ export const projects = pgTable("projects", {
 		}).onDelete("cascade"),
 ]);
 
+export const demodayStatus = pgEnum("demoday_status", ['active', 'finished', 'canceled']);
+
 export const demodays = pgTable("demodays", {
 	id: text().primaryKey().notNull(),
 	name: text().notNull(),
 	createdById: text("created_by_id").notNull(),
+	active: boolean().default(false).notNull(),
+	status: demodayStatus("status").notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [

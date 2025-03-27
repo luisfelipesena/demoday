@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, varchar, integer, boolean, pgEnum } from "dri
 import { createId } from "@paralleldrive/cuid2";
 
 export const roleEnum = pgEnum("role", ["admin", "user", "professor"]);
+export const demodayStatusEnum = pgEnum("demoday_status", ["active", "finished", "canceled"]);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -50,6 +51,8 @@ export const demodays = pgTable("demodays", {
   createdById: text("created_by_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  active: boolean("active").default(false).notNull(),
+  status: demodayStatusEnum("status").default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
