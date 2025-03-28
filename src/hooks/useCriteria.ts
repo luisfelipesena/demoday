@@ -187,4 +187,46 @@ export function useSubmitCriteriaBatch() {
       });
     },
   });
+}
+
+// Update all criteria for a specific demoday
+export function useUpdateCriteriaBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      demodayId,
+      registration,
+      evaluation
+    }: {
+      demodayId: string;
+      registration: { name: string; description: string }[];
+      evaluation: { name: string; description: string }[];
+    }) => {
+      const response = await fetch(`/api/demoday/${demodayId}/criteria`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          demodayId,
+          registration,
+          evaluation,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as ErrorResponse;
+        throw new Error(errorData.error || "Erro ao atualizar critérios");
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch criteria after successful update
+      queryClient.invalidateQueries({
+        queryKey: ["criteria", variables.demodayId]
+      });
+    },
+  });
 } 
