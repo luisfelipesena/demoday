@@ -203,7 +203,7 @@ export function useUpdateCriteriaBatch() {
       registration: { name: string; description: string }[];
       evaluation: { name: string; description: string }[];
     }) => {
-      const response = await fetch(`/api/demoday/${demodayId}/criteria`, {
+      const response = await fetch(`/api/demoday/criteria`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

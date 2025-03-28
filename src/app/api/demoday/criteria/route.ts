@@ -1,10 +1,10 @@
-import { db } from "@/server/db";
-import { evaluationCriteria, registrationCriteria } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
+import { db } from "@/server/db";
+import { demodays, evaluationCriteria, registrationCriteria } from "@/server/db/schema";
+import { batchCriteriaSchema, criteriaSchema } from "@/server/db/validators";
+import { eq } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { batchCriteriaSchema, criteriaSchema } from "@/server/db/validators";
 
 // GET - Fetch criteria for a specific demoday
 export async function GET(req: NextRequest) {
@@ -217,6 +217,111 @@ export async function DELETE(req: NextRequest) {
     console.error("Error deleting criteria:", error);
     return NextResponse.json(
       { error: "Erro ao remover critério" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Atualizar critérios de um demoday
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 401 }
+      );
+    }
+
+    // Admin check
+    if (session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Apenas administradores podem atualizar critérios" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const result = batchCriteriaSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: result.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const { demodayId, registration, evaluation } = result.data;
+
+    // Validate that the demoday exists
+    const existingDemoday = await db.query.demodays.findFirst({
+      where: eq(demodays.id, demodayId),
+    });
+
+    if (!existingDemoday) {
+      return NextResponse.json(
+        { error: "Demoday não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Atualizar todos os critérios em uma transação
+    await db.transaction(async (tx: typeof db) => {
+      // Remover todos os critérios existentes
+      await tx.delete(registrationCriteria)
+        .where(eq(registrationCriteria.demoday_id, demodayId));
+
+      await tx.delete(evaluationCriteria)
+        .where(eq(evaluationCriteria.demoday_id, demodayId));
+
+      // Inserir novos critérios de inscrição
+      if (registration && registration.length > 0) {
+        for (const criteria of registration) {
+          if (criteria.name.trim() && criteria.description.trim()) {
+            await tx.insert(registrationCriteria).values({
+              demoday_id: demodayId,
+              name: criteria.name,
+              description: criteria.description,
+            });
+          }
+        }
+      }
+
+      // Inserir novos critérios de avaliação
+      if (evaluation && evaluation.length > 0) {
+        for (const criteria of evaluation) {
+          if (criteria.name.trim() && criteria.description.trim()) {
+            await tx.insert(evaluationCriteria).values({
+              demoday_id: demodayId,
+              name: criteria.name,
+              description: criteria.description,
+            });
+          }
+        }
+      }
+    });
+
+    // Buscar critérios atualizados
+    const updatedRegistrationCriteria = await db.query.registrationCriteria.findMany({
+      where: eq(registrationCriteria.demoday_id, demodayId),
+    });
+
+    const updatedEvaluationCriteria = await db.query.evaluationCriteria.findMany({
+      where: eq(evaluationCriteria.demoday_id, demodayId),
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        registration: updatedRegistrationCriteria,
+        evaluation: updatedEvaluationCriteria,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating criteria:", error);
+    return NextResponse.json(
+      { error: "Erro ao atualizar critérios" },
       { status: 500 }
     );
   }

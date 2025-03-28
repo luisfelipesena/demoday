@@ -4,7 +4,7 @@ import { DemodayForm } from "@/components/dashboard/DemodayForm"
 import { DemodayFormData } from "@/components/dashboard/types"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCriteria, useSubmitCriteriaBatch } from "@/hooks/useCriteria"
+import { useCriteria, useUpdateCriteriaBatch } from "@/hooks/useCriteria"
 import { useDemodayDetails, useUpdateDemoday } from "@/hooks/useDemoday"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
@@ -29,7 +29,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
   const { data: criteriaData, isLoading: loadingCriteria } = useCriteria(demodayId)
   const [error, setError] = useState<string | null>(queryError?.message || null)
   const { mutate: updateDemoday, isPending: isUpdating } = useUpdateDemoday()
-  const { mutate: submitCriteria, isPending: isUpdatingCriteria } = useSubmitCriteriaBatch()
+  const { mutate: updateCriteria, isPending: isUpdatingCriteria } = useUpdateCriteriaBatch()
 
   // Check if user is admin
   const isAdmin = session?.user?.role === "admin"
@@ -122,7 +122,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       {
         onSuccess: () => {
           // Now update the criteria
-          submitCriteria(
+          updateCriteria(
             {
               demodayId: demoday.id,
               registration: validRegistrationCriteria,

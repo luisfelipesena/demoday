@@ -1,10 +1,10 @@
-import { db } from "@/server/db";
-import { demodays, demoDayPhases, projectSubmissions, projects } from "@/server/db/schema";
-import { NextRequest, NextResponse } from "next/server";
-import { eq, count, and } from "drizzle-orm";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth/auth-options";
-import { updateStatusSchema } from "@/server/db/validators";
+import { db } from "@/server/db";
+import { demoDayPhases, demodays, projectSubmissions } from "@/server/db/schema";
+import { demodaySchema, updateStatusSchema } from "@/server/db/validators";
+import { and, count, eq } from "drizzle-orm";
+import { getServerSession } from "next-auth";
+import { NextRequest, NextResponse } from "next/server";
 
 
 // GET - Fetch a specific demoday with its phases
@@ -151,11 +151,99 @@ export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  // Implementar atualização de demoday aqui
-  return NextResponse.json(
-    { message: "Endpoint não implementado" },
-    { status: 501 }
-  );
+  try {
+    // Verificar autenticação
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 401 }
+      );
+    }
+
+    // Verificar se é admin
+    if (session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Apenas administradores podem atualizar demodays" },
+        { status: 403 }
+      );
+    }
+
+    // Unwrap the params
+    const params = await context.params;
+    const id = params.id;
+
+    // Verificar se o demoday existe
+    const existingDemoday = await db.query.demodays.findFirst({
+      where: eq(demodays.id, id),
+    });
+
+    if (!existingDemoday) {
+      return NextResponse.json(
+        { error: "Demoday não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Obter dados da requisição
+    const body = await req.json();
+    const result = demodaySchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: result.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const { name, phases } = result.data;
+
+    // Atualizar demoday e fases em uma transação
+    await db.transaction(async (tx: any) => {
+      // Atualizar nome do demoday
+      await tx.update(demodays)
+        .set({ name })
+        .where(eq(demodays.id, id));
+
+      // Excluir fases existentes
+      await tx.delete(demoDayPhases)
+        .where(eq(demoDayPhases.demoday_id, id));
+
+      // Inserir novas fases
+      for (const phase of phases) {
+        await tx.insert(demoDayPhases).values({
+          demoday_id: id,
+          name: phase.name,
+          description: phase.description,
+          phaseNumber: phase.phaseNumber,
+          startDate: new Date(phase.startDate),
+          endDate: new Date(phase.endDate),
+        });
+      }
+    });
+
+    // Retornar demoday atualizado
+    const updatedDemoday = await db.query.demodays.findFirst({
+      where: eq(demodays.id, id),
+    });
+
+    const updatedPhases = await db.query.demoDayPhases.findMany({
+      where: eq(demoDayPhases.demoday_id, id),
+      orderBy: demoDayPhases.phaseNumber,
+    });
+
+    return NextResponse.json({
+      ...updatedDemoday,
+      phases: updatedPhases,
+    });
+  } catch (error) {
+    console.error("Error updating demoday:", error);
+    return NextResponse.json(
+      { error: "Erro ao atualizar demoday" },
+      { status: 500 }
+    );
+  }
 }
 
 // PATCH - Update a demoday status
