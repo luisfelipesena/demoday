@@ -18,14 +18,6 @@ export default function NewDemodayPage() {
   // Form validation error
   const [error, setError] = useState<string | null>(null)
 
-  // Registration and evaluation criteria
-  const [registrationCriteria, setRegistrationCriteria] = useState<{ name: string; description: string }[]>([
-    { name: "", description: "" },
-  ])
-  const [evaluationCriteria, setEvaluationCriteria] = useState<{ name: string; description: string }[]>([
-    { name: "", description: "" },
-  ])
-
   // Check if user is admin
   const isAdmin = session?.user?.role === "admin"
 
@@ -103,93 +95,54 @@ export default function NewDemodayPage() {
     return null
   }
 
-  const onSubmit = (data: { name: string; phases: Phase[] }) => {
+  const onSubmit = (data: {
+    name: string
+    phases: Phase[]
+    registrationCriteria: { name: string; description: string }[]
+    evaluationCriteria: { name: string; description: string }[]
+  }) => {
     setError(null)
 
     // Filter out empty criteria
-    const validRegistrationCriteria = registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
-    const validEvaluationCriteria = evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
+    const validRegistrationCriteria = data.registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
+    const validEvaluationCriteria = data.evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
 
     if (validRegistrationCriteria.length === 0) {
       setError("Adicione pelo menos um critério de inscrição")
       return
     }
 
-    // Create the demoday
-    createDemoday(data, {
-      onSuccess: (createdDemoday) => {
-        console.log("Demoday criado com sucesso:", createdDemoday)
+    // Create the demoday (passing only name and phases)
+    createDemoday(
+      { name: data.name, phases: data.phases },
+      {
+        onSuccess: (createdDemoday) => {
+          console.log("Demoday criado com sucesso:", createdDemoday)
 
-        // Now submit the criteria
-        submitCriteria(
-          {
-            demodayId: createdDemoday.id,
-            registration: validRegistrationCriteria,
-            evaluation: validEvaluationCriteria,
-          },
-          {
-            onSuccess: () => {
-              console.log("Critérios adicionados com sucesso")
-              router.push("/dashboard/admin/demoday")
+          // Now submit the criteria
+          submitCriteria(
+            {
+              demodayId: createdDemoday.id,
+              registration: validRegistrationCriteria,
+              evaluation: validEvaluationCriteria,
             },
-            onError: (error) => {
-              console.error("Erro ao adicionar critérios:", error)
-              setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
-            },
-          }
-        )
-      },
-      onError: (error) => {
-        setError(error.message)
-      },
-    })
-  }
-
-  // Helper functions for criteria
-  const updateRegistrationCriteria = (
-    index: number,
-    field: keyof { name: string; description: string },
-    value: string
-  ) => {
-    const updated = [...registrationCriteria]
-    updated[index] = {
-      ...updated[index],
-      [field]: value,
-    } as { name: string; description: string }
-    setRegistrationCriteria(updated)
-  }
-
-  const updateEvaluationCriteria = (
-    index: number,
-    field: keyof { name: string; description: string },
-    value: string
-  ) => {
-    const updated = [...evaluationCriteria]
-    updated[index] = {
-      ...updated[index],
-      [field]: value,
-    } as { name: string; description: string }
-    setEvaluationCriteria(updated)
-  }
-
-  const addRegistrationCriteria = () => {
-    setRegistrationCriteria([...registrationCriteria, { name: "", description: "" }])
-  }
-
-  const addEvaluationCriteria = () => {
-    setEvaluationCriteria([...evaluationCriteria, { name: "", description: "" }])
-  }
-
-  const removeRegistrationCriteria = (index: number) => {
-    if (registrationCriteria.length > 1) {
-      setRegistrationCriteria(registrationCriteria.filter((_, i) => i !== index))
-    }
-  }
-
-  const removeEvaluationCriteria = (index: number) => {
-    if (evaluationCriteria.length > 1) {
-      setEvaluationCriteria(evaluationCriteria.filter((_, i) => i !== index))
-    }
+            {
+              onSuccess: () => {
+                console.log("Critérios adicionados com sucesso")
+                router.push("/dashboard/admin/demoday")
+              },
+              onError: (error) => {
+                console.error("Erro ao adicionar critérios:", error)
+                setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
+              },
+            }
+          )
+        },
+        onError: (error) => {
+          setError(error.message)
+        },
+      }
+    )
   }
 
   // Determine if form is submitting

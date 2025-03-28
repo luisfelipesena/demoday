@@ -3,6 +3,7 @@
 import { DemodayForm } from "@/components/dashboard/DemodayForm"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCriteria, useSubmitCriteriaBatch } from "@/hooks/useCriteria"
 import { Phase, useDemodayDetails, useUpdateDemoday } from "@/hooks/useDemoday"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
@@ -13,14 +14,21 @@ interface DemodayPageProps {
   params: Promise<{ id: string }>
 }
 
+// Define an error type
+interface ApiError {
+  message: string
+}
+
 export default function EditDemodayPage({ params }: DemodayPageProps) {
   const resolvedParams = use(params)
   const router = useRouter()
   const { data: session, status } = useSession()
   const demodayId = resolvedParams.id
   const { data: demoday, isLoading: loading, error: queryError } = useDemodayDetails(demodayId)
+  const { data: criteriaData, isLoading: loadingCriteria } = useCriteria(demodayId)
   const [error, setError] = useState<string | null>(queryError?.message || null)
   const { mutate: updateDemoday, isPending: isUpdating } = useUpdateDemoday()
+  const { mutate: submitCriteria, isPending: isUpdatingCriteria } = useSubmitCriteriaBatch()
 
   // Check if user is admin
   const isAdmin = session?.user?.role === "admin"
@@ -32,7 +40,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
   }
 
   // Show loading during session check
-  if (status === "loading" || loading) {
+  if (status === "loading" || loading || loadingCriteria) {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6 flex items-center justify-between">
@@ -80,9 +88,24 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
     )
   }
 
-  const onSubmit = (data: { name: string; phases: Phase[] }) => {
+  const onSubmit = (data: {
+    name: string
+    phases: Phase[]
+    registrationCriteria: { name: string; description: string }[]
+    evaluationCriteria: { name: string; description: string }[]
+  }) => {
     setError(null)
 
+    // Filter out empty criteria
+    const validRegistrationCriteria = data.registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
+    const validEvaluationCriteria = data.evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
+
+    if (validRegistrationCriteria.length === 0) {
+      setError("Adicione pelo menos um critério de inscrição")
+      return
+    }
+
+    // Update demoday name and phases
     updateDemoday(
       {
         id: demoday.id,
@@ -91,9 +114,24 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       },
       {
         onSuccess: () => {
-          router.push("/dashboard/admin/demoday")
+          // Now update the criteria
+          submitCriteria(
+            {
+              demodayId: demoday.id,
+              registration: validRegistrationCriteria,
+              evaluation: validEvaluationCriteria,
+            },
+            {
+              onSuccess: () => {
+                router.push("/dashboard/admin/demoday")
+              },
+              onError: (error: ApiError) => {
+                setError(`Demoday atualizado, mas houve um erro ao atualizar critérios: ${error.message}`)
+              },
+            }
+          )
         },
-        onError: (error) => {
+        onError: (error: ApiError) => {
           setError(error.message)
         },
       }
@@ -110,7 +148,20 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       startDate: phase.startDate,
       endDate: phase.endDate,
     })),
+    registrationCriteria:
+      criteriaData?.registration?.map((c) => ({
+        name: c.name,
+        description: c.description,
+      })) || [],
+    evaluationCriteria:
+      criteriaData?.evaluation?.map((c) => ({
+        name: c.name,
+        description: c.description,
+      })) || [],
   }
+
+  // Determine if form is submitting
+  const isPending = isUpdating || isUpdatingCriteria
 
   return (
     <div className="mx-auto max-w-5xl p-6">
@@ -127,7 +178,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       <DemodayForm
         initialData={initialData}
         onSubmit={onSubmit}
-        isSubmitting={isUpdating}
+        isSubmitting={isPending}
         error={error}
         submitButtonText="Salvar Alterações"
         loadingButtonText="Salvando..."
