@@ -147,7 +147,12 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
           <Badge className={`${demoday.active ? "bg-green-500" : "bg-blue-500"}`}>
             {demoday.active ? "Ativo" : "Finalizado"}
           </Badge>
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+          <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>
+            <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+              Editar
+            </Button>
+          </Link>
+          <Button variant="outline" onClick={() => router.push("/dashboard/admin/demoday")}>
             Voltar
           </Button>
         </div>

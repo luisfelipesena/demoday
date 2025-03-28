@@ -1,15 +1,21 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FormEvent, use, useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
+import { Controller, useForm } from "react-hook-form"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { projectSchema } from "@/server/db/validators"
 import { PROJECT_TYPES } from "@/types"
+
+type ProjectFormData = z.infer<typeof projectSchema>
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   // Desembrulhar (unwrap) o objeto params usando React.use
@@ -19,13 +25,22 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   const router = useRouter()
   const { data: session, status } = useSession()
 
-  // Estados para o formulário
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [type, setType] = useState("")
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      type: undefined,
+    },
+  })
 
   // Carregar dados do projeto ao iniciar
   useEffect(() => {
@@ -44,9 +59,12 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         const project = await response.json()
 
         // Preencher o formulário com os dados do projeto
-        setTitle(project.title)
-        setDescription(project.description)
-        setType(project.type)
+        reset({
+          title: project.title,
+          description: project.description,
+          type: project.type,
+        })
+
         setLoading(false)
       } catch (error) {
         console.error("Erro ao carregar projeto:", error)
@@ -58,7 +76,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     if (session?.user?.id) {
       fetchProject()
     }
-  }, [session?.user?.id, projectId])
+  }, [session?.user?.id, projectId, reset])
 
   // Verificar autenticação
   if (status === "unauthenticated") {
@@ -105,42 +123,23 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
+  const onSubmit = async (data: ProjectFormData) => {
     setError(null)
 
     try {
-      // Validações básicas
-      if (!title.trim()) {
-        throw new Error("O título do projeto é obrigatório")
-      }
-
-      if (!description.trim()) {
-        throw new Error("A descrição do projeto é obrigatória")
-      }
-
-      if (!type) {
-        throw new Error("O tipo do projeto é obrigatório")
-      }
-
       // Enviar dados atualizados para a API
       const response = await fetch(`/api/projects/${projectId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          title,
-          description,
-          type,
-        }),
+        body: JSON.stringify(data),
       })
 
-      const data = await response.json()
+      const responseData = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao atualizar projeto")
+        throw new Error(responseData.error || "Erro ao atualizar projeto")
       }
 
       // Redirecionar para a página de detalhes do projeto após sucesso
@@ -151,7 +150,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
       } else {
         setError("Ocorreu um erro ao atualizar o projeto")
       }
-      setSaving(false)
     }
   }
 
@@ -174,18 +172,21 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
           <CardTitle>Dados do Projeto</CardTitle>
           <CardDescription>Edite as informações do seu projeto acadêmico</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="title" className="text-sm font-medium">
                 Título do Projeto
               </label>
-              <Input
-                id="title"
-                placeholder="Digite o título do projeto"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={saving}
+              <Controller
+                name="title"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <Input id="title" placeholder="Digite o título do projeto" {...field} disabled={isSubmitting} />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
               />
             </div>
 
@@ -193,13 +194,21 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               <label htmlFor="description" className="text-sm font-medium">
                 Descrição
               </label>
-              <textarea
-                id="description"
-                placeholder="Descreva seu projeto"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={saving}
-                className="h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <Controller
+                name="description"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <textarea
+                      id="description"
+                      placeholder="Descreva seu projeto"
+                      {...field}
+                      disabled={isSubmitting}
+                      className="h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
               />
             </div>
 
@@ -207,22 +216,30 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               <label htmlFor="type" className="text-sm font-medium">
                 Tipo de Projeto
               </label>
-              <select
-                id="type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                disabled={saving}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="" disabled>
-                  Selecione um tipo
-                </option>
-                {PROJECT_TYPES.map((projectType) => (
-                  <option key={projectType} value={projectType}>
-                    {projectType}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="type"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <select
+                      id="type"
+                      {...field}
+                      disabled={isSubmitting}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="" disabled>
+                        Selecione um tipo
+                      </option>
+                      {PROJECT_TYPES.map((projectType) => (
+                        <option key={projectType} value={projectType}>
+                          {projectType}
+                        </option>
+                      ))}
+                    </select>
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
+              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">
@@ -230,12 +247,12 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               type="button"
               variant="outline"
               onClick={() => router.push(`/dashboard/projects/${projectId}`)}
-              disabled={saving}
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Salvando..." : "Salvar Alterações"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </CardFooter>
         </form>

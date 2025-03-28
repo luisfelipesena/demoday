@@ -221,6 +221,7 @@ export default function DemodayListPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/admin/demoday/${demoday.id}`}>Detalhes</Link>
                         </DropdownMenuItem>
@@ -242,7 +243,7 @@ export default function DemodayListPage() {
                           onClick={() => handleStatusChange(demoday.id, "canceled")}
                           className="text-red-600 focus:text-red-600"
                         >
-                          Cancelar
+                          Apagar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

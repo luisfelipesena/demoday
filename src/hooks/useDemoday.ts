@@ -13,6 +13,12 @@ export type CreateDemodayInput = {
   phases: Phase[];
 };
 
+export type UpdateDemodayInput = {
+  id: string;
+  name: string;
+  phases: Phase[];
+};
+
 export type UpdateDemodayStatusInput = {
   id: string;
   status: 'active' | 'finished' | 'canceled';
@@ -76,6 +82,35 @@ export function useCreateDemoday() {
     },
     onSuccess: () => {
       // Invalidate and refetch demodays after successful creation
+      queryClient.invalidateQueries({ queryKey: ["demodays"] });
+    },
+  });
+}
+
+// Update existing demoday
+export function useUpdateDemoday() {
+  const queryClient = useQueryClient();
+
+  return useMutation<Demoday, Error, UpdateDemodayInput>({
+    mutationFn: async ({ id, name, phases }: UpdateDemodayInput) => {
+      const response = await fetch(`/api/demoday/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, phases }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as ErrorResponse;
+        throw new Error(errorData.error || "Erro ao atualizar demoday");
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch the specific demoday and demodays list
+      queryClient.invalidateQueries({ queryKey: ["demoday", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["demodays"] });
     },
   });

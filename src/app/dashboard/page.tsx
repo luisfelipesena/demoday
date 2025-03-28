@@ -56,11 +56,9 @@ export default function DashboardPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-xl font-bold text-blue-800">{activeDemoday.name}</CardTitle>
-                  <CardDescription className="text-blue-600 mt-1">
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      <span>Criado em {formatDate(activeDemoday.createdAt)}</span>
-                    </div>
+                  <CardDescription className="flex items-center gap-2 text-blue-600 mt-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>Criado em {formatDate(activeDemoday.createdAt)}</span>
                   </CardDescription>
                 </div>
                 <Badge className="bg-green-500 hover:bg-green-600">Ativo</Badge>
@@ -104,15 +102,13 @@ export default function DashboardPage() {
                     <CardTitle className="text-lg font-semibold">{demoday.name}</CardTitle>
                     <Badge className="bg-blue-500 hover:bg-blue-600">Finalizado</Badge>
                   </div>
-                  <CardDescription className="text-gray-500 mt-1">
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="h-4 w-4" />
-                      <span>Finalizado em {formatDate(demoday.updatedAt)}</span>
-                    </div>
+                  <CardDescription className="flex items-center gap-2 text-gray-500 mt-1">
+                    <ClockIcon className="h-4 w-4" />
+                    <span>Finalizado em {formatDate(demoday.updatedAt)}</span>
                   </CardDescription>
                 </CardHeader>
                 <CardFooter className="flex justify-end">
-                  <Link href={`/dashboard/demoday/${demoday.id}`}>
+                  <Link href={`/dashboard/admin/demoday/${demoday.id}`}>
                     <Button variant="outline" size="sm">
                       Ver Detalhes
                     </Button>

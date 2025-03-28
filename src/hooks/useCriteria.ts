@@ -154,7 +154,7 @@ export function useSubmitCriteriaBatch() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          demodayId,
+          demoday_id: demodayId,
           registration,
           evaluation,
         }),

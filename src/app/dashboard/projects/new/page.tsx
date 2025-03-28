@@ -1,26 +1,39 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FormEvent, useState } from "react"
+import { useState } from "react"
+import { Controller, useForm } from "react-hook-form"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { projectSchema } from "@/server/db/validators"
 import { PROJECT_TYPES } from "@/types"
+
+type ProjectFormData = z.infer<typeof projectSchema>
 
 export default function NewProjectPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
-
-  // Estados para o formulário
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [type, setType] = useState("Disciplina") // Valor padrão
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      type: undefined,
+    },
+  })
 
   // Verificar autenticação
   if (status === "unauthenticated") {
@@ -33,7 +46,7 @@ export default function NewProjectPage() {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-10 w-56" />
+          <Skeleton className="h-10 w-48" />
           <Skeleton className="h-9 w-24" />
         </div>
 
@@ -60,49 +73,30 @@ export default function NewProjectPage() {
 
           <div className="flex justify-end space-x-2 mt-8">
             <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-40" />
           </div>
         </div>
       </div>
     )
   }
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: ProjectFormData) => {
     setError(null)
-    setLoading(true)
 
     try {
-      // Validações básicas
-      if (!title.trim()) {
-        throw new Error("O título do projeto é obrigatório")
-      }
-
-      if (!description.trim()) {
-        throw new Error("A descrição do projeto é obrigatória")
-      }
-
-      if (!type) {
-        throw new Error("O tipo do projeto é obrigatório")
-      }
-
       // Enviar dados para a API
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          title,
-          description,
-          type,
-        }),
+        body: JSON.stringify(data),
       })
 
-      const data = await response.json()
+      const responseData = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao criar projeto")
+        throw new Error(responseData.error || "Erro ao criar projeto")
       }
 
       // Redirecionar para a página de projetos após sucesso
@@ -113,7 +107,6 @@ export default function NewProjectPage() {
       } else {
         setError("Ocorreu um erro ao criar o projeto")
       }
-      setLoading(false)
     }
   }
 
@@ -133,18 +126,21 @@ export default function NewProjectPage() {
           <CardTitle>Dados do Projeto</CardTitle>
           <CardDescription>Preencha as informações do seu projeto acadêmico</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="title" className="text-sm font-medium">
                 Título do Projeto
               </label>
-              <Input
-                id="title"
-                placeholder="Digite o título do projeto"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={loading}
+              <Controller
+                name="title"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <Input id="title" placeholder="Digite o título do projeto" {...field} disabled={isSubmitting} />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
               />
             </div>
 
@@ -152,13 +148,21 @@ export default function NewProjectPage() {
               <label htmlFor="description" className="text-sm font-medium">
                 Descrição
               </label>
-              <textarea
-                id="description"
-                placeholder="Descreva seu projeto"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={loading}
-                className="h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <Controller
+                name="description"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <textarea
+                      id="description"
+                      placeholder="Descreva seu projeto"
+                      {...field}
+                      disabled={isSubmitting}
+                      className="h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
               />
             </div>
 
@@ -166,19 +170,31 @@ export default function NewProjectPage() {
               <label htmlFor="type" className="text-sm font-medium">
                 Tipo de Projeto
               </label>
-              <select
-                id="type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                disabled={loading}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {PROJECT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="type"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <select
+                      id="type"
+                      {...field}
+                      value={field.value || ""}
+                      disabled={isSubmitting}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="" disabled>
+                        Selecione um tipo
+                      </option>
+                      {PROJECT_TYPES.map((projectType) => (
+                        <option key={projectType} value={projectType}>
+                          {projectType}
+                        </option>
+                      ))}
+                    </select>
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
+              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">
@@ -186,12 +202,12 @@ export default function NewProjectPage() {
               type="button"
               variant="outline"
               onClick={() => router.push("/dashboard/projects")}
-              disabled={loading}
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar Projeto"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : "Salvar Projeto"}
             </Button>
           </CardFooter>
         </form>
