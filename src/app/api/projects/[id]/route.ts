@@ -1,10 +1,10 @@
+import { authOptions } from "@/auth/auth-options";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
-import { authOptions } from "@/auth/auth-options";
+import { projectSchema } from "@/server/db/validators";
+import { eq } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { projectSchema } from "@/schemas/project";
 
 // GET - Buscar um projeto específico pelo ID
 export async function GET(
@@ -15,10 +15,10 @@ export async function GET(
     // Desembrulhar (unwrap) o objeto params antes de acessar suas propriedades
     const params = await context.params;
     const projectId = params.id;
-    
+
     // Obter a sessão para verificar se o usuário está autenticado
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -27,7 +27,7 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    
+
     if (!projectId) {
       return NextResponse.json(
         { error: "ID do projeto é obrigatório" },
@@ -46,7 +46,7 @@ export async function GET(
     // Se o usuário for admin, permitir ver qualquer projeto
     // Se não, só permite ver projetos do próprio usuário
     const isAdmin = session.user.role === "admin";
-    
+
     let project;
     if (isAdmin) {
       // Admin pode ver qualquer projeto
@@ -59,7 +59,7 @@ export async function GET(
       const projectExists = await db.query.projects.findFirst({
         where: eq(projects.id, projectId),
       });
-      
+
       // Depois verificamos se pertence ao usuário atual
       if (projectExists && projectExists.userId === userId) {
         project = projectExists;
@@ -97,7 +97,7 @@ export async function PUT(
 
     // Obter a sessão para verificar se o usuário está autenticado
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -106,7 +106,7 @@ export async function PUT(
     }
 
     const userId = session.user.id;
-    
+
     if (!projectId) {
       return NextResponse.json(
         { error: "ID do projeto é obrigatório" },
@@ -162,7 +162,7 @@ export async function PUT(
         title,
         description,
         type,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(projects.id, projectId))
       .returning();

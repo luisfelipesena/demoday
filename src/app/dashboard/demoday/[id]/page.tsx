@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarIcon, CheckCircle2, Clock, FileText, Users, Award } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useDemodayDetails } from "@/hooks/useDemoday"
+import { Award, CalendarIcon, CheckCircle2, Clock, FileText, Users } from "lucide-react"
+import { useSession } from "next-auth/react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { use, useState } from "react"
 
 interface DemodayDetails {
   id: string
@@ -46,39 +46,12 @@ interface DemodayPageProps {
 }
 
 export default function DemodayDetailsPage({ params }: DemodayPageProps) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [demoday, setDemoday] = useState<DemodayDetails | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchDemodayDetails = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        // Unwrap params promise
-        const resolvedParams = await params
-        const response = await fetch(`/api/demoday/${resolvedParams.id}`)
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Erro ao buscar detalhes do demoday")
-        }
-
-        const data = await response.json()
-        setDemoday(data)
-      } catch (error) {
-        console.error("Erro ao buscar detalhes do demoday:", error)
-        setError(error instanceof Error ? error.message : "Erro desconhecido")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchDemodayDetails()
-  }, [params])
+  const demodayId = resolvedParams.id
+  const { data: demoday, isLoading: loading, error: queryError } = useDemodayDetails(demodayId)
+  const [error, setError] = useState<string | null>(queryError?.message || null)
 
   // Redirecionar para login se não estiver autenticado
   if (status === "unauthenticated") {
@@ -241,31 +214,31 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <FileText className="h-6 w-6 text-gray-600 mb-2" />
-                      <span className="text-2xl font-bold">{demoday.stats.totalProjects}</span>
+                      <span className="text-2xl font-bold">{demoday.stats?.totalProjects || 0}</span>
                       <span className="text-xs text-gray-600">Projetos</span>
                     </div>
 
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <Users className="h-6 w-6 text-blue-600 mb-2" />
-                      <span className="text-2xl font-bold">{demoday.stats.submitted}</span>
+                      <span className="text-2xl font-bold">{demoday.stats?.submitted || 0}</span>
                       <span className="text-xs text-gray-600">Submetidos</span>
                     </div>
 
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <CheckCircle2 className="h-6 w-6 text-green-600 mb-2" />
-                      <span className="text-2xl font-bold">{demoday.stats.approved}</span>
+                      <span className="text-2xl font-bold">{demoday.stats?.approved || 0}</span>
                       <span className="text-xs text-gray-600">Aprovados</span>
                     </div>
 
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <Award className="h-6 w-6 text-amber-500 mb-2" />
-                      <span className="text-2xl font-bold">{demoday.stats.finalists}</span>
+                      <span className="text-2xl font-bold">{demoday.stats?.finalists || 0}</span>
                       <span className="text-xs text-gray-600">Finalistas</span>
                     </div>
 
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <Award className="h-6 w-6 text-purple-600 mb-2" />
-                      <span className="text-2xl font-bold">{demoday.stats.winners}</span>
+                      <span className="text-2xl font-bold">{demoday.stats?.winners || 0}</span>
                       <span className="text-xs text-gray-600">Vencedores</span>
                     </div>
                   </div>

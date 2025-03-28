@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, FormEvent } from "react"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { FormEvent, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { PROJECT_TYPES } from "@/types"
 
 export default function NewProjectPage() {
@@ -30,9 +31,37 @@ export default function NewProjectPage() {
   // Mostrar loading durante verificação da sessão
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
+      <div className="mx-auto max-w-3xl p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+
+        <div className="rounded-lg border p-6 shadow-sm">
+          <Skeleton className="h-8 w-48 mb-4" />
+          <Skeleton className="h-6 w-64 mb-8" />
+
+          <div className="space-y-6">
+            <div>
+              <Skeleton className="h-5 w-36 mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+
+            <div>
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+
+            <div>
+              <Skeleton className="h-5 w-32 mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-8">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-32" />
+          </div>
         </div>
       </div>
     )
@@ -92,10 +121,7 @@ export default function NewProjectPage() {
     <div className="mx-auto max-w-3xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Criar novo projeto</h1>
-        <Link
-          href="/dashboard/projects"
-          className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300"
-        >
+        <Link href="/dashboard/projects" className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">
           Voltar
         </Link>
       </div>
@@ -105,9 +131,7 @@ export default function NewProjectPage() {
       <Card>
         <CardHeader>
           <CardTitle>Dados do Projeto</CardTitle>
-          <CardDescription>
-            Preencha as informações do seu projeto acadêmico
-          </CardDescription>
+          <CardDescription>Preencha as informações do seu projeto acadêmico</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -174,4 +198,4 @@ export default function NewProjectPage() {
       </Card>
     </div>
   )
-} 
+}

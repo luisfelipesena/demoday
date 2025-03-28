@@ -1,13 +1,14 @@
 "use client"
 
-import { useDemodays } from "@/hooks/useDemoday"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useDemodays } from "@/hooks/useDemoday"
 import { CalendarIcon, ClockIcon } from "lucide-react"
+import { useSession } from "next-auth/react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -23,14 +24,14 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
+          <Skeleton className="h-16 w-16" />
         </div>
       </div>
     )
   }
 
-  const activeDemoday = demodays?.find(demoday => demoday.active)
-  const pastDemodays = demodays?.filter(demoday => !demoday.active && demoday.status === 'finished') || []
+  const activeDemoday = demodays?.find((demoday) => demoday.active)
+  const pastDemodays = demodays?.filter((demoday) => !demoday.active && demoday.status === "finished") || []
 
   // Função para formatar a data
   const formatDate = (dateString: string) => {
@@ -45,10 +46,10 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6">
       <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
-      
+
       <div className="mb-12">
         <h2 className="mb-4 text-2xl font-semibold">Demoday Ativo</h2>
-        
+
         {activeDemoday ? (
           <Card className="bg-gradient-to-r from-blue-50 to-white border-blue-200">
             <CardHeader>
@@ -57,7 +58,7 @@ export default function DashboardPage() {
                   <CardTitle className="text-xl font-bold text-blue-800">{activeDemoday.name}</CardTitle>
                   <CardDescription className="text-blue-600 mt-1">
                     <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" /> 
+                      <CalendarIcon className="h-4 w-4" />
                       <span>Criado em {formatDate(activeDemoday.createdAt)}</span>
                     </div>
                   </CardDescription>
@@ -90,10 +91,10 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-      
+
       <div>
         <h2 className="mb-4 text-2xl font-semibold">Histórico de Demodays</h2>
-        
+
         {pastDemodays.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pastDemodays.map((demoday) => (
@@ -105,14 +106,16 @@ export default function DashboardPage() {
                   </div>
                   <CardDescription className="text-gray-500 mt-1">
                     <div className="flex items-center gap-2">
-                      <ClockIcon className="h-4 w-4" /> 
+                      <ClockIcon className="h-4 w-4" />
                       <span>Finalizado em {formatDate(demoday.updatedAt)}</span>
                     </div>
                   </CardDescription>
                 </CardHeader>
                 <CardFooter className="flex justify-end">
                   <Link href={`/dashboard/demoday/${demoday.id}`}>
-                    <Button variant="outline" size="sm">Ver Detalhes</Button>
+                    <Button variant="outline" size="sm">
+                      Ver Detalhes
+                    </Button>
                   </Link>
                 </CardFooter>
               </Card>

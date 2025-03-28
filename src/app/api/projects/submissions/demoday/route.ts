@@ -1,10 +1,10 @@
-import { db } from "@/server/db";
-import { projectSubmissions, projects, users } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
+import { db } from "@/server/db";
+import { projectSubmissions, users } from "@/server/db/schema";
+import { projectQuerySchema } from "@/server/db/validators";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, inArray, asc } from "drizzle-orm";
-import { projectQuerySchema } from "@/schemas/project";
 
 // GET - Buscar projetos de um Demoday com filtros
 export async function GET(req: NextRequest) {
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     const isProfessor = session?.user?.role === "professor";
 
     // Construir a consulta com os filtros
-    let query: any = {
+    const query: any = {
       where: eq(projectSubmissions.demoday_id, demodayId),
     };
 

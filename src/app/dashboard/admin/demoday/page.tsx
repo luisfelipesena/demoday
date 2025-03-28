@@ -1,11 +1,7 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { useDemodays, useCreateDemoday, useUpdateDemodayStatus } from "@/hooks/useDemoday"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { DotsHorizontalIcon } from "@radix-ui/react-icons"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
+import { useDemodays, useUpdateDemodayStatus } from "@/hooks/useDemoday"
+import { DotsHorizontalIcon } from "@radix-ui/react-icons"
+import { useSession } from "next-auth/react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function DemodayListPage() {
   const router = useRouter()
@@ -36,9 +37,32 @@ export default function DemodayListPage() {
   // Show loading during session check
   if (sessionStatus === "loading" || isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
+      <div className="mx-auto max-w-7xl p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-9 w-36" />
+        </div>
+        <div className="overflow-hidden rounded-lg border shadow">
+          <div className="bg-gray-50 p-4">
+            <div className="grid grid-cols-5 gap-4">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-24 ml-auto" />
+            </div>
+          </div>
+          <div className="divide-y divide-gray-200 bg-white">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="grid grid-cols-5 gap-4 p-4">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-24 ml-auto" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -60,12 +84,14 @@ export default function DemodayListPage() {
     }).format(date)
   }
 
-  const handleStatusChange = async (id: string, newStatus: 'active' | 'finished' | 'canceled') => {
+  const handleStatusChange = async (id: string, newStatus: "active" | "finished" | "canceled") => {
     try {
       await updateStatus.mutateAsync({ id, status: newStatus })
       toast({
         title: "Status atualizado",
-        description: `O Demoday foi ${newStatus === 'active' ? 'ativado' : newStatus === 'finished' ? 'finalizado' : 'cancelado'} com sucesso.`,
+        description: `O Demoday foi ${
+          newStatus === "active" ? "ativado" : newStatus === "finished" ? "finalizado" : "cancelado"
+        } com sucesso.`,
         variant: "default",
       })
     } catch (error) {
@@ -78,21 +104,21 @@ export default function DemodayListPage() {
   }
 
   const getActiveDemoday = () => {
-    return demodays?.find(demoday => demoday.active)
+    return demodays?.find((demoday) => demoday.active)
   }
 
   const activeDemoday = getActiveDemoday()
   const hasActiveDemoday = !!activeDemoday
-  
+
   const renderStatusBadge = (active: boolean, status: string) => {
     if (active) {
       return <Badge className="bg-green-500 hover:bg-green-600">Ativo</Badge>
     }
-    
-    if (status === 'finished') {
+
+    if (status === "finished") {
       return <Badge className="bg-blue-500 hover:bg-blue-600">Finalizado</Badge>
     }
-    
+
     return <Badge className="bg-gray-500 hover:bg-gray-600">Inativo</Badge>
   }
 
@@ -107,11 +133,13 @@ export default function DemodayListPage() {
         )}
         {hasActiveDemoday && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Existe um Demoday ativo: <strong>{activeDemoday.name}</strong></span>
-            <Button 
+            <span className="text-sm text-gray-600">
+              Existe um Demoday ativo: <strong>{activeDemoday.name}</strong>
+            </span>
+            <Button
               variant="outline"
               className="border-blue-500 text-blue-500 hover:bg-blue-50"
-              onClick={() => handleStatusChange(activeDemoday.id, 'finished')}
+              onClick={() => handleStatusChange(activeDemoday.id, "finished")}
             >
               Finalizar Ativo
             </Button>
@@ -175,9 +203,7 @@ export default function DemodayListPage() {
                     <div className="text-sm font-medium text-gray-900">{demoday.name}</div>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm">
-                      {renderStatusBadge(demoday.active, demoday.status)}
-                    </div>
+                    <div className="text-sm">{renderStatusBadge(demoday.active, demoday.status)}</div>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="text-sm text-gray-500">{formatDate(demoday.createdAt)}</div>
@@ -196,28 +222,24 @@ export default function DemodayListPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/admin/demoday/${demoday.id}`}>
-                            Detalhes
-                          </Link>
+                          <Link href={`/dashboard/admin/demoday/${demoday.id}`}>Detalhes</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>
-                            Editar
-                          </Link>
+                          <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>Editar</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {!demoday.active && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(demoday.id, 'active')}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(demoday.id, "active")}>
                             Ativar
                           </DropdownMenuItem>
                         )}
                         {demoday.active && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(demoday.id, 'finished')}>
+                          <DropdownMenuItem onClick={() => handleStatusChange(demoday.id, "finished")}>
                             Finalizar
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem 
-                          onClick={() => handleStatusChange(demoday.id, 'canceled')}
+                        <DropdownMenuItem
+                          onClick={() => handleStatusChange(demoday.id, "canceled")}
                           className="text-red-600 focus:text-red-600"
                         >
                           Cancelar

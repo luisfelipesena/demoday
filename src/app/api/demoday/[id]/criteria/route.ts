@@ -3,25 +3,8 @@ import { evaluationCriteria, registrationCriteria, demodays } from "@/server/db/
 import { authOptions } from "@/auth/auth-options";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { PgTable } from "drizzle-orm/pg-core";
-
-// Schema for validating batch criteria creation
-const batchCriteriaSchema = z.object({
-  registration: z.array(
-    z.object({
-      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-    })
-  ),
-  evaluation: z.array(
-    z.object({
-      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-    })
-  ),
-});
+import { batchCriteriaSchema } from "@/server/db/validators";
 
 export async function POST(
   req: NextRequest,
@@ -76,24 +59,28 @@ export async function POST(
     // Insert all criteria in a transaction
     await db.transaction(async (tx: typeof db) => {
       // Insert registration criteria
-      for (const criteria of registration) {
-        if (criteria.name.trim() && criteria.description.trim()) {
-          await tx.insert(registrationCriteria).values({
-            demoday_id: demodayId,
-            name: criteria.name,
-            description: criteria.description,
-          });
+      if (registration) {
+        for (const criteria of registration) {
+          if (criteria.name.trim() && criteria.description.trim()) {
+            await tx.insert(registrationCriteria).values({
+              demoday_id: demodayId,
+              name: criteria.name,
+              description: criteria.description,
+            });
+          }
         }
       }
 
       // Insert evaluation criteria
-      for (const criteria of evaluation) {
-        if (criteria.name.trim() && criteria.description.trim()) {
-          await tx.insert(evaluationCriteria).values({
-            demoday_id: demodayId,
-            name: criteria.name,
-            description: criteria.description,
-          });
+      if (evaluation) {
+        for (const criteria of evaluation) {
+          if (criteria.name.trim() && criteria.description.trim()) {
+            await tx.insert(evaluationCriteria).values({
+              demoday_id: demodayId,
+              name: criteria.name,
+              description: criteria.description,
+            });
+          }
         }
       }
     });

@@ -1,3 +1,9 @@
+---
+description: Code Rules for a Next.js Project with Tailwind, Shadcn, Drizzle, Node.js, and PostgreSQL
+globs: 
+alwaysApply: true
+---
+
 # Requisitos de Negócio - Demoday
 
 ## Visão Geral

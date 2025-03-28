@@ -3,13 +3,9 @@ import { demodays, demoDayPhases, projectSubmissions, projects } from "@/server/
 import { NextRequest, NextResponse } from "next/server";
 import { eq, count, and } from "drizzle-orm";
 import { getServerSession } from "next-auth";
-import { z } from "zod";
 import { authOptions } from "@/auth/auth-options";
+import { updateStatusSchema } from "@/server/db/validators";
 
-// Schema para validação do status de atualização
-const updateStatusSchema = z.object({
-  status: z.enum(["active", "finished", "canceled"]),
-});
 
 // GET - Fetch a specific demoday with its phases
 export async function GET(

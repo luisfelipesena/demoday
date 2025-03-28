@@ -1,17 +1,17 @@
+import { authOptions } from "@/auth/auth-options";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
-import { authOptions } from "@/auth/auth-options";
+import { projectSchema } from "@/server/db/validators";
+import { desc, eq } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
-import { projectSchema } from "@/schemas/project";
 
 // GET - Buscar todos os projetos do usuário atual
 export async function GET(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     // Extrair o ID do usuário
     const userId = session.user.id;
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: "ID de usuário não encontrado" },
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     // Extrair o ID do usuário
     const userId = session.user.id;
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: "ID de usuário não encontrado" },

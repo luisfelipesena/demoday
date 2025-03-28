@@ -3,33 +3,8 @@ import { evaluationCriteria, registrationCriteria } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
-
-// Schema for validating criteria
-const criteriaSchema = z.object({
-  demoday_id: z.string().min(1, "ID do demoday é obrigatório"),
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-  type: z.enum(["registration", "evaluation"]),
-});
-
-// Schema para validar envio em lote de critérios
-const batchCriteriaSchema = z.object({
-  demodayId: z.string().min(1, "ID do demoday é obrigatório"),
-  registration: z.array(
-    z.object({
-      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-    })
-  ).optional(),
-  evaluation: z.array(
-    z.object({
-      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-    })
-  ).optional(),
-});
+import { batchCriteriaSchema, criteriaSchema } from "@/server/db/validators";
 
 // GET - Fetch criteria for a specific demoday
 export async function GET(req: NextRequest) {

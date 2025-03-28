@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Demoday, Phase } from "@/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export type { Phase }; // Export the Phase type for external use
 
@@ -30,6 +30,26 @@ export function useDemodays() {
       }
       return response.json();
     },
+  });
+}
+
+// Fetch demoday details
+export function useDemodayDetails(demodayId: string | null) {
+  return useQuery<Demoday, Error>({
+    queryKey: ["demoday", demodayId],
+    queryFn: async () => {
+      if (!demodayId) {
+        throw new Error("ID do demoday é obrigatório");
+      }
+
+      const response = await fetch(`/api/demoday/${demodayId}`);
+      if (!response.ok) {
+        const errorData = await response.json() as ErrorResponse;
+        throw new Error(errorData.error || "Erro ao buscar detalhes do demoday");
+      }
+      return response.json();
+    },
+    enabled: !!demodayId,
   });
 }
 

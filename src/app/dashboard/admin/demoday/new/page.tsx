@@ -1,15 +1,16 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/datepicker"
 import { Input } from "@/components/ui/input"
-import { CreateDemodayInput, Phase, useCreateDemoday } from "@/hooks/useDemoday"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useSubmitCriteriaBatch } from "@/hooks/useCriteria"
-import { useRouter } from "next/navigation"
-import { FormEvent, useState } from "react"
+import { Phase, useCreateDemoday } from "@/hooks/useDemoday"
+import moment from "moment"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { DatePicker } from "@/components/ui/datepicker"
-import moment from "moment"
+import { useRouter } from "next/navigation"
+import { FormEvent, useState } from "react"
 
 export default function NewDemodayPage() {
   const router = useRouter()
@@ -73,9 +74,60 @@ export default function NewDemodayPage() {
   // Show loading during session check
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
+      <div className="mx-auto max-w-5xl p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+
+        <div className="space-y-8">
+          {/* Nome do Demoday */}
+          <div className="space-y-4 rounded-lg border p-6 shadow-sm">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+
+          {/* Fases */}
+          <div className="space-y-6 rounded-lg border p-6 shadow-sm">
+            <Skeleton className="h-7 w-32" />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-4 rounded-lg border p-4 shadow-sm">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-full" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Critérios */}
+          <div className="space-y-4 rounded-lg border p-6 shadow-sm">
+            <Skeleton className="h-7 w-48" />
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex space-x-2">
+                  <div className="flex-grow space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <Skeleton className="mt-2 h-10 w-10 rounded-full" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-10 w-full" />
+          </div>
+
+          <Skeleton className="h-10 w-full" />
         </div>
       </div>
     )
@@ -163,7 +215,6 @@ export default function NewDemodayPage() {
 
     // Filter out empty criteria
     const validRegistrationCriteria = registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
-
     const validEvaluationCriteria = evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
 
     if (validRegistrationCriteria.length === 0) {
@@ -173,7 +224,7 @@ export default function NewDemodayPage() {
     }
 
     // Create the demoday
-    const demodayData: CreateDemodayInput = {
+    const demodayData = {
       name,
       phases,
     }

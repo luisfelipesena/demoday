@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { projectQuerySchema } from "@/schemas/project";
 import { Project } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 
 type DemodayProject = {
   id: string;

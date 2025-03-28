@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect, FormEvent } from "react"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { use } from "react"
+import { useRouter } from "next/navigation"
+import { FormEvent, use, useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Project, PROJECT_TYPES } from "@/types"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PROJECT_TYPES } from "@/types"
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   // Desembrulhar (unwrap) o objeto params usando React.use
@@ -33,16 +33,16 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
       try {
         setLoading(true)
         const response = await fetch(`/api/projects/${projectId}`)
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error("Projeto não encontrado")
           }
           throw new Error("Erro ao buscar projeto")
         }
-        
+
         const project = await response.json()
-        
+
         // Preencher o formulário com os dados do projeto
         setTitle(project.title)
         setDescription(project.description)
@@ -69,9 +69,37 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   // Mostrar loading durante verificação da sessão
   if (status === "loading" || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Carregando...</h1>
+      <div className="mx-auto max-w-3xl p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+
+        <div className="rounded-lg border p-6 shadow-sm">
+          <Skeleton className="h-8 w-48 mb-4" />
+          <Skeleton className="h-6 w-64 mb-8" />
+
+          <div className="space-y-6">
+            <div>
+              <Skeleton className="h-5 w-36 mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+
+            <div>
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+
+            <div>
+              <Skeleton className="h-5 w-32 mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-8">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-40" />
+          </div>
         </div>
       </div>
     )
@@ -144,9 +172,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
       <Card>
         <CardHeader>
           <CardTitle>Dados do Projeto</CardTitle>
-          <CardDescription>
-            Edite as informações do seu projeto acadêmico
-          </CardDescription>
+          <CardDescription>Edite as informações do seu projeto acadêmico</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -188,7 +214,9 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                 disabled={saving}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="" disabled>Selecione um tipo</option>
+                <option value="" disabled>
+                  Selecione um tipo
+                </option>
                 {PROJECT_TYPES.map((projectType) => (
                   <option key={projectType} value={projectType}>
                     {projectType}
@@ -214,4 +242,4 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
       </Card>
     </div>
   )
-} 
+}

@@ -26,6 +26,18 @@ export interface Demoday {
   status: 'active' | 'finished' | 'canceled'
   createdAt: string
   updatedAt: string
+  stats?: {
+    totalProjects: number
+    submitted: number
+    approved: number
+    finalists: number
+    winners: number
+  }
+  currentPhase?: {
+    id: string
+    name: string
+    phaseNumber: number
+  } | null
 }
 
 /**

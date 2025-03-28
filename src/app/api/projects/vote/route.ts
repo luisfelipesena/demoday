@@ -1,16 +1,10 @@
-import { db } from "@/server/db";
-import { votes, projects, projectSubmissions, demoDayPhases, demodays } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
+import { db } from "@/server/db";
+import { demoDayPhases, projects, projectSubmissions, votes } from "@/server/db/schema";
+import { voteSchema } from "@/server/db/validators";
+import { and, eq } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { and, eq, count } from "drizzle-orm";
-
-// Schema para validação de voto
-const voteSchema = z.object({
-  projectId: z.string().min(1, "ID do projeto é obrigatório"),
-  demodayId: z.string().min(1, "ID do demoday é obrigatório"),
-});
 
 // GET - Verificar se o usuário já votou em um projeto específico
 export async function GET(req: NextRequest) {

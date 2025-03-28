@@ -1,48 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { FileText, PlusCircle } from "lucide-react"
 import { useSession } from "next-auth/react"
-import { PlusCircle, FileText } from "lucide-react"
 import Link from "next/link"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Project } from "@/types"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useProjects } from "@/hooks/useProjects"
 
 export default function ProjectsPage() {
   const { data: session } = useSession()
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: projects = [], isLoading: loading, error } = useProjects()
   const userRole = session?.user?.role || "user"
 
   // A rota correta para criar um novo projeto
   const newProjectRoute = "/dashboard/projects/new"
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true)
-        // Usando a API real que criamos
-        const response = await fetch("/api/projects")
-        
-        if (!response.ok) {
-          throw new Error("Falha ao buscar projetos")
-        }
-        
-        const data = await response.json()
-        setProjects(data)
-        setLoading(false)
-      } catch (error) {
-        console.error("Erro ao buscar projetos:", error)
-        setLoading(false)
-      }
-    }
-
-    if (session?.user?.id) {
-      fetchProjects()
-    }
-  }, [session?.user?.id])
 
   return (
     <div className="w-full space-y-6">
@@ -63,7 +37,7 @@ export default function ProjectsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center p-12">
-          <p>Carregando projetos...</p>
+          <Skeleton className="h-16 w-16" />
         </div>
       ) : projects.length === 0 ? (
         <Card>
@@ -90,25 +64,19 @@ export default function ProjectsPage() {
             <Card key={project.id}>
               <CardHeader>
                 <CardTitle>{project.title}</CardTitle>
-                <CardDescription>
-                  <Badge variant="outline" className="mt-1">
-                    {project.type}
-                  </Badge>
-                </CardDescription>
+                <div>
+                  <Badge variant="outline">{project.type}</Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {project.description}
-                </p>
+                <p className="text-sm text-muted-foreground line-clamp-3">{project.description}</p>
               </CardContent>
               <CardFooter className="justify-between border-t p-4">
                 <div className="text-xs text-muted-foreground">
                   Criado em: {new Date(project.createdAt).toLocaleDateString()}
                 </div>
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/dashboard/projects/${project.id}`}>
-                    Ver detalhes
-                  </Link>
+                  <Link href={`/dashboard/projects/${project.id}`}>Ver detalhes</Link>
                 </Button>
               </CardFooter>
             </Card>
@@ -117,4 +85,4 @@ export default function ProjectsPage() {
       )}
     </div>
   )
-} 
+}

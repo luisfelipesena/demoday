@@ -4,7 +4,7 @@ import { authOptions } from "@/auth/auth-options";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, gte, lte, or } from "drizzle-orm";
-import { projectSubmissionSchema } from "@/schemas/project";
+import { projectSubmissionSchema } from "@/server/db/validators";
 import { SQL } from "drizzle-orm";
 
 // GET - Listar todas as submissões do usuário atual

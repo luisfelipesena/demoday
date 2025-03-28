@@ -1,10 +1,10 @@
-import { db } from "@/server/db";
-import { projectSubmissions, projects, demodays, demoDayPhases } from "@/server/db/schema";
 import { authOptions } from "@/auth/auth-options";
+import { db } from "@/server/db";
+import { demoDayPhases, demodays, projectSubmissions, projects } from "@/server/db/schema";
+import { projectSubmissionStatusSchema } from "@/server/db/validators";
+import { eq } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
-import { projectSubmissionStatusSchema } from "@/schemas/project";
 
 // GET - Obter detalhes de uma submissão específica
 export async function GET(
@@ -260,7 +260,7 @@ export async function PUT(
       .update(projectSubmissions)
       .set({
         status,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(projectSubmissions.id, submissionId))
       .returning();

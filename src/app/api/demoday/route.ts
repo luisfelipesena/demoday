@@ -2,27 +2,9 @@ import { db } from "@/server/db";
 import { demodays, demoDayPhases, demodayStatusEnum } from "@/server/db/schema";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { authOptions } from "@/auth/auth-options";
 import { desc, eq } from "drizzle-orm";
-
-// Schema for validating demoday data
-const demodaySchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  phases: z.array(
-    z.object({
-      name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-      description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-      phaseNumber: z.number().int().positive(),
-      startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: "Data inválida",
-      }),
-      endDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: "Data inválida",
-      }),
-    })
-  ).min(1, "Adicione pelo menos uma fase"),
-});
+import { demodaySchema } from "@/server/db/validators";
 
 // GET - Fetch all demodays
 export async function GET() {
@@ -90,9 +72,9 @@ export async function POST(req: NextRequest) {
       // Marque todos os demodays existentes como inativos e finalizados
       await tx
         .update(demodays)
-        .set({ 
+        .set({
           active: false,
-          status: "finished" 
+          status: "finished"
         })
         .where(eq(demodays.active, true));
 
