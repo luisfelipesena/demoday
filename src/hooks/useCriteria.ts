@@ -137,6 +137,7 @@ export function useDeleteCriteria() {
 // Submit criteria in batch for a specific demoday
 export function useSubmitCriteriaBatch() {
   const queryClient = useQueryClient();
+  const createCriteria = useCreateCriteria();
 
   return useMutation({
     mutationFn: async ({
@@ -148,24 +149,36 @@ export function useSubmitCriteriaBatch() {
       registration: { name: string; description: string }[];
       evaluation: { name: string; description: string }[];
     }) => {
-      const response = await fetch(`/api/demoday/criteria`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // Create promises for all registration criteria
+      const registrationPromises = registration.map(({ name, description }) =>
+        createCriteria.mutateAsync({
           demoday_id: demodayId,
-          registration,
-          evaluation,
-        }),
-      });
+          name,
+          description,
+          type: "registration"
+        })
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json() as ErrorResponse;
-        throw new Error(errorData.error || "Erro ao criar critérios");
-      }
+      // Create promises for all evaluation criteria
+      const evaluationPromises = evaluation.map(({ name, description }) =>
+        createCriteria.mutateAsync({
+          demoday_id: demodayId,
+          name,
+          description,
+          type: "evaluation"
+        })
+      );
 
-      return response.json();
+      // Wait for all criteria to be created
+      const results = await Promise.all([
+        ...registrationPromises,
+        ...evaluationPromises
+      ]);
+
+      return {
+        message: "Critérios criados com sucesso",
+        data: results
+      };
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful creation

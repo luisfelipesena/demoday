@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useProjectDetails, useUpdateProject } from "@/hooks/useProjects"
 import { projectSchema } from "@/server/db/validators"
 import { PROJECT_TYPES } from "@/types"
 
@@ -21,18 +22,18 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   // Desembrulhar (unwrap) o objeto params usando React.use
   const resolvedParams = use(params)
   const projectId = resolvedParams.id
+  const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
   const { data: session, status } = useSession()
-
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: project, isLoading: isLoadingProject } = useProjectDetails(projectId)
+  const { mutate: updateProject, isPending: isUpdatingProject } = useUpdateProject()
 
   const {
     control,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -42,41 +43,16 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     },
   })
 
-  // Carregar dados do projeto ao iniciar
+  // Atualizar o formulário quando os dados do projeto forem carregados
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/projects/${projectId}`)
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("Projeto não encontrado")
-          }
-          throw new Error("Erro ao buscar projeto")
-        }
-
-        const project = await response.json()
-
-        // Preencher o formulário com os dados do projeto
-        reset({
-          title: project.title,
-          description: project.description,
-          type: project.type,
-        })
-
-        setLoading(false)
-      } catch (error) {
-        console.error("Erro ao carregar projeto:", error)
-        setError(error instanceof Error ? error.message : "Erro desconhecido")
-        setLoading(false)
-      }
+    if (project) {
+      reset({
+        title: project.title,
+        description: project.description,
+        type: project.type as "Disciplina" | "IC" | "TCC" | "Mestrado" | "Doutorado",
+      })
     }
-
-    if (session?.user?.id) {
-      fetchProject()
-    }
-  }, [session?.user?.id, projectId, reset])
+  }, [project, reset])
 
   // Verificar autenticação
   if (status === "unauthenticated") {
@@ -84,8 +60,8 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     return null
   }
 
-  // Mostrar loading durante verificação da sessão
-  if (status === "loading" || loading) {
+  // Mostrar loading durante verificação da sessão ou carregamento do projeto
+  if (status === "loading" || isLoadingProject) {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">
@@ -123,35 +99,40 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  const onSubmit = async (data: ProjectFormData) => {
+  if (!project) {
+    return (
+      <div className="mx-auto max-w-3xl p-6">
+        <div className="rounded-lg border p-6 text-center">
+          <h1 className="text-2xl font-bold mb-2">Projeto não encontrado</h1>
+          <p className="text-gray-600">Não foi possível encontrar o projeto solicitado.</p>
+          <Button onClick={() => router.push("/dashboard/projects")} className="mt-4">
+            Voltar aos Projetos
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const onSubmit = (data: ProjectFormData) => {
     setError(null)
 
-    try {
-      // Enviar dados atualizados para a API
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+    updateProject(
+      {
+        id: projectId,
+        ...data,
+      },
+      {
+        onSuccess: () => {
+          router.push(`/dashboard/projects/${projectId}`)
         },
-        body: JSON.stringify(data),
-      })
-
-      const responseData = await response.json()
-
-      if (!response.ok) {
-        throw new Error(responseData.error || "Erro ao atualizar projeto")
+        onError: (error) => {
+          setError(error.message || "Erro ao atualizar projeto")
+        },
       }
-
-      // Redirecionar para a página de detalhes do projeto após sucesso
-      router.push(`/dashboard/projects/${projectId}`)
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message)
-      } else {
-        setError("Ocorreu um erro ao atualizar o projeto")
-      }
-    }
+    )
   }
+
+  const isPending = isUpdatingProject
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -183,7 +164,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                 control={control}
                 render={({ field, fieldState }) => (
                   <div>
-                    <Input id="title" placeholder="Digite o título do projeto" {...field} disabled={isSubmitting} />
+                    <Input id="title" placeholder="Digite o título do projeto" {...field} disabled={isPending} />
                     {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
                   </div>
                 )}
@@ -203,7 +184,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                       id="description"
                       placeholder="Descreva seu projeto"
                       {...field}
-                      disabled={isSubmitting}
+                      disabled={isPending}
                       className="h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     />
                     {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
@@ -224,7 +205,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                     <select
                       id="type"
                       {...field}
-                      disabled={isSubmitting}
+                      disabled={isPending}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="" disabled>
@@ -247,12 +228,12 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               type="button"
               variant="outline"
               onClick={() => router.push(`/dashboard/projects/${projectId}`)}
-              disabled={isSubmitting}
+              disabled={isPending}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </CardFooter>
         </form>

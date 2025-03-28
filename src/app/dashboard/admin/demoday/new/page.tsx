@@ -1,9 +1,10 @@
 "use client"
 
 import { DemodayForm } from "@/components/dashboard/DemodayForm"
+import { DemodayFormData } from "@/components/dashboard/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSubmitCriteriaBatch } from "@/hooks/useCriteria"
-import { Phase, useCreateDemoday } from "@/hooks/useDemoday"
+import { useCreateDemoday } from "@/hooks/useDemoday"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -95,12 +96,7 @@ export default function NewDemodayPage() {
     return null
   }
 
-  const onSubmit = (data: {
-    name: string
-    phases: Phase[]
-    registrationCriteria: { name: string; description: string }[]
-    evaluationCriteria: { name: string; description: string }[]
-  }) => {
+  const onSubmit = (data: DemodayFormData) => {
     setError(null)
 
     // Filter out empty criteria
@@ -117,14 +113,29 @@ export default function NewDemodayPage() {
       { name: data.name, phases: data.phases },
       {
         onSuccess: (createdDemoday) => {
-          console.log("Demoday criado com sucesso:", createdDemoday)
+          // Extraia apenas os campos name e description para cada critério
+          const registrationForAPI = validRegistrationCriteria.map(({ name, description }) => ({
+            name,
+            description,
+          }))
 
-          // Now submit the criteria
+          const evaluationForAPI = validEvaluationCriteria.map(({ name, description }) => ({
+            name,
+            description,
+          }))
+
+          // Se não houver critérios para submeter, vá direto para a dashboard
+          if (registrationForAPI.length === 0 && evaluationForAPI.length === 0) {
+            router.push("/dashboard/admin/demoday")
+            return
+          }
+
+          // Now submit the criteria with demoday_id
           submitCriteria(
             {
               demodayId: createdDemoday.id,
-              registration: validRegistrationCriteria,
-              evaluation: validEvaluationCriteria,
+              registration: registrationForAPI,
+              evaluation: evaluationForAPI,
             },
             {
               onSuccess: () => {

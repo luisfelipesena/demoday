@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useProject } from "@/hooks/useProjects"
+import { useProjectDetails } from "@/hooks/useProjects"
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Desembrulhar (unwrap) o objeto params usando React.use
@@ -18,7 +18,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const router = useRouter()
   const { data: session, status } = useSession()
-  const { data: project, isLoading: loading, error: queryError } = useProject(projectId)
+  const { data: project, isLoading: loading, error: queryError } = useProjectDetails(projectId)
   const error = queryError?.message || null
 
   // Verificar autenticação

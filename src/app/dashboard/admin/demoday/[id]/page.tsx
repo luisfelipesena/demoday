@@ -10,7 +10,7 @@ import { Award, CalendarIcon, CheckCircle2, Clock, FileText, Users } from "lucid
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { use, useState } from "react"
+import { use } from "react"
 
 interface DemodayDetails {
   id: string
@@ -50,8 +50,7 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const demodayId = resolvedParams.id
-  const { data: demoday, isLoading: loading, error: queryError } = useDemodayDetails(demodayId)
-  const [error, setError] = useState<string | null>(queryError?.message || null)
+  const { data: demoday, isLoading: loading, error } = useDemodayDetails(demodayId)
 
   // Redirecionar para login se não estiver autenticado
   if (status === "unauthenticated") {
@@ -89,7 +88,7 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
       <div className="container mx-auto p-6">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
           <h1 className="text-2xl font-bold text-red-700 mb-2">Erro</h1>
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600">{error.message}</p>
           <Button onClick={() => router.push("/dashboard")} className="mt-4 bg-red-600 hover:bg-red-700">
             Voltar ao Dashboard
           </Button>

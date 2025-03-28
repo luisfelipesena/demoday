@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCreateProject } from "@/hooks/useProjects"
 import { projectSchema } from "@/server/db/validators"
 import { PROJECT_TYPES } from "@/types"
 
@@ -21,11 +22,12 @@ export default function NewProjectPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [error, setError] = useState<string | null>(null)
+  const { mutate: createProject, isPending: isCreatingProject } = useCreateProject()
 
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -80,34 +82,18 @@ export default function NewProjectPage() {
     )
   }
 
-  const onSubmit = async (data: ProjectFormData) => {
+  const onSubmit = (data: ProjectFormData) => {
     setError(null)
 
-    try {
-      // Enviar dados para a API
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-
-      const responseData = await response.json()
-
-      if (!response.ok) {
-        throw new Error(responseData.error || "Erro ao criar projeto")
-      }
-
-      // Redirecionar para a página de projetos após sucesso
-      router.push("/dashboard/projects")
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message)
-      } else {
-        setError("Ocorreu um erro ao criar o projeto")
-      }
-    }
+    createProject(data, {
+      onSuccess: () => {
+        // Redirecionar para a página de projetos após sucesso
+        router.push("/dashboard/projects")
+      },
+      onError: (error) => {
+        setError(error.message || "Ocorreu um erro ao criar o projeto")
+      },
+    })
   }
 
   return (
@@ -137,7 +123,12 @@ export default function NewProjectPage() {
                 control={control}
                 render={({ field, fieldState }) => (
                   <div>
-                    <Input id="title" placeholder="Digite o título do projeto" {...field} disabled={isSubmitting} />
+                    <Input
+                      id="title"
+                      placeholder="Digite o título do projeto"
+                      {...field}
+                      disabled={isCreatingProject}
+                    />
                     {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
                   </div>
                 )}
@@ -157,7 +148,7 @@ export default function NewProjectPage() {
                       id="description"
                       placeholder="Descreva seu projeto"
                       {...field}
-                      disabled={isSubmitting}
+                      disabled={isCreatingProject}
                       className="h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     />
                     {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
@@ -179,7 +170,7 @@ export default function NewProjectPage() {
                       id="type"
                       {...field}
                       value={field.value || ""}
-                      disabled={isSubmitting}
+                      disabled={isCreatingProject}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="" disabled>
@@ -202,12 +193,12 @@ export default function NewProjectPage() {
               type="button"
               variant="outline"
               onClick={() => router.push("/dashboard/projects")}
-              disabled={isSubmitting}
+              disabled={isCreatingProject}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar Projeto"}
+            <Button type="submit" disabled={isCreatingProject}>
+              {isCreatingProject ? "Salvando..." : "Salvar Projeto"}
             </Button>
           </CardFooter>
         </form>

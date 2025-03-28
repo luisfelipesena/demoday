@@ -1,59 +1,20 @@
 "use client"
 
+import { CriteriaType, DemodayFormData, DemodayFormProps } from "@/components/dashboard/types"
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/ui/datepicker"
 import { Input } from "@/components/ui/input"
 import { Phase } from "@/hooks/useDemoday"
+import { demodayFormSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusCircle, X } from "lucide-react"
 import moment from "moment"
 import { DateRange } from "react-day-picker"
 import { Controller, useForm } from "react-hook-form"
-import { z } from "zod"
-
-const phaseSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-  phaseNumber: z.number().int().positive(),
-  startDate: z.string().min(1, "Data de início é obrigatória"),
-  endDate: z.string().min(1, "Data de fim é obrigatória"),
-})
-
-const criteriaSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-})
-
-const demodayFormSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  phases: z.array(phaseSchema).min(1, "Adicione pelo menos uma fase"),
-  registrationCriteria: z.array(criteriaSchema).min(1, "Adicione pelo menos um critério de inscrição"),
-  evaluationCriteria: z.array(criteriaSchema),
-})
-
-type DemodayFormData = z.infer<typeof demodayFormSchema>
-
-interface DemodayFormProps {
-  initialData?: {
-    name: string
-    phases: Phase[]
-    registrationCriteria?: { name: string; description: string }[]
-    evaluationCriteria?: { name: string; description: string }[]
-  }
-  onSubmit: (data: {
-    name: string
-    phases: Phase[]
-    registrationCriteria: { name: string; description: string }[]
-    evaluationCriteria: { name: string; description: string }[]
-  }) => void
-  isSubmitting: boolean
-  error: string | null
-  submitButtonText: string
-  loadingButtonText: string
-}
 
 export function DemodayForm({
   initialData,
+  demodayId,
   onSubmit,
   isSubmitting,
   error,
@@ -91,13 +52,41 @@ export function DemodayForm({
     },
   ]
 
-  const defaultRegistrationCriteria = [
-    { name: "Originalidade", description: "O projeto apresenta uma ideia original ou inovadora" },
-  ]
+  const createEmptyCriterion = (type: CriteriaType) => ({
+    name: "",
+    description: "",
+    type,
+    demoday_id: demodayId || "", // This is now optional in the schema
+  })
 
-  const defaultEvaluationCriteria = [
-    { name: "Qualidade técnica", description: "Avaliação da qualidade técnica da implementação" },
-  ]
+  // Apply demoday_id to initialData criteria if provided
+  const prepareInitialData = () => {
+    if (!initialData) {
+      return {
+        name: "",
+        phases: defaultPhases,
+        registrationCriteria: [],
+        evaluationCriteria: [],
+      }
+    }
+
+    return {
+      name: initialData.name || "",
+      phases: initialData.phases || defaultPhases,
+      registrationCriteria:
+        initialData.registrationCriteria?.map((criteria) => ({
+          ...criteria,
+          type: "registration" as CriteriaType,
+          demoday_id: demodayId || criteria.demoday_id || "",
+        })) || [],
+      evaluationCriteria:
+        initialData.evaluationCriteria?.map((criteria) => ({
+          ...criteria,
+          type: "evaluation" as CriteriaType,
+          demoday_id: demodayId || criteria.demoday_id || "",
+        })) || [],
+    }
+  }
 
   const {
     control,
@@ -107,12 +96,7 @@ export function DemodayForm({
     watch,
   } = useForm<DemodayFormData>({
     resolver: zodResolver(demodayFormSchema),
-    defaultValues: {
-      name: initialData?.name || "",
-      phases: initialData?.phases || defaultPhases,
-      registrationCriteria: initialData?.registrationCriteria || defaultRegistrationCriteria,
-      evaluationCriteria: initialData?.evaluationCriteria || defaultEvaluationCriteria,
-    },
+    defaultValues: prepareInitialData(),
   })
 
   const phases = watch("phases")
@@ -142,11 +126,11 @@ export function DemodayForm({
   }
 
   const addRegistrationCriteria = () => {
-    setValue("registrationCriteria", [...registrationCriteria, { name: "", description: "" }])
+    setValue("registrationCriteria", [...registrationCriteria, createEmptyCriterion("registration")])
   }
 
   const removeRegistrationCriteria = (index: number) => {
-    if (registrationCriteria.length > 1) {
+    if (registrationCriteria.length > 0) {
       setValue(
         "registrationCriteria",
         registrationCriteria.filter((_, i) => i !== index)
@@ -155,7 +139,7 @@ export function DemodayForm({
   }
 
   const addEvaluationCriteria = () => {
-    setValue("evaluationCriteria", [...evaluationCriteria, { name: "", description: "" }])
+    setValue("evaluationCriteria", [...evaluationCriteria, createEmptyCriterion("evaluation")])
   }
 
   const removeEvaluationCriteria = (index: number) => {
@@ -168,6 +152,8 @@ export function DemodayForm({
   }
 
   const onSubmitForm = (data: DemodayFormData) => {
+    // For new demodays, the backend will handle assigning criteria to the new demoday
+    // For existing demodays, ensure criteria have the demoday_id
     onSubmit({
       name: data.name,
       phases: data.phases,

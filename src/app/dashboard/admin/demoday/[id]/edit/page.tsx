@@ -1,10 +1,11 @@
 "use client"
 
 import { DemodayForm } from "@/components/dashboard/DemodayForm"
+import { DemodayFormData } from "@/components/dashboard/types"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCriteria, useSubmitCriteriaBatch } from "@/hooks/useCriteria"
-import { Phase, useDemodayDetails, useUpdateDemoday } from "@/hooks/useDemoday"
+import { useDemodayDetails, useUpdateDemoday } from "@/hooks/useDemoday"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -88,17 +89,23 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
     )
   }
 
-  const onSubmit = (data: {
-    name: string
-    phases: Phase[]
-    registrationCriteria: { name: string; description: string }[]
-    evaluationCriteria: { name: string; description: string }[]
-  }) => {
+  const onSubmit = (data: DemodayFormData) => {
     setError(null)
 
-    // Filter out empty criteria
-    const validRegistrationCriteria = data.registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
-    const validEvaluationCriteria = data.evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
+    // Filter out empty criteria and select only necessary fields
+    const validRegistrationCriteria = data.registrationCriteria
+      .filter((c) => c.name.trim() && c.description.trim())
+      .map(({ name, description }) => ({
+        name,
+        description,
+      }))
+
+    const validEvaluationCriteria = data.evaluationCriteria
+      .filter((c) => c.name.trim() && c.description.trim())
+      .map(({ name, description }) => ({
+        name,
+        description,
+      }))
 
     if (validRegistrationCriteria.length === 0) {
       setError("Adicione pelo menos um critério de inscrição")
@@ -152,11 +159,13 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       criteriaData?.registration?.map((c) => ({
         name: c.name,
         description: c.description,
+        demoday_id: demodayId,
       })) || [],
     evaluationCriteria:
       criteriaData?.evaluation?.map((c) => ({
         name: c.name,
         description: c.description,
+        demoday_id: demodayId,
       })) || [],
   }
 
@@ -177,6 +186,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
 
       <DemodayForm
         initialData={initialData}
+        demodayId={demodayId}
         onSubmit={onSubmit}
         isSubmitting={isPending}
         error={error}
