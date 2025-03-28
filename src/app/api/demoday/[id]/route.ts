@@ -217,8 +217,8 @@ export async function PUT(
           name: phase.name,
           description: phase.description,
           phaseNumber: phase.phaseNumber,
-          startDate: new Date(phase.startDate),
-          endDate: new Date(phase.endDate),
+          startDate: new Date(`${phase.startDate}T00:00:00.000Z`),
+          endDate: new Date(`${phase.endDate}T00:00:00.000Z`),
         });
       }
     });

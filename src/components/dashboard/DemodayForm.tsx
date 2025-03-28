@@ -8,7 +8,6 @@ import { Phase } from "@/hooks/useDemoday"
 import { demodayFormSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusCircle, X } from "lucide-react"
-import moment from "moment"
 import { DateRange } from "react-day-picker"
 import { Controller, useForm } from "react-hook-form"
 
@@ -111,11 +110,20 @@ export function DemodayForm({
 
     // Update start and end dates
     if (dateRange.from) {
-      phase.startDate = moment(dateRange.from).format("YYYY-MM-DD")
+      // Use UTC date formatting to avoid timezone issues
+      // Format date as YYYY-MM-DD without time component to avoid timezone shifts
+      const date = new Date(dateRange.from)
+      phase.startDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
+        date.getUTCDate()
+      ).padStart(2, "0")}`
     }
 
     if (dateRange.to) {
-      phase.endDate = moment(dateRange.to).format("YYYY-MM-DD")
+      // Use UTC date formatting to avoid timezone issues
+      const date = new Date(dateRange.to)
+      phase.endDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
+        date.getUTCDate()
+      ).padStart(2, "0")}`
     } else if (dateRange.from) {
       // If only start date is selected, clear end date
       phase.endDate = ""
@@ -168,11 +176,13 @@ export function DemodayForm({
     const result: Partial<DateRange> = {}
 
     if (phase.startDate) {
-      result.from = moment(phase.startDate).toDate()
+      // Parse date string as UTC to maintain consistency
+      result.from = new Date(`${phase.startDate}T00:00:00.000Z`)
     }
 
     if (phase.endDate) {
-      result.to = moment(phase.endDate).toDate()
+      // Parse date string as UTC to maintain consistency
+      result.to = new Date(`${phase.endDate}T00:00:00.000Z`)
     }
 
     return Object.keys(result).length > 0 ? (result as DateRange) : undefined
