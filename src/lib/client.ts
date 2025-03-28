@@ -1,4 +1,3 @@
-import type { AppRouter } from "@/server"
 import { createClient } from "jstack"
 
 /**
@@ -6,7 +5,7 @@ import { createClient } from "jstack"
  * @see https://jstack.app/docs/backend/api-client
  */
 
-const baseUrl =  "/api"
-export const client = createClient<AppRouter>({
+const baseUrl = "/api"
+export const client = createClient({
   baseUrl,
 })

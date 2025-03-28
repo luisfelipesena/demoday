@@ -59,7 +59,7 @@ export async function GET(
         .select({ value: count() })
         .from(projectSubmissions)
         .where(eq(projectSubmissions.demoday_id, demodayId));
-      
+
       totalProjects = projectCountResult[0]?.value || 0;
 
       // Contar projetos em cada status
@@ -72,7 +72,7 @@ export async function GET(
             eq(projectSubmissions.status, "submitted")
           )
         );
-      
+
       submittedCount = submittedCountResult[0]?.value || 0;
 
       const approvedCountResult = await db
@@ -84,7 +84,7 @@ export async function GET(
             eq(projectSubmissions.status, "approved")
           )
         );
-      
+
       approvedCount = approvedCountResult[0]?.value || 0;
 
       const finalistCountResult = await db
@@ -96,7 +96,7 @@ export async function GET(
             eq(projectSubmissions.status, "finalist")
           )
         );
-      
+
       finalistCount = finalistCountResult[0]?.value || 0;
 
       const winnerCountResult = await db
@@ -108,7 +108,7 @@ export async function GET(
             eq(projectSubmissions.status, "winner")
           )
         );
-      
+
       winnerCount = winnerCountResult[0]?.value || 0;
     } catch (countError) {
       console.error("Erro ao calcular estatísticas:", countError);
@@ -165,7 +165,7 @@ export async function PUT(
 // PATCH - Update a demoday status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -186,6 +186,10 @@ export async function PATCH(
       );
     }
 
+    // Unwrap the params
+    const params = await context.params;
+    const id = params.id;
+
     // Obter dados da requisição
     const body = await request.json();
     const result = updateStatusSchema.safeParse(body);
@@ -201,7 +205,7 @@ export async function PATCH(
 
     // Buscar o demoday atual
     const currentDemoday = await db.query.demodays.findFirst({
-      where: eq(demodays.id, params.id),
+      where: eq(demodays.id, id),
     });
 
     if (!currentDemoday) {
@@ -213,7 +217,7 @@ export async function PATCH(
 
     // Se estiver atualizando para "canceled", apenas delete o demoday
     if (status === "canceled") {
-      await db.delete(demodays).where(eq(demodays.id, params.id));
+      await db.delete(demodays).where(eq(demodays.id, id));
       return NextResponse.json({ message: "Demoday cancelado e excluído com sucesso" });
     }
 
@@ -224,10 +228,10 @@ export async function PATCH(
           active: false,
           status: "finished",
         })
-        .where(eq(demodays.id, params.id));
+        .where(eq(demodays.id, id));
 
-      return NextResponse.json({ 
-        message: "Demoday finalizado com sucesso e adicionado ao histórico" 
+      return NextResponse.json({
+        message: "Demoday finalizado com sucesso e adicionado ao histórico"
       });
     }
 
@@ -248,7 +252,7 @@ export async function PATCH(
             active: true,
             status: "active",
           })
-          .where(eq(demodays.id, params.id));
+          .where(eq(demodays.id, id));
       });
 
       return NextResponse.json({ message: "Demoday ativado com sucesso" });
@@ -259,7 +263,7 @@ export async function PATCH(
       .set({
         status,
       })
-      .where(eq(demodays.id, params.id));
+      .where(eq(demodays.id, id));
 
     return NextResponse.json({ message: "Status do demoday atualizado com sucesso" });
   } catch (error) {
@@ -274,7 +278,7 @@ export async function PATCH(
 // DELETE - Delete a demoday
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -295,8 +299,12 @@ export async function DELETE(
       );
     }
 
+    // Unwrap the params
+    const params = await context.params;
+    const id = params.id;
+
     // Excluir demoday
-    await db.delete(demodays).where(eq(demodays.id, params.id));
+    await db.delete(demodays).where(eq(demodays.id, id));
 
     return NextResponse.json({ message: "Demoday excluído com sucesso" });
   } catch (error) {

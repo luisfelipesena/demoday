@@ -1,14 +1,15 @@
 import { relations } from "drizzle-orm/relations";
 import { demodays, evaluationCriteria, projects, projectSubmissions, registrationCriteria, users, sessions, votes, demodayPhases } from "./schema";
 
-export const evaluationCriteriaRelations = relations(evaluationCriteria, ({one}) => ({
+// Using the schema re-exports to maintain relation consistency
+export const evaluationCriteriaRelations = relations(evaluationCriteria, ({ one }) => ({
 	demoday: one(demodays, {
-		fields: [evaluationCriteria.demodayId],
+		fields: [evaluationCriteria.demoday_id],
 		references: [demodays.id]
 	}),
 }));
 
-export const demodaysRelations = relations(demodays, ({one, many}) => ({
+export const demodaysRelations = relations(demodays, ({ one, many }) => ({
 	evaluationCriteria: many(evaluationCriteria),
 	projectSubmissions: many(projectSubmissions),
 	registrationCriteria: many(registrationCriteria),
@@ -19,18 +20,18 @@ export const demodaysRelations = relations(demodays, ({one, many}) => ({
 	demodayPhases: many(demodayPhases),
 }));
 
-export const projectSubmissionsRelations = relations(projectSubmissions, ({one}) => ({
+export const projectSubmissionsRelations = relations(projectSubmissions, ({ one }) => ({
 	project: one(projects, {
 		fields: [projectSubmissions.projectId],
 		references: [projects.id]
 	}),
 	demoday: one(demodays, {
-		fields: [projectSubmissions.demodayId],
+		fields: [projectSubmissions.demoday_id],
 		references: [demodays.id]
 	}),
 }));
 
-export const projectsRelations = relations(projects, ({one, many}) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
 	projectSubmissions: many(projectSubmissions),
 	votes: many(votes),
 	user: one(users, {
@@ -39,28 +40,28 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 	}),
 }));
 
-export const registrationCriteriaRelations = relations(registrationCriteria, ({one}) => ({
+export const registrationCriteriaRelations = relations(registrationCriteria, ({ one }) => ({
 	demoday: one(demodays, {
-		fields: [registrationCriteria.demodayId],
+		fields: [registrationCriteria.demoday_id],
 		references: [demodays.id]
 	}),
 }));
 
-export const sessionsRelations = relations(sessions, ({one}) => ({
+export const sessionsRelations = relations(sessions, ({ one }) => ({
 	user: one(users, {
 		fields: [sessions.userId],
 		references: [users.id]
 	}),
 }));
 
-export const usersRelations = relations(users, ({many}) => ({
+export const usersRelations = relations(users, ({ many }) => ({
 	sessions: many(sessions),
 	votes: many(votes),
 	projects: many(projects),
 	demodays: many(demodays),
 }));
 
-export const votesRelations = relations(votes, ({one}) => ({
+export const votesRelations = relations(votes, ({ one }) => ({
 	user: one(users, {
 		fields: [votes.userId],
 		references: [users.id]
@@ -71,9 +72,9 @@ export const votesRelations = relations(votes, ({one}) => ({
 	}),
 }));
 
-export const demodayPhasesRelations = relations(demodayPhases, ({one}) => ({
+export const demodayPhasesRelations = relations(demodayPhases, ({ one }) => ({
 	demoday: one(demodays, {
-		fields: [demodayPhases.demodayId],
+		fields: [demodayPhases.demoday_id],
 		references: [demodays.id]
 	}),
 }));

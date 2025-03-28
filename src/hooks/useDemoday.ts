@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Demoday, Phase } from "@/types";
 
+export type { Phase }; // Export the Phase type for external use
+
 // Type for error responses
 type ErrorResponse = {
   error: string;

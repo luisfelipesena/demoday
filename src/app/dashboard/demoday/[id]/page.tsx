@@ -16,7 +16,7 @@ interface DemodayDetails {
   id: string
   name: string
   active: boolean
-  status: 'active' | 'finished' | 'canceled'
+  status: "active" | "finished" | "canceled"
   createdAt: string
   updatedAt: string
   phases: Array<{
@@ -41,7 +41,11 @@ interface DemodayDetails {
   } | null
 }
 
-export default function DemodayDetailsPage({ params }: { params: { id: string } }) {
+interface DemodayPageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function DemodayDetailsPage({ params }: DemodayPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [demoday, setDemoday] = useState<DemodayDetails | null>(null)
@@ -53,14 +57,16 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
       try {
         setLoading(true)
         setError(null)
-        
-        const response = await fetch(`/api/demoday/${params.id}`)
-        
+
+        // Unwrap params promise
+        const resolvedParams = await params
+        const response = await fetch(`/api/demoday/${resolvedParams.id}`)
+
         if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.error || "Erro ao buscar detalhes do demoday")
         }
-        
+
         const data = await response.json()
         setDemoday(data)
       } catch (error) {
@@ -70,9 +76,9 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
         setLoading(false)
       }
     }
-    
+
     fetchDemodayDetails()
-  }, [params.id])
+  }, [params])
 
   // Redirecionar para login se não estiver autenticado
   if (status === "unauthenticated") {
@@ -111,10 +117,7 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
           <h1 className="text-2xl font-bold text-red-700 mb-2">Erro</h1>
           <p className="text-red-600">{error}</p>
-          <Button 
-            onClick={() => router.push('/dashboard')} 
-            className="mt-4 bg-red-600 hover:bg-red-700"
-          >
+          <Button onClick={() => router.push("/dashboard")} className="mt-4 bg-red-600 hover:bg-red-700">
             Voltar ao Dashboard
           </Button>
         </div>
@@ -128,10 +131,7 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
         <div className="rounded-lg border p-6 text-center">
           <h1 className="text-2xl font-bold mb-2">Demoday não encontrado</h1>
           <p className="text-gray-600">Não foi possível encontrar o Demoday solicitado.</p>
-          <Button 
-            onClick={() => router.push('/dashboard')} 
-            className="mt-4"
-          >
+          <Button onClick={() => router.push("/dashboard")} className="mt-4">
             Voltar ao Dashboard
           </Button>
         </div>
@@ -167,17 +167,14 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
         <div>
           <h1 className="text-3xl font-bold">{demoday.name}</h1>
           <p className="text-gray-500">
-            {demoday.active ? 'Demoday ativo' : 'Demoday finalizado'} • Criado em {formatDate(demoday.createdAt)}
+            {demoday.active ? "Demoday ativo" : "Demoday finalizado"} • Criado em {formatDate(demoday.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={`${demoday.active ? 'bg-green-500' : 'bg-blue-500'}`}>
-            {demoday.active ? 'Ativo' : 'Finalizado'}
+          <Badge className={`${demoday.active ? "bg-green-500" : "bg-blue-500"}`}>
+            {demoday.active ? "Ativo" : "Finalizado"}
           </Badge>
-          <Button 
-            variant="outline" 
-            onClick={() => router.push('/dashboard')}
-          >
+          <Button variant="outline" onClick={() => router.push("/dashboard")}>
             Voltar
           </Button>
         </div>
@@ -203,21 +200,19 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
                     <div>
                       <h3 className="font-medium">Status</h3>
                       <p className="text-gray-600">
-                        {demoday.active 
-                          ? 'Este Demoday está atualmente ativo' 
-                          : 'Este Demoday já foi finalizado'}
+                        {demoday.active ? "Este Demoday está atualmente ativo" : "Este Demoday já foi finalizado"}
                       </p>
                     </div>
-                    
+
                     <div>
                       <h3 className="font-medium">Fase Atual</h3>
                       <p className="text-gray-600">
-                        {demoday.currentPhase 
-                          ? `${demoday.currentPhase.name} (Fase ${demoday.currentPhase.phaseNumber})` 
-                          : 'Nenhuma fase ativa no momento'}
+                        {demoday.currentPhase
+                          ? `${demoday.currentPhase.name} (Fase ${demoday.currentPhase.phaseNumber})`
+                          : "Nenhuma fase ativa no momento"}
                       </p>
                     </div>
-                    
+
                     <div>
                       <h3 className="font-medium">Datas</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-600">
@@ -249,25 +244,25 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
                       <span className="text-2xl font-bold">{demoday.stats.totalProjects}</span>
                       <span className="text-xs text-gray-600">Projetos</span>
                     </div>
-                    
+
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <Users className="h-6 w-6 text-blue-600 mb-2" />
                       <span className="text-2xl font-bold">{demoday.stats.submitted}</span>
                       <span className="text-xs text-gray-600">Submetidos</span>
                     </div>
-                    
+
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <CheckCircle2 className="h-6 w-6 text-green-600 mb-2" />
                       <span className="text-2xl font-bold">{demoday.stats.approved}</span>
                       <span className="text-xs text-gray-600">Aprovados</span>
                     </div>
-                    
+
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <Award className="h-6 w-6 text-amber-500 mb-2" />
                       <span className="text-2xl font-bold">{demoday.stats.finalists}</span>
                       <span className="text-xs text-gray-600">Finalistas</span>
                     </div>
-                    
+
                     <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
                       <Award className="h-6 w-6 text-purple-600 mb-2" />
                       <span className="text-2xl font-bold">{demoday.stats.winners}</span>
@@ -277,7 +272,7 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
                 </CardContent>
               </Card>
             </div>
-            
+
             <div>
               <Card className="mb-6">
                 <CardHeader>
@@ -289,30 +284,22 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
                       <div
                         key={phase.id}
                         className={`border-l-2 pl-4 ${
-                          demoday.currentPhase?.id === phase.id
-                            ? "border-blue-500"
-                            : "border-gray-200"
+                          demoday.currentPhase?.id === phase.id ? "border-blue-500" : "border-gray-200"
                         }`}
                       >
-                        <h3 className={`font-medium ${
-                          demoday.currentPhase?.id === phase.id
-                            ? "text-blue-700"
-                            : ""
-                        }`}>
+                        <h3 className={`font-medium ${demoday.currentPhase?.id === phase.id ? "text-blue-700" : ""}`}>
                           {phase.name}
                         </h3>
                         <p className="text-sm text-gray-500">
                           {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
                         </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {phase.description}
-                        </p>
+                        <p className="text-xs text-gray-600 mt-1">{phase.description}</p>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-              
+
               {!demoday.active && (
                 <Card>
                   <CardHeader>
@@ -346,11 +333,13 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-8 gap-4">
                       <div className="md:col-span-1 flex justify-center md:justify-start">
-                        <div className={`h-10 w-10 rounded-full ${
-                          demoday.currentPhase?.id === phase.id
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-100 text-gray-700"
-                        } flex items-center justify-center font-bold`}>
+                        <div
+                          className={`h-10 w-10 rounded-full ${
+                            demoday.currentPhase?.id === phase.id
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 text-gray-700"
+                          } flex items-center justify-center font-bold`}
+                        >
                           {phase.phaseNumber}
                         </div>
                       </div>
@@ -381,10 +370,7 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
             <CardHeader>
               <CardTitle>Projetos Participantes</CardTitle>
               <CardDescription>
-                {demoday.active
-                  ? "Projetos submeter atualmente no Demoday"
-                  : "Projetos que participaram deste Demoday"
-                }
+                {demoday.active ? "Projetos submeter atualmente no Demoday" : "Projetos que participaram deste Demoday"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -397,4 +383,4 @@ export default function DemodayDetailsPage({ params }: { params: { id: string } 
       </Tabs>
     </div>
   )
-} 
+}

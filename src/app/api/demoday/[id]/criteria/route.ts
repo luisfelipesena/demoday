@@ -25,11 +25,11 @@ const batchCriteriaSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "Não autorizado" },
@@ -45,6 +45,8 @@ export async function POST(
       );
     }
 
+    // Unwrap the params
+    const params = await context.params;
     const demodayId = params.id;
 
     // Validate that the demoday exists
