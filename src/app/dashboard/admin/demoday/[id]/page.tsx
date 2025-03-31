@@ -15,6 +15,7 @@ import { use } from "react"
 interface DemodayDetails {
   id: string
   name: string
+
   active: boolean
   status: "active" | "finished" | "canceled"
   createdAt: string

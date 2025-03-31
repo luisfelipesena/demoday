@@ -1,10 +1,10 @@
-import { db } from "@/server/db";
-import { demodays, demoDayPhases, demodayStatusEnum } from "@/server/db/schema";
-import { getServerSession } from "next-auth";
-import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/auth/auth-options";
-import { desc, eq } from "drizzle-orm";
-import { demodaySchema } from "@/server/db/validators";
+import { db } from '@/server/db'
+import { demodays, demoDayPhases } from '@/server/db/schema'
+import { getServerSession } from 'next-auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { authOptions } from '@/auth/auth-options'
+import { desc, eq } from 'drizzle-orm'
+import { demodaySchema } from '@/server/db/validators'
 
 // GET - Fetch all demodays
 export async function GET() {
@@ -12,15 +12,12 @@ export async function GET() {
     // Aplicando a ordem por data de criação mais recente
     const allDemodays = await db.query.demodays.findMany({
       orderBy: desc(demodays.createdAt),
-    });
+    })
 
-    return NextResponse.json(allDemodays);
+    return NextResponse.json(allDemodays)
   } catch (error) {
-    console.error("Error fetching demodays:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar demodays" },
-      { status: 500 }
-    );
+    console.error('Error fetching demodays:', error)
+    return NextResponse.json({ error: 'Erro ao buscar demodays' }, { status: 500 })
   }
 }
 
@@ -28,44 +25,32 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     // Get the session to check if user is authenticated
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions)
 
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Extract user ID now that we know it exists
-    const userId = session.user.id;
+    const userId = session.user.id
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "ID de usuário não encontrado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'ID de usuário não encontrado' }, { status: 401 })
     }
 
     // Admin check
-    if (session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Apenas administradores podem criar demodays" },
-        { status: 403 }
-      );
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Apenas administradores podem criar demodays' }, { status: 403 })
     }
 
-    const body = await req.json();
-    const result = demodaySchema.safeParse(body);
+    const body = await req.json()
+    const result = demodaySchema.safeParse(body)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", details: result.error.format() },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Dados inválidos', details: result.error.format() }, { status: 400 })
     }
 
-    const { name, phases } = result.data;
+    const { name, phases } = result.data
 
     // Create demoday in a transaction
     const [newDemoday] = await db.transaction(async (tx: any) => {
@@ -74,9 +59,9 @@ export async function POST(req: NextRequest) {
         .update(demodays)
         .set({
           active: false,
-          status: "finished"
+          status: 'finished',
         })
-        .where(eq(demodays.active, true));
+        .where(eq(demodays.active, true))
 
       // Insert the demoday
       const [createdDemoday] = await tx
@@ -85,12 +70,12 @@ export async function POST(req: NextRequest) {
           name,
           createdById: userId,
           active: true,
-          status: "active",
+          status: 'active',
         })
-        .returning();
+        .returning()
 
       if (!createdDemoday) {
-        throw new Error("Falha ao criar demoday");
+        throw new Error('Falha ao criar demoday')
       }
 
       // Insert phases
@@ -102,18 +87,15 @@ export async function POST(req: NextRequest) {
           phaseNumber: phase.phaseNumber,
           startDate: new Date(phase.startDate),
           endDate: new Date(phase.endDate),
-        });
+        })
       }
 
-      return [createdDemoday];
-    });
+      return [createdDemoday]
+    })
 
-    return NextResponse.json(newDemoday, { status: 201 });
+    return NextResponse.json(newDemoday, { status: 201 })
   } catch (error) {
-    console.error("Error creating demoday:", error);
-    return NextResponse.json(
-      { error: "Erro ao criar demoday" },
-      { status: 500 }
-    );
+    console.error('Error creating demoday:', error)
+    return NextResponse.json({ error: 'Erro ao criar demoday' }, { status: 500 })
   }
-} 
+}

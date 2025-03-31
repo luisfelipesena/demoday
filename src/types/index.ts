@@ -58,5 +58,5 @@ export interface Phase {
 /**
  * Tipos de projetos disponíveis para seleção
  */
-export const PROJECT_TYPES = ["Disciplina", "IC", "TCC", "Mestrado", "Doutorado"] as const
-export type ProjectType = typeof PROJECT_TYPES[number] 
+export const PROJECT_TYPES = ['Disciplina', 'IC', 'TCC', 'Mestrado', 'Doutorado'] as const
+export type ProjectType = (typeof PROJECT_TYPES)[number]

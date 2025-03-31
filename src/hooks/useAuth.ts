@@ -1,71 +1,67 @@
-import { useMutation } from "@tanstack/react-query";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-
-type ErrorResponse = {
-  error: string;
-};
+import { useMutation } from '@tanstack/react-query'
+import { signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 type LoginInput = {
-  email: string;
-  password: string;
-};
+  email: string
+  password: string
+}
 
 type RegisterInput = {
-  name: string;
-  email: string;
-  password: string;
-};
+  name: string
+  email: string
+  password: string
+}
 
 // Hook para login de usuário
 export function useLogin() {
-  const router = useRouter();
+  const router = useRouter()
 
   return useMutation<any, Error, LoginInput>({
     mutationFn: async ({ email, password }: LoginInput) => {
-      const response = await signIn("credentials", {
+      const response = await signIn('credentials', {
         email,
         password,
         redirect: false,
-      });
+      })
 
       if (response?.error) {
-        throw new Error("Email ou senha inválidos");
+        throw new Error('Email ou senha inválidos')
       }
 
-      return response;
+      return response
     },
     onSuccess: () => {
-      router.push("/dashboard");
-      router.refresh();
+      router.push('/dashboard')
+      router.refresh()
     },
-  });
+  })
 }
 
 // Hook para registro de usuário
 export function useRegister() {
-  const router = useRouter();
+  const router = useRouter()
 
   return useMutation<any, Error, RegisterInput>({
     mutationFn: async (data: RegisterInput) => {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
-      });
+      })
 
-      const responseData = (await response.json()) as { error?: string };
+      const responseData = (await response.json()) as { error?: string }
 
       if (!response.ok) {
-        throw new Error(responseData.error || "Erro ao cadastrar usuário");
+        throw new Error(responseData.error || 'Erro ao cadastrar usuário')
       }
 
-      return responseData;
+      return responseData
     },
     onSuccess: () => {
-      router.push("/login?registered=true");
+      router.push('/login?registered=true')
     },
-  });
-} 
+  })
+}

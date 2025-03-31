@@ -1,69 +1,60 @@
-import { authOptions } from "@/auth/auth-options";
-import { db } from "@/server/db";
-import { projectSubmissions, users } from "@/server/db/schema";
-import { projectQuerySchema } from "@/server/db/validators";
-import { and, asc, eq, inArray } from "drizzle-orm";
-import { getServerSession } from "next-auth";
-import { NextRequest, NextResponse } from "next/server";
+import { authOptions } from '@/auth/auth-options'
+import { db } from '@/server/db'
+import { projectSubmissions, users } from '@/server/db/schema'
+import { projectQuerySchema } from '@/server/db/validators'
+import { and, asc, eq, inArray } from 'drizzle-orm'
+import { getServerSession } from 'next-auth'
+import { NextRequest, NextResponse } from 'next/server'
 
 // GET - Buscar projetos de um Demoday com filtros
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const demodayId = searchParams.get("demodayId");
-    const status = searchParams.get("status");
-    const type = searchParams.get("type");
+    const { searchParams } = new URL(req.url)
+    const demodayId = searchParams.get('demodayId')
+    const status = searchParams.get('status')
+    const type = searchParams.get('type')
 
     // Validar parâmetros
     const queryParams = {
       demodayId: demodayId || undefined,
       status: status || undefined,
       type: type || undefined,
-    };
+    }
 
-    const result = projectQuerySchema.safeParse(queryParams);
+    const result = projectQuerySchema.safeParse(queryParams)
 
     if (!result.success) {
       return NextResponse.json(
-        { error: "Parâmetros de busca inválidos", details: result.error.format() },
+        { error: 'Parâmetros de busca inválidos', details: result.error.format() },
         { status: 400 }
-      );
+      )
     }
 
     // Verificar se o demodayId é fornecido (obrigatório)
     if (!demodayId) {
-      return NextResponse.json(
-        { error: "ID do demoday é obrigatório" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'ID do demoday é obrigatório' }, { status: 400 })
     }
 
     // Verificar sessão para permissões (opcionalmente restringir visualização)
-    const session = await getServerSession(authOptions);
-    const isAuthenticated = !!session?.user;
-    const isAdmin = session?.user?.role === "admin";
-    const isProfessor = session?.user?.role === "professor";
+    const session = await getServerSession(authOptions)
+    const _isAuthenticated = !!session?.user
+    const isAdmin = session?.user?.role === 'admin'
+    const isProfessor = session?.user?.role === 'professor'
 
     // Construir a consulta com os filtros
     const query: any = {
       where: eq(projectSubmissions.demoday_id, demodayId),
-    };
+    }
 
     // Adicionar filtro de status se fornecido
     if (status) {
-      query.where = and(
-        query.where,
-        eq(projectSubmissions.status, status)
-      );
+      query.where = and(query.where, eq(projectSubmissions.status, status))
     }
 
     // Se não for admin ou professor, apenas projetos aprovados/finalistas/vencedores
     // são visíveis para usuários comuns (a menos que o status seja explicitamente definido)
     if (!isAdmin && !isProfessor && !status) {
-      query.where = and(
-        query.where,
-        inArray(projectSubmissions.status, ["approved", "finalist", "winner"])
-      );
+      query.where = and(query.where, inArray(projectSubmissions.status, ['approved', 'finalist', 'winner']))
     }
 
     // Buscar as submissões
@@ -73,21 +64,19 @@ export async function GET(req: NextRequest) {
       with: {
         project: true,
       },
-    });
+    })
 
     // Filtrar por tipo de projeto se necessário
-    let filteredSubmissions = submissions;
+    let filteredSubmissions = submissions
     if (type) {
-      filteredSubmissions = submissions.filter(
-        (sub: any) => sub.project && sub.project.type === type
-      );
+      filteredSubmissions = submissions.filter((sub: any) => sub.project && sub.project.type === type)
     }
 
     // Enriquecer com dados do usuário (autor)
     const projectsWithAuthors = await Promise.all(
       filteredSubmissions.map(async (submission: any) => {
         if (!submission.project) {
-          return submission;
+          return submission
         }
 
         const author = await db.query.users.findFirst({
@@ -98,7 +87,7 @@ export async function GET(req: NextRequest) {
             email: true,
             role: true,
           },
-        });
+        })
 
         return {
           ...submission,
@@ -106,16 +95,13 @@ export async function GET(req: NextRequest) {
             ...submission.project,
             author,
           },
-        };
+        }
       })
-    );
+    )
 
-    return NextResponse.json(projectsWithAuthors);
+    return NextResponse.json(projectsWithAuthors)
   } catch (error) {
-    console.error("Erro ao buscar projetos do demoday:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar projetos do demoday" },
-      { status: 500 }
-    );
+    console.error('Erro ao buscar projetos do demoday:', error)
+    return NextResponse.json({ error: 'Erro ao buscar projetos do demoday' }, { status: 500 })
   }
-} 
+}

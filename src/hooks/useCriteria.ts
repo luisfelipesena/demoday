@@ -1,153 +1,151 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 // Types
 export type Criteria = {
-  id: string;
-  demoday_id: string;
-  name: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-};
+  id: string
+  demoday_id: string
+  name: string
+  description: string
+  createdAt: string
+  updatedAt: string
+}
 
 export type CreateCriteriaInput = {
-  demoday_id: string;
-  name: string;
-  description: string;
-  type: "registration" | "evaluation";
-};
+  demoday_id: string
+  name: string
+  description: string
+  type: 'registration' | 'evaluation'
+}
 
 type ErrorResponse = {
-  error: string;
-};
+  error: string
+}
 
 type CriteriaResponse = {
-  registration: Criteria[];
-  evaluation: Criteria[];
-};
+  registration: Criteria[]
+  evaluation: Criteria[]
+}
 
 // Fetch criteria for a specific demoday
-export function useCriteria(demodayId: string | null, type?: "registration" | "evaluation") {
+export function useCriteria(demodayId: string | null, type?: 'registration' | 'evaluation') {
   return useQuery({
-    queryKey: ["criteria", demodayId, type],
+    queryKey: ['criteria', demodayId, type],
     queryFn: async () => {
       if (!demodayId) {
-        return { registration: [], evaluation: [] } as CriteriaResponse;
+        return { registration: [], evaluation: [] } as CriteriaResponse
       }
 
-      let url = `/api/demoday/criteria?demodayId=${demodayId}`;
+      let url = `/api/demoday/criteria?demodayId=${demodayId}`
       if (type) {
-        url += `&type=${type}`;
+        url += `&type=${type}`
       }
 
-      const response = await fetch(url);
+      const response = await fetch(url)
       if (!response.ok) {
-        const errorData = await response.json() as ErrorResponse;
-        throw new Error(errorData.error || "Erro ao buscar critérios");
+        const errorData = (await response.json()) as ErrorResponse
+        throw new Error(errorData.error || 'Erro ao buscar critérios')
       }
 
       if (type) {
         // If type is specified, the response will be an array of criteria
-        const data = await response.json() as Criteria[];
+        const data = (await response.json()) as Criteria[]
         // Return it in a way that's compatible with our expected structure
-        if (type === "registration") {
+        if (type === 'registration') {
           return {
             registration: data,
-            evaluation: []
-          } as CriteriaResponse;
-        } else {
-          return {
-            registration: [],
-            evaluation: data
-          } as CriteriaResponse;
+            evaluation: [],
+          } as CriteriaResponse
         }
-      } else {
-        // If no type is specified, the response will already be in the correct format
-        return response.json() as Promise<CriteriaResponse>;
+        return {
+          registration: [],
+          evaluation: data,
+        } as CriteriaResponse
       }
+      // If no type is specified, the response will already be in the correct format
+      return response.json() as Promise<CriteriaResponse>
     },
     enabled: !!demodayId,
-  });
+  })
 }
 
 // Create new criteria
 export function useCreateCriteria() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (criteria: CreateCriteriaInput) => {
-      const response = await fetch("/api/demoday/criteria", {
-        method: "POST",
+      const response = await fetch('/api/demoday/criteria', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(criteria),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json() as ErrorResponse;
-        throw new Error(errorData.error || "Erro ao criar critério");
+        const errorData = (await response.json()) as ErrorResponse
+        throw new Error(errorData.error || 'Erro ao criar critério')
       }
 
-      return response.json() as Promise<Criteria>;
+      return response.json() as Promise<Criteria>
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful creation
       queryClient.invalidateQueries({
-        queryKey: ["criteria", variables.demoday_id]
-      });
+        queryKey: ['criteria', variables.demoday_id],
+      })
     },
-  });
+  })
 }
 
 // Delete criteria
 export function useDeleteCriteria() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({
       id,
       type,
-      demodayId
+      demodayId,
     }: {
-      id: string;
-      type: "registration" | "evaluation";
-      demodayId: string;
+      id: string
+      type: 'registration' | 'evaluation'
+      demodayId: string
     }) => {
-      const response = await fetch(`/api/demoday/criteria?id=${id}&type=${type}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(`/api/demoday/criteria?id=${id}&type=${type}&demodayId=${demodayId}`, {
+        method: 'DELETE',
+      })
 
       if (!response.ok) {
-        const errorData = await response.json() as ErrorResponse;
-        throw new Error(errorData.error || "Erro ao remover critério");
+        const errorData = (await response.json()) as ErrorResponse
+        throw new Error(errorData.error || 'Erro ao remover critério')
       }
 
-      return response.json();
+      return response.json()
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful deletion
       queryClient.invalidateQueries({
-        queryKey: ["criteria", variables.demodayId]
-      });
+        queryKey: ['criteria', variables.demodayId],
+      })
     },
-  });
+  })
 }
 
 // Submit criteria in batch for a specific demoday
 export function useSubmitCriteriaBatch() {
-  const queryClient = useQueryClient();
-  const createCriteria = useCreateCriteria();
+  const queryClient = useQueryClient()
+  const createCriteria = useCreateCriteria()
 
   return useMutation({
     mutationFn: async ({
       demodayId,
       registration,
-      evaluation
+      evaluation,
     }: {
-      demodayId: string;
-      registration: { name: string; description: string }[];
-      evaluation: { name: string; description: string }[];
+      demodayId: string
+      registration: { name: string; description: string }[]
+      evaluation: { name: string; description: string }[]
     }) => {
       // Create promises for all registration criteria
       const registrationPromises = registration.map(({ name, description }) =>
@@ -155,9 +153,9 @@ export function useSubmitCriteriaBatch() {
           demoday_id: demodayId,
           name,
           description,
-          type: "registration"
+          type: 'registration',
         })
-      );
+      )
 
       // Create promises for all evaluation criteria
       const evaluationPromises = evaluation.map(({ name, description }) =>
@@ -165,68 +163,65 @@ export function useSubmitCriteriaBatch() {
           demoday_id: demodayId,
           name,
           description,
-          type: "evaluation"
+          type: 'evaluation',
         })
-      );
+      )
 
       // Wait for all criteria to be created
-      const results = await Promise.all([
-        ...registrationPromises,
-        ...evaluationPromises
-      ]);
+      const results = await Promise.all([...registrationPromises, ...evaluationPromises])
 
       return {
-        message: "Critérios criados com sucesso",
-        data: results
-      };
+        message: 'Critérios criados com sucesso',
+        data: results,
+      }
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful creation
       queryClient.invalidateQueries({
-        queryKey: ["criteria", variables.demodayId]
-      });
+        queryKey: ['criteria', variables.demodayId],
+      })
     },
-  });
+  })
 }
 
 // Update all criteria for a specific demoday
 export function useUpdateCriteriaBatch() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({
       demodayId,
       registration,
-      evaluation
+      evaluation,
     }: {
-      demodayId: string;
-      registration: { name: string; description: string }[];
-      evaluation: { name: string; description: string }[];
+      demodayId: string
+      registration: { name: string; description: string }[]
+      evaluation: { name: string; description: string }[]
     }) => {
       const response = await fetch(`/api/demoday/criteria`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           demodayId,
           registration,
           evaluation,
         }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json() as ErrorResponse;
-        throw new Error(errorData.error || "Erro ao atualizar critérios");
+        const errorData = (await response.json()) as ErrorResponse
+        throw new Error(errorData.error || 'Erro ao atualizar critérios')
       }
 
-      return response.json();
+      return response.json()
     },
     onSuccess: (_, variables) => {
       // Invalidate and refetch criteria after successful update
       queryClient.invalidateQueries({
-        queryKey: ["criteria", variables.demodayId]
-      });
+        queryKey: ['criteria', variables.demodayId],
+      })
     },
-  });
-} 
+  })
+}

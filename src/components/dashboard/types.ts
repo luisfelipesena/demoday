@@ -1,9 +1,9 @@
-import { Phase } from "@/hooks/useDemoday"
-import { demodayFormSchema } from "@/server/db/validators"
-import { z } from "zod"
+import { Phase } from '@/hooks/useDemoday'
+import { demodayFormSchema } from '@/server/db/validators'
+import { z } from 'zod'
 
 export type DemodayFormData = z.infer<typeof demodayFormSchema>
-export type CriteriaType = "registration" | "evaluation"
+export type CriteriaType = 'registration' | 'evaluation'
 
 export interface DemodayFormProps {
   initialData?: {

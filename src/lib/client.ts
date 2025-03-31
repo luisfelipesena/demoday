@@ -1,11 +1,11 @@
-import { createClient } from "jstack"
+import { createClient } from 'jstack'
 
 /**
  * Your type-safe API client
  * @see https://jstack.app/docs/backend/api-client
  */
 
-const baseUrl = "/api"
+const baseUrl = '/api'
 export const client = createClient({
   baseUrl,
 })
