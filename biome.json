@@ -115,7 +115,7 @@
         "useValidTypeof": "error"
       }
     },
-    "ignore": ["dist", "src/api/routers/index.ts"]
+    "ignore": ["dist"]
   },
   "javascript": {
     "formatter": {
