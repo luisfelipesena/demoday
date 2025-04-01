@@ -20,7 +20,7 @@ ssh -t -p $DOKKU_PORT $DOKKU_HOST builder:set $APP_NAME selected dockerfile
 
 # Create a git commit if there are changes
 git add .
-git diff-index --quiet HEAD || git commit -m "chore: switch to bun for faster deployment"
+git diff-index --quiet HEAD || git commit -m "chore: bun deployment"
 
 # Push to dokku
 echo "Pushing to dokku..."
