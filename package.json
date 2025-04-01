@@ -2,6 +2,9 @@
   "name": "demoday",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.11.0"
+  },
   "scripts": {
     "build": "npm run db:push && next build",
     "db:generate": "drizzle-kit generate",
