@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
+    "bun": ">=1.2.8",
     "node": ">=20.11.0",
-    "bun": ">=1.2.8"
+    "npm": ">=10.2.4"
   },
   "packageManager": "bun@1.2.8",
   "scripts": {
-    "build": "bun run db:push && next build",
+    "build": "next build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
