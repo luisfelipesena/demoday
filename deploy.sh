@@ -15,15 +15,15 @@ else
 fi
 
 # Configure Dokku to use Dockerfile builder
-echo "Setting Dokku to use Dockerfile builder..."
+echo "Setting Dokku to use Dockerfile builder with Bun runtime..."
 ssh -t -p $DOKKU_PORT $DOKKU_HOST builder:set $APP_NAME selected dockerfile
 
 # Create a git commit if there are changes
 git add .
-git diff-index --quiet HEAD || git commit -m "chore: prepare for dokku deployment"
+git diff-index --quiet HEAD || git commit -m "chore: switch to bun for faster deployment"
 
 # Push to dokku
 echo "Pushing to dokku..."
 git push dokku master
 
-echo "Deployment completed! Your app should now be running on Dokku." 
+echo "Deployment completed! Your app should now be running on Dokku with Bun." 
