@@ -1,7 +1,8 @@
 "use client"
 
-import { format } from "date-fns"
+import { format, isValid } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
+import { ptBR } from "date-fns/locale"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -29,11 +30,17 @@ export function DatePicker({
           disabled={disabled}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>Pick a date</span>}
+          {value && isValid(value) ? format(value, "dd/MM/yyyy") : <span>Selecione uma data</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
-        <Calendar mode="single" selected={value} onSelect={onChange} initialFocus />
+        <Calendar 
+          mode="single" 
+          selected={value} 
+          onSelect={onChange} 
+          initialFocus 
+          locale={ptBR}
+        />
       </PopoverContent>
     </Popover>
   )
@@ -63,15 +70,53 @@ export function DatePickerWithRange({
 
   // Handle date selection and propagate changes
   const handleSelect = (selectedDate: DateRange | undefined) => {
-    setDate(selectedDate)
-    onChange(selectedDate)
+    if (!selectedDate) {
+      setDate(undefined)
+      onChange(undefined)
+      return
+    }
+    
+    // Criar um novo objeto sem modificar o original
+    const newRange: DateRange = {
+      from: selectedDate.from ? new Date(selectedDate.from) : undefined,
+      to: selectedDate.to ? new Date(selectedDate.to) : undefined
+    }
+    
+    // Garantir que as datas permaneçam no mesmo dia, independente do fuso horário
+    if (newRange.from) {
+      // Preservar o dia definindo para meio-dia no horário local
+      const year = newRange.from.getFullYear();
+      const month = newRange.from.getMonth();
+      const day = newRange.from.getDate();
+      newRange.from = new Date(year, month, day, 12, 0, 0);
+    }
+    
+    if (newRange.to) {
+      // Preservar o dia definindo para meio-dia no horário local
+      const year = newRange.to.getFullYear();
+      const month = newRange.to.getMonth();
+      const day = newRange.to.getDate();
+      newRange.to = new Date(year, month, day, 12, 0, 0);
+    }
+    
+    setDate(newRange)
+    onChange(newRange)
   }
 
   // Get today for disabling past dates
   const today = disablePastDates ? new Date() : undefined
+  if (today) {
+    today.setHours(0, 0, 0, 0)
+  }
 
   // Determine default month to show based on current selection or today
-  const defaultMonth = date?.from || new Date()
+  const defaultMonth = date?.from && isValid(date.from) ? date.from : new Date()
+
+  // Função para formatar datas de forma segura
+  const formatDateSafely = (date: Date | undefined) => {
+    if (!date || !isValid(date)) return null;
+    return format(date, "dd/MM/yyyy");
+  };
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -84,13 +129,13 @@ export function DatePickerWithRange({
             disabled={disabled}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
+            {date?.from && isValid(date.from) ? (
+              date.to && isValid(date.to) ? (
                 <>
-                  {format(date.from, "dd/MM/yyyy")} - {format(date.to, "dd/MM/yyyy")}
+                  {formatDateSafely(date.from)} - {formatDateSafely(date.to)}
                 </>
               ) : (
-                format(date.from, "dd/MM/yyyy")
+                formatDateSafely(date.from)
               )
             ) : (
               <span>Selecione o período</span>
@@ -107,6 +152,8 @@ export function DatePickerWithRange({
             numberOfMonths={2}
             disabled={disablePastDates ? (today ? { before: today } : undefined) : undefined}
             fromDate={disablePastDates ? today : undefined}
+            locale={ptBR}
+            weekStartsOn={0}
           />
         </PopoverContent>
       </Popover>
