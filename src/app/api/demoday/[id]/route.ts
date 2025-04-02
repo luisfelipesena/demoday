@@ -108,7 +108,6 @@ export async function GET(
       winnerCount = winnerCountResult[0]?.value || 0;
     } catch (countError) {
       console.error("Erro ao calcular estatísticas:", countError);
-      // Continue mesmo com erro nas estatísticas
     }
 
     // Verificar em qual fase estamos atualmente
