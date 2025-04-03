@@ -211,13 +211,42 @@ export async function PUT(
 
       // Inserir novas fases
       for (const phase of phases) {
+        // Verificar se as datas são válidas
+        let startDateObj = new Date();  // Usar data atual como padrão
+        let endDateObj = new Date();
+        endDateObj.setDate(endDateObj.getDate() + 7);  // Data padrão é uma semana no futuro
+        
+        // Validar e converter a data de início
+        if (phase.startDate && phase.startDate.trim() !== '') {
+          try {
+            const tempDate = new Date(`${phase.startDate}T12:00:00.000Z`);
+            if (!isNaN(tempDate.getTime())) {
+              startDateObj = tempDate;
+            }
+          } catch (error) {
+            console.error(`Erro ao converter data de início: ${phase.startDate}`, error);
+          }
+        }
+        
+        // Validar e converter a data de fim
+        if (phase.endDate && phase.endDate.trim() !== '') {
+          try {
+            const tempDate = new Date(`${phase.endDate}T12:00:00.000Z`);
+            if (!isNaN(tempDate.getTime())) {
+              endDateObj = tempDate;
+            }
+          } catch (error) {
+            console.error(`Erro ao converter data de fim: ${phase.endDate}`, error);
+          }
+        }
+        
         await tx.insert(demoDayPhases).values({
           demoday_id: id,
           name: phase.name,
           description: phase.description,
           phaseNumber: phase.phaseNumber,
-          startDate: new Date(`${phase.startDate}T00:00:00.000Z`),
-          endDate: new Date(`${phase.endDate}T00:00:00.000Z`),
+          startDate: startDateObj,
+          endDate: endDateObj,
         });
       }
     });

@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusCircle, X } from "lucide-react"
 import { DateRange } from "react-day-picker"
 import { Controller, useForm } from "react-hook-form"
+import { isValid, format } from "date-fns"
 
 export function DemodayForm({
   initialData,
@@ -103,34 +104,43 @@ export function DemodayForm({
   const evaluationCriteria = watch("evaluationCriteria")
 
   const updatePhaseDates = (index: number, dateRange: DateRange | undefined) => {
-    if (!dateRange) return
-
-    const updatedPhases = [...phases]
-    const phase = { ...updatedPhases[index] }
-
-    // Update start and end dates
-    if (dateRange.from) {
-      // Use UTC date formatting to avoid timezone issues
-      // Format date as YYYY-MM-DD without time component to avoid timezone shifts
-      const date = new Date(dateRange.from)
-      phase.startDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
-        date.getUTCDate()
-      ).padStart(2, "0")}`
+    if (!dateRange) {
+      setValue(`phases.${index}.startDate`, "")
+      setValue(`phases.${index}.endDate`, "")
+      return
     }
 
-    if (dateRange.to) {
-      // Use UTC date formatting to avoid timezone issues
-      const date = new Date(dateRange.to)
-      phase.endDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
-        date.getUTCDate()
-      ).padStart(2, "0")}`
-    } else if (dateRange.from) {
-      // If only start date is selected, clear end date
-      phase.endDate = ""
+    if (dateRange.from && isValid(dateRange.from)) {
+      // Usar a data completa para obter o dia correto independente do fuso horário
+      const year = dateRange.from.getFullYear();
+      const month = dateRange.from.getMonth() + 1; // getMonth() retorna 0-11
+      const day = dateRange.from.getDate();
+      
+      // Formatar com zeros à esquerda
+      const monthStr = month < 10 ? `0${month}` : `${month}`;
+      const dayStr = day < 10 ? `0${day}` : `${day}`;
+      
+      const startDateString = `${year}-${monthStr}-${dayStr}`;
+      setValue(`phases.${index}.startDate`, startDateString)
+    } else {
+      setValue(`phases.${index}.startDate`, "")
     }
 
-    updatedPhases[index] = phase as Phase
-    setValue("phases", updatedPhases)
+    if (dateRange.to && isValid(dateRange.to)) {
+      // Usar a data completa para obter o dia correto independente do fuso horário
+      const year = dateRange.to.getFullYear();
+      const month = dateRange.to.getMonth() + 1; // getMonth() retorna 0-11
+      const day = dateRange.to.getDate();
+      
+      // Formatar com zeros à esquerda
+      const monthStr = month < 10 ? `0${month}` : `${month}`;
+      const dayStr = day < 10 ? `0${day}` : `${day}`;
+      
+      const endDateString = `${year}-${monthStr}-${dayStr}`;
+      setValue(`phases.${index}.endDate`, endDateString)
+    } else {
+       setValue(`phases.${index}.endDate`, "")
+    }
   }
 
   const addRegistrationCriteria = () => {
@@ -160,14 +170,25 @@ export function DemodayForm({
   }
 
   const onSubmitForm = (data: DemodayFormData) => {
-    // For new demodays, the backend will handle assigning criteria to the new demoday
-    // For existing demodays, ensure criteria have the demoday_id
+    // Verificar se todas as fases têm datas válidas
+    const hasInvalidDates = data.phases.some(phase => 
+      !phase.startDate || !phase.endDate || 
+      phase.startDate.trim() === '' || 
+      phase.endDate.trim() === ''
+    );
+    
+    if (hasInvalidDates) {
+      // Mostrar aviso mas continuar o envio (a API usará datas padrão)
+      console.warn('Algumas fases estão com datas em branco. Serão usadas datas padrão.');
+    }
+    
+    // Enviar os dados
     onSubmit({
       name: data.name,
       phases: data.phases,
       registrationCriteria: data.registrationCriteria,
       evaluationCriteria: data.evaluationCriteria,
-    })
+    });
   }
 
   const getPhaseRangeDates = (phase: Phase): DateRange | undefined => {
@@ -175,17 +196,66 @@ export function DemodayForm({
 
     const result: Partial<DateRange> = {}
 
-    if (phase.startDate) {
-      // Parse date string as UTC to maintain consistency
-      result.from = new Date(`${phase.startDate}T00:00:00.000Z`)
-    }
+    try {
+      if (phase.startDate) {
+        // Extrair o ano, mês e dia diretamente da string yyyy-MM-dd
+        const parts = phase.startDate.split('-');
+        
+        if (parts.length === 3) {
+          const year = parseInt(parts[0]!, 10);
+          const month = parseInt(parts[1]!, 10);
+          const day = parseInt(parts[2]!, 10);
+          
+          // Verificar se todos os valores são números válidos
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            // Criar a data usando os componentes extraídos (mês - 1 porque getMonth é 0-11)
+            result.from = new Date(year, month - 1, day, 12, 0, 0, 0);
+            
+            // Verificar se a data criada é válida
+            if (isNaN(result.from.getTime())) {
+              console.warn("Data inicial criada é inválida:", phase.startDate);
+              result.from = undefined;
+            }
+          } else {
+            console.warn("Componentes de data inicial não são números válidos:", phase.startDate);
+          }
+        } else {
+          console.warn("Formato de data inicial inválido:", phase.startDate);
+        }
+      }
 
-    if (phase.endDate) {
-      // Parse date string as UTC to maintain consistency
-      result.to = new Date(`${phase.endDate}T00:00:00.000Z`)
-    }
+      if (phase.endDate) {
+        // Extrair o ano, mês e dia diretamente da string yyyy-MM-dd
+        const parts = phase.endDate.split('-');
+        
+        if (parts.length === 3) {
+          const year = parseInt(parts[0]!, 10);
+          const month = parseInt(parts[1]!, 10);
+          const day = parseInt(parts[2]!, 10);
+          
+          // Verificar se todos os valores são números válidos
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            // Criar a data usando os componentes extraídos (mês - 1 porque getMonth é 0-11)
+            result.to = new Date(year, month - 1, day, 12, 0, 0, 0);
+            
+            // Verificar se a data criada é válida
+            if (isNaN(result.to.getTime())) {
+              console.warn("Data final criada é inválida:", phase.endDate);
+              result.to = undefined;
+            }
+          } else {
+            console.warn("Componentes de data final não são números válidos:", phase.endDate);
+          }
+        } else {
+          console.warn("Formato de data final inválido:", phase.endDate);
+        }
+      }
 
-    return Object.keys(result).length > 0 ? (result as DateRange) : undefined
+      return (result.from || result.to) ? (result as DateRange) : undefined
+    } catch (error) {
+      console.error("Erro ao converter datas para DateRange:", error)
+      return undefined
+    }
   }
 
   return (
