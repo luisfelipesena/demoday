@@ -1,2 +1,2 @@
-web: npm run start
-release: npm run db:push
+release: npm run db: push
+web: npm start
