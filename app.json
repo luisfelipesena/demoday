@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "dokku": {
-      "predeploy": "npx drizzle-kit push"
-    }
-  }
-}
