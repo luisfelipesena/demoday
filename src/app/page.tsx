@@ -5,30 +5,22 @@ import { ArrowRight, Award, BookOpen, Calendar, GraduationCap, Users } from "luc
 import { Button } from "@/components/ui/button"
 import { LandingPageHeader } from "@/components/landing-page/header"
 import { LandingPageFooter } from "@/components/landing-page/footer"
+import { useEffect } from "react"
 
 export default function LandingPage() {
-  const onClick = async () => {
-    try {
-      const response = await fetch("/api/db/run-migrations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      
-      if (response.ok) {
-        console.log("Migrations executed successfully")
-        alert("Migrations executed successfully")
-      } else {
-        const error = await response.json()
-        console.error("Failed to run migrations:", error)
-        alert(`Failed to run migrations: ${error.message || "Unknown error"}`)
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        const data = await response.json();
+        console.log('Users data:', data);
+      } catch (error) {
+        console.error('Error fetching users:', error);
       }
-    } catch (error) {
-      console.error("Error triggering migrations:", error)
-      alert(`Error triggering migrations: ${error instanceof Error ? error.message : "Unknown error"}`)
-    }
-  }
+    };
+
+    fetchUsers();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -68,7 +60,6 @@ export default function LandingPage() {
                       <GraduationCap className="mx-auto h-16 w-16 text-primary" />
                       <h2 className="text-2xl font-bold">Demoday 2025</h2>
                       <p className="text-muted-foreground">Inscrições abertas</p>
-                      <Button onClick={onClick}>Migrations</Button>
                     </div>
                   </div>
                 </div>
