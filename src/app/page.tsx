@@ -1,11 +1,17 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowRight, Award, BookOpen, Calendar, GraduationCap, Users } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { LandingPageHeader } from "@/components/landing-page/header"
 import { LandingPageFooter } from "@/components/landing-page/footer"
+import { useEffect } from "react"
 
 export default function LandingPage() {
+  useEffect(() => {
+    console.log("LandingPage", { env: process.env.DATABASE_URL })
+  }, [])
+
   return (
     <div className="flex min-h-screen flex-col">
       <LandingPageHeader />
@@ -174,4 +180,3 @@ export default function LandingPage() {
     </div>
   )
 }
-
