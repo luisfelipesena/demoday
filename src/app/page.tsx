@@ -5,13 +5,30 @@ import { ArrowRight, Award, BookOpen, Calendar, GraduationCap, Users } from "luc
 import { Button } from "@/components/ui/button"
 import { LandingPageHeader } from "@/components/landing-page/header"
 import { LandingPageFooter } from "@/components/landing-page/footer"
-import { useEffect } from "react"
-import { env } from "@/env"
 
 export default function LandingPage() {
-  useEffect(() => {
-    console.log("LandingPage", { publicDb: env.NEXT_PUBLIC_DATABASE_URL, privateDb: env.DATABASE_URL })
-  }, [])
+  const onClick = async () => {
+    try {
+      const response = await fetch("/api/db/run-migrations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      
+      if (response.ok) {
+        console.log("Migrations executed successfully")
+        alert("Migrations executed successfully")
+      } else {
+        const error = await response.json()
+        console.error("Failed to run migrations:", error)
+        alert(`Failed to run migrations: ${error.message || "Unknown error"}`)
+      }
+    } catch (error) {
+      console.error("Error triggering migrations:", error)
+      alert(`Error triggering migrations: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -51,6 +68,7 @@ export default function LandingPage() {
                       <GraduationCap className="mx-auto h-16 w-16 text-primary" />
                       <h2 className="text-2xl font-bold">Demoday 2025</h2>
                       <p className="text-muted-foreground">Inscrições abertas</p>
+                      <Button onClick={onClick}>Migrations</Button>
                     </div>
                   </div>
                 </div>
