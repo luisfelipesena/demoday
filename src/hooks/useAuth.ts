@@ -57,7 +57,6 @@ export function useRegister() {
       });
 
       const responseData = (await response.json()) as { error?: string };
-      console.log({ responseData, dbEnv: process.env.DATABASE_URL });
 
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao cadastrar usuário");
