@@ -1,10 +1,7 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { use } from "react"
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,23 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectDetails } from "@/hooks/useProjects"
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // Desembrulhar (unwrap) o objeto params usando React.use
   const resolvedParams = use(params)
   const projectId = resolvedParams.id
 
-  const router = useRouter()
-  const { data: session, status } = useSession()
   const { data: project, isLoading: loading, error: queryError } = useProjectDetails(projectId)
   const error = queryError?.message || null
 
-  // Verificar autenticação
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
-  // Mostrar loading durante verificação da sessão
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">

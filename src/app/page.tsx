@@ -5,14 +5,8 @@ import { ArrowRight, Award, BookOpen, Calendar, GraduationCap, Users } from "luc
 import { Button } from "@/components/ui/button"
 import { LandingPageHeader } from "@/components/landing-page/header"
 import { LandingPageFooter } from "@/components/landing-page/footer"
-import { useEffect } from "react"
-import { env } from "@/env"
 
 export default function LandingPage() {
-  useEffect(() => {
-    console.log("LandingPage", { publicDb: env.NEXT_PUBLIC_DATABASE_URL, privateDb: env.DATABASE_URL })
-  }, [])
-
   return (
     <div className="flex min-h-screen flex-col">
       <LandingPageHeader />

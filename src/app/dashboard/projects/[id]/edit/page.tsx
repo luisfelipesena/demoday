@@ -1,7 +1,6 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use, useEffect, useState } from "react"
@@ -19,13 +18,11 @@ import { PROJECT_TYPES } from "@/types"
 type ProjectFormData = z.infer<typeof projectSchema>
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
-  // Desembrulhar (unwrap) o objeto params usando React.use
   const resolvedParams = use(params)
   const projectId = resolvedParams.id
   const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
-  const { data: session, status } = useSession()
   const { data: project, isLoading: isLoadingProject } = useProjectDetails(projectId)
   const { mutate: updateProject, isPending: isUpdatingProject } = useUpdateProject()
 
@@ -54,14 +51,8 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     }
   }, [project, reset])
 
-  // Verificar autenticação
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
 
-  // Mostrar loading durante verificação da sessão ou carregamento do projeto
-  if (status === "loading" || isLoadingProject) {
+  if (isLoadingProject) {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">

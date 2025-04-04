@@ -14,28 +14,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { useDemodays, useUpdateDemodayStatus } from "@/hooks/useDemoday"
 import { DotsHorizontalIcon } from "@radix-ui/react-icons"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 
 export default function DemodayListPage() {
-  const router = useRouter()
-  const { data: session, status: sessionStatus } = useSession()
   const { data: demodays, isLoading, error } = useDemodays()
   const updateStatus = useUpdateDemodayStatus()
   const { toast } = useToast()
 
-  // Check if user is admin
-  const isAdmin = session?.user?.role === "admin"
-
-  // Redirect to login if not authenticated
-  if (sessionStatus === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
 
   // Show loading during session check
-  if (sessionStatus === "loading" || isLoading) {
+  if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl p-6">
         <div className="mb-6 flex items-center justify-between">
@@ -66,12 +54,6 @@ export default function DemodayListPage() {
         </div>
       </div>
     )
-  }
-
-  // Redirect to dashboard if not admin
-  if (!isAdmin) {
-    router.push("/dashboard")
-    return null
   }
 
   // Format date for display

@@ -1,19 +1,20 @@
 "use client"
 
-import { useRegister } from "@/hooks/useAuth"
 import { registerSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { signUp } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
 
 type RegisterFormData = z.infer<typeof registerSchema>
 
 export default function RegisterForm() {
   const [registerError, setRegisterError] = useState("")
-  const register_mutation = useRegister()
-
+  const router = useRouter()
+  
   const {
     register,
     handleSubmit,
@@ -29,13 +30,18 @@ export default function RegisterForm() {
   })
 
   const onSubmit = async (data: RegisterFormData) => {
-    setRegisterError("")
-
-    register_mutation.mutate(data, {
-      onError: (error) => {
-        setRegisterError(error.message || "Ocorreu um erro ao cadastrar")
-      },
+    const result = await signUp.email({
+      email: data.email,
+      password: data.password,
+      name: data.name,
+      callbackURL: '/login?registered=true',
+      role: data.role,
     })
+
+    if (result?.error?.message) {
+      setRegisterError(result.error.message)
+      return
+    }
   }
 
   return (
@@ -107,10 +113,10 @@ export default function RegisterForm() {
       <div>
         <button
           type="submit"
-          disabled={isSubmitting || register_mutation.isPending}
+          disabled={isSubmitting}
           className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
         >
-          {register_mutation.isPending ? "Cadastrando..." : "Cadastrar"}
+          {isSubmitting ? "Cadastrando..." : "Cadastrar"}
         </button>
       </div>
       <div className="text-center text-sm">

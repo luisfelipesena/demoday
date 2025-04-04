@@ -1,9 +1,9 @@
 import { authOptions } from "@/auth/auth-options";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demoDayPhases, demodays, projectSubmissions } from "@/server/db/schema";
 import { demodaySchema, updateStatusSchema } from "@/server/db/validators";
 import { and, count, eq } from "drizzle-orm";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -152,7 +152,7 @@ export async function PUT(
 ) {
   try {
     // Verificar autenticação
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -281,7 +281,7 @@ export async function PATCH(
 ) {
   try {
     // Verificar autenticação
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -394,7 +394,7 @@ export async function DELETE(
 ) {
   try {
     // Verificar autenticação
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

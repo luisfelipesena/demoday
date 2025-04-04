@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { demodays, demoDayPhases, demodayStatusEnum } from "@/server/db/schema";
-import { getServerSession } from "next-auth";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/auth/auth-options";
 import { desc, eq } from "drizzle-orm";
@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     // Get the session to check if user is authenticated
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

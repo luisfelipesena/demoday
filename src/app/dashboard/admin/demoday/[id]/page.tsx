@@ -7,10 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDemodayDetails } from "@/hooks/useDemoday"
 import { Award, CalendarIcon, CheckCircle2, Clock, FileText, Users } from "lucide-react"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use } from "react"
+import { useSession } from "@/lib/auth-client"
 
 interface DemodayDetails {
   id: string
@@ -48,18 +48,11 @@ interface DemodayPageProps {
 export default function DemodayDetailsPage({ params }: DemodayPageProps) {
   const resolvedParams = use(params)
   const router = useRouter()
-  const { data: session, status } = useSession()
   const demodayId = resolvedParams.id
   const { data: demoday, isLoading: loading, error } = useDemodayDetails(demodayId)
 
-  // Redirecionar para login se não estiver autenticado
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
   // Mostrar carregamento durante verificação da sessão
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6 flex items-center justify-between">

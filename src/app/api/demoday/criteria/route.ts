@@ -1,9 +1,8 @@
-import { authOptions } from "@/auth/auth-options";
 import { db } from "@/server/db";
 import { demodays, evaluationCriteria, registrationCriteria } from "@/server/db/schema";
 import { batchCriteriaSchema, criteriaSchema } from "@/server/db/validators";
 import { eq } from "drizzle-orm";
-import { getServerSession } from "next-auth";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET - Fetch criteria for a specific demoday
@@ -58,7 +57,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Get the session to check if user is authenticated
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -170,7 +169,7 @@ export async function POST(req: NextRequest) {
 // DELETE - Remove criteria
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -225,7 +224,7 @@ export async function DELETE(req: NextRequest) {
 // PUT - Atualizar critérios de um demoday
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

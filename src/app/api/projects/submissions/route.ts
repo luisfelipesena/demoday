@@ -1,17 +1,14 @@
 import { db } from "@/server/db";
 import { projectSubmissions, projects, demodays, demoDayPhases } from "@/server/db/schema";
-import { authOptions } from "@/auth/auth-options";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, gte, lte, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { projectSubmissionSchema } from "@/server/db/validators";
-import { SQL } from "drizzle-orm";
-
+import { getSessionWithRole } from "@/lib/session-utils";
 // GET - Listar todas as submissões do usuário atual
 export async function GET(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -91,7 +88,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

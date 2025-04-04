@@ -1,16 +1,15 @@
-import { authOptions } from "@/auth/auth-options";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demoDayPhases, projects, projectSubmissions, votes } from "@/server/db/schema";
 import { voteSchema } from "@/server/db/validators";
 import { and, eq } from "drizzle-orm";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET - Verificar se o usuário já votou em um projeto específico
 export async function GET(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -56,7 +55,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -210,7 +209,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

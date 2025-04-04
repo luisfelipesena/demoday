@@ -1,18 +1,19 @@
 "use client"
 
-import { useLogin } from "@/hooks/useAuth"
 import { loginSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { signIn } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
 
 type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginForm() {
   const [loginError, setLoginError] = useState("")
-  const login = useLogin()
+  const router = useRouter()
 
   const {
     register,
@@ -28,15 +29,20 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoginError("")
+    const result = await signIn.email({
+      email: data.email,
+      password: data.password,
+      callbackURL: "/dashboard",
+      rememberMe: true,
+      fetchOptions: {
+        credentials: "include",
+      },
+    })
 
-    login.mutate(
-      { email: data.email, password: data.password },
-      {
-        onError: (error) => {
-          setLoginError(error.message || "Email ou senha inválidos")
-        },
-      }
-    )
+    if (result?.error?.message) {
+      setLoginError(result.error.message)
+      return
+    }
   }
 
   return (
@@ -78,10 +84,10 @@ export default function LoginForm() {
       <div>
         <button
           type="submit"
-          disabled={isSubmitting || login.isPending}
+          disabled={isSubmitting}
           className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
         >
-          {login.isPending ? "Entrando..." : "Entrar"}
+          Entrar
         </button>
       </div>
       <div className="text-center text-sm">
