@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Award, BarChart, FileText, GraduationCap, Home, LogOut, PlusCircle, Settings, Users } from "lucide-react"
 
 import {
@@ -18,13 +17,14 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { signOut } from "next-auth/react"
-
+import { signOut, useSession } from "@/lib/auth-client"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
 export function DashboardSidebar() {
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const { data: session, isPending: loading } = useSession()
   const userRole = session?.user?.role || "user"
-
+  const router = useRouter()
   const isActive = (path: string) => {
     return pathname === path
   }
@@ -69,6 +69,16 @@ export function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        {loading && (
+          <SidebarGroup>
+            <SidebarGroupContent className="flex flex-col gap-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Menu específico para professores */}
         {userRole === "professor" && (
@@ -133,7 +143,13 @@ export function DashboardSidebar() {
         )}
       </SidebarContent>
       <SidebarFooter className="border-t p-4">
-        <Button variant="outline" className="w-full justify-start" onClick={() => signOut({ callbackUrl: "/" })}>
+        <Button variant="outline" className="w-full justify-start" onClick={() => signOut({
+          fetchOptions: {
+            onSuccess: () => {
+              router.push("/"); 
+            },
+          },
+        })}>
           <LogOut className="mr-2 h-4 w-4" />
           Sair
         </Button>

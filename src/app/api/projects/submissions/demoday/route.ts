@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { projectSubmissions, users } from "@/server/db/schema";
 import { projectQuerySchema } from "@/server/db/validators";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { getServerSession } from "next-auth";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET - Buscar projetos de um Demoday com filtros
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Verificar sessão para permissões (opcionalmente restringir visualização)
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
     const isAuthenticated = !!session?.user;
     const isAdmin = session?.user?.role === "admin";
     const isProfessor = session?.user?.role === "professor";

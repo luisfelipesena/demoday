@@ -1,9 +1,8 @@
-import { authOptions } from "@/auth/auth-options";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demoDayPhases, demodays, projectSubmissions, projects } from "@/server/db/schema";
 import { projectSubmissionStatusSchema } from "@/server/db/validators";
 import { eq } from "drizzle-orm";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET - Obter detalhes de uma submissão específica
@@ -17,7 +16,7 @@ export async function GET(
     const submissionId = params.id;
 
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -111,7 +110,7 @@ export async function PUT(
     const submissionId = params.id;
 
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -285,7 +284,7 @@ export async function DELETE(
     const submissionId = params.id;
 
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

@@ -5,30 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDemodays } from "@/hooks/useDemoday"
+import { useSession } from "@/lib/auth-client"
 import { CalendarIcon, ClockIcon } from "lucide-react"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-
 export default function DashboardPage() {
-  const router = useRouter()
-  const { data: session, status } = useSession()
-  const { data: demodays, isLoading, error } = useDemodays()
+  const { data: session} = useSession()
+  const { data: demodays, isLoading } = useDemodays()
 
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
-  if (status === "loading" || isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Skeleton className="h-16 w-16" />
-        </div>
-      </div>
-    )
-  }
 
   const activeDemoday = demodays?.find((demoday) => demoday.active)
   const pastDemodays = demodays?.filter((demoday) => !demoday.active && demoday.status === "finished") || []
@@ -46,9 +29,15 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6">
       <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
-
-      <div className="mb-12">
-        <h2 className="mb-4 text-2xl font-semibold">Demoday Ativo</h2>
+      {isLoading ? (
+        <div className="flex items-center justify-center p-12">
+          <Skeleton className="h-36 w-full" />
+          <Skeleton className="h-36 w-full" />
+        </div>
+      ) : (
+        <>
+          <div className="mb-12">
+            <h2 className="mb-4 text-2xl font-semibold">Demoday Ativo</h2>
 
         {activeDemoday ? (
           <Card className="bg-gradient-to-r from-blue-50 to-white border-blue-200">
@@ -123,6 +112,8 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   )
 }

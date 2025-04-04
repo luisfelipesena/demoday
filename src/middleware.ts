@@ -1,45 +1,44 @@
-import { NextResponse } from "next/server";
-import { withAuth } from "next-auth/middleware";
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const isLoggedIn = !!token;
-    const isAdmin = token?.role === "admin";
-    const isProfessor = token?.role === "professor";
-    const isUser = token?.role === "user";
-    const path = req.nextUrl.pathname;
-
-    // Redirecionar usuários não autenticados para a página de login
-    if (!isLoggedIn && path.startsWith("/dashboard")) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-
-    // Rotas de admin só podem ser acessadas por admins
-    if (path.startsWith("/dashboard/admin") && !isAdmin) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
-
-    // Rotas de professor só podem ser acessadas por professores ou admins
-    if (path.startsWith("/professor") && !(isProfessor || isAdmin)) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
-
-    // Permitir acesso à rota atual
+export async function middleware(request: NextRequest) {
+  // Protected routes that require authentication
+  const protectedRoutes = ["/dashboard", "/profile", "/admin", "/professor"];
+  
+  // Check if the current path should be protected
+  const path = request.nextUrl.pathname;
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
+  
+  // Skip middleware for public routes and API routes
+  if (!isProtectedRoute || path.startsWith("/api/auth")) {
     return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
   }
-);
+  
+  // Check for session cookie - update with the correct configuration
+  const sessionCookie = getSessionCookie(request);
 
-// Configurar quais rotas o middleware deve ser executado
+  // If no session cookie, redirect to login
+  if (!sessionCookie) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+  
+  // For admin routes, we need to check the role
+  // Since we can't do full validation in middleware, we'll redirect to a role check page
+  if (path.startsWith("/admin")) {
+    // We need to do a server-side check for admin role
+    return NextResponse.rewrite(new URL("/api/auth/check-admin", request.url));
+  }
+  
+  // For professor routes, we need to check the role
+  if (path.startsWith("/professor") && !path.startsWith("/professor/public")) {
+    // We need to do a server-side check for professor role
+    return NextResponse.rewrite(new URL("/api/auth/check-professor", request.url));
+  }
+  
+  return NextResponse.next();
+}
+
+// Middleware configuration
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/professor/:path*",
-    "/api/protected/:path*",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }; 

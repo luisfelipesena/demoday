@@ -2,99 +2,21 @@
 
 import { DemodayForm } from "@/components/dashboard/DemodayForm"
 import { DemodayFormData } from "@/components/dashboard/types"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useSubmitCriteriaBatch } from "@/hooks/useCriteria"
 import { useCreateDemoday } from "@/hooks/useDemoday"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export default function NewDemodayPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
   const { mutate: createDemoday, isPending: isCreatingDemoday } = useCreateDemoday()
   const { mutate: submitCriteria, isPending: isSubmittingCriteria } = useSubmitCriteriaBatch()
 
   // Form validation error
   const [error, setError] = useState<string | null>(null)
 
-  // Check if user is admin
-  const isAdmin = session?.user?.role === "admin"
 
-  // Redirect to login if not authenticated
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
-  // Show loading during session check
-  if (status === "loading") {
-    return (
-      <div className="mx-auto max-w-5xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-10 w-56" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-
-        <div className="space-y-8">
-          {/* Nome do Demoday */}
-          <div className="space-y-4 rounded-lg border p-6 shadow-sm">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-
-          {/* Fases */}
-          <div className="space-y-6 rounded-lg border p-6 shadow-sm">
-            <Skeleton className="h-7 w-32" />
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="space-y-4 rounded-lg border p-4 shadow-sm">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-full" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Skeleton className="h-4 w-16 mb-2" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                    <div>
-                      <Skeleton className="h-4 w-16 mb-2" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Critérios */}
-          <div className="space-y-4 rounded-lg border p-6 shadow-sm">
-            <Skeleton className="h-7 w-48" />
-            <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <div key={i} className="flex space-x-2">
-                  <div className="flex-grow space-y-2">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                  <Skeleton className="mt-2 h-10 w-10 rounded-full" />
-                </div>
-              ))}
-            </div>
-            <Skeleton className="h-10 w-full" />
-          </div>
-
-          <Skeleton className="h-10 w-full" />
-        </div>
-      </div>
-    )
-  }
-
-  // Redirect to dashboard if not admin
-  if (!isAdmin) {
-    router.push("/dashboard")
-    return null
-  }
 
   const onSubmit = (data: DemodayFormData) => {
     setError(null)

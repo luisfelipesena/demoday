@@ -5,23 +5,8 @@ import { ArrowRight, Award, BookOpen, Calendar, GraduationCap, Users } from "luc
 import { Button } from "@/components/ui/button"
 import { LandingPageHeader } from "@/components/landing-page/header"
 import { LandingPageFooter } from "@/components/landing-page/footer"
-import { useEffect } from "react"
 
 export default function LandingPage() {
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/users');
-        const data = await response.json();
-        console.log('Users data:', data);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
   return (
     <div className="flex min-h-screen flex-col">
       <LandingPageHeader />

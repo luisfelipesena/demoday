@@ -1,7 +1,6 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -11,7 +10,6 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useCreateProject } from "@/hooks/useProjects"
 import { projectSchema } from "@/server/db/validators"
 import { PROJECT_TYPES } from "@/types"
@@ -20,7 +18,6 @@ type ProjectFormData = z.infer<typeof projectSchema>
 
 export default function NewProjectPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
   const [error, setError] = useState<string | null>(null)
   const { mutate: createProject, isPending: isCreatingProject } = useCreateProject()
 
@@ -37,50 +34,6 @@ export default function NewProjectPage() {
     },
   })
 
-  // Verificar autenticação
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
-  // Mostrar loading durante verificação da sessão
-  if (status === "loading") {
-    return (
-      <div className="mx-auto max-w-3xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-
-        <div className="rounded-lg border p-6 shadow-sm">
-          <Skeleton className="h-8 w-48 mb-4" />
-          <Skeleton className="h-6 w-64 mb-8" />
-
-          <div className="space-y-6">
-            <div>
-              <Skeleton className="h-5 w-36 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-
-            <div>
-              <Skeleton className="h-5 w-24 mb-2" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-
-            <div>
-              <Skeleton className="h-5 w-32 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 mt-8">
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-40" />
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   const onSubmit = (data: ProjectFormData) => {
     setError(null)

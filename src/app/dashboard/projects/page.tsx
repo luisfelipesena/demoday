@@ -1,9 +1,7 @@
 "use client"
 
 import { FileText, PlusCircle } from "lucide-react"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,9 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useProjects } from "@/hooks/useProjects"
 
 export default function ProjectsPage() {
-  const { data: session } = useSession()
-  const { data: projects = [], isLoading: loading, error } = useProjects()
-  const userRole = session?.user?.role || "user"
+  const { data: projects = [], isLoading: loading } = useProjects()
 
   // A rota correta para criar um novo projeto
   const newProjectRoute = "/dashboard/projects/new"
@@ -37,7 +33,7 @@ export default function ProjectsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center p-12">
-          <Skeleton className="h-16 w-16" />
+          <Skeleton className="h-36 w-full" />
         </div>
       ) : projects.length === 0 ? (
         <Card>

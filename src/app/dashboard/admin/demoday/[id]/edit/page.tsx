@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCriteria, useUpdateCriteriaBatch } from "@/hooks/useCriteria"
 import { useDemodayDetails, useUpdateDemoday } from "@/hooks/useDemoday"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use, useState } from "react"
@@ -23,25 +22,15 @@ interface ApiError {
 export default function EditDemodayPage({ params }: DemodayPageProps) {
   const resolvedParams = use(params)
   const router = useRouter()
-  const { data: session, status } = useSession()
   const demodayId = resolvedParams.id
-  const { data: demoday, isLoading: loading, error: queryError } = useDemodayDetails(demodayId)
+  const { data: demoday, isLoading: loadingDemoday, error: queryError } = useDemodayDetails(demodayId)
   const { data: criteriaData, isLoading: loadingCriteria } = useCriteria(demodayId)
   const [error, setError] = useState<string | null>(queryError?.message || null)
   const { mutate: updateDemoday, isPending: isUpdating } = useUpdateDemoday()
   const { mutate: updateCriteria, isPending: isUpdatingCriteria } = useUpdateCriteriaBatch()
 
-  // Check if user is admin
-  const isAdmin = session?.user?.role === "admin"
-
-  // Redirect to login if not authenticated
-  if (status === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
-
   // Show loading during session check
-  if (status === "loading" || loading || loadingCriteria) {
+  if (loadingDemoday || loadingCriteria) {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6 flex items-center justify-between">
@@ -53,12 +42,6 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
         </div>
       </div>
     )
-  }
-
-  // Redirect to dashboard if not admin
-  if (!isAdmin) {
-    router.push("/dashboard")
-    return null
   }
 
   if (error) {

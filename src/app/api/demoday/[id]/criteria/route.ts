@@ -1,17 +1,15 @@
-import { authOptions } from "@/auth/auth-options";
 import { db } from "@/server/db";
 import { demodays, evaluationCriteria, registrationCriteria } from "@/server/db/schema";
 import { batchCriteriaSchema } from "@/server/db/validators";
 import { eq } from "drizzle-orm";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-
+import { getSessionWithRole } from "@/lib/session-utils";
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -101,7 +99,7 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(

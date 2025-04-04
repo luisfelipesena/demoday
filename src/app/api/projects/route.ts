@@ -1,16 +1,15 @@
-import { authOptions } from "@/auth/auth-options";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
 import { projectSchema } from "@/server/db/validators";
 import { desc, eq } from "drizzle-orm";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionWithRole } from "@/lib/session-utils";
 
 // GET - Buscar todos os projetos do usuário atual
 export async function GET(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -49,7 +48,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
-    const session = await getServerSession(authOptions);
+    const session = await getSessionWithRole();
 
     if (!session || !session.user) {
       return NextResponse.json(
