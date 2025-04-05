@@ -1,4 +1,3 @@
-import { authOptions } from "@/auth/auth-options";
 import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demoDayPhases, demodays, projectSubmissions } from "@/server/db/schema";

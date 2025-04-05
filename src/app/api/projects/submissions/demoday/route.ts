@@ -1,4 +1,3 @@
-import { authOptions } from "@/auth/auth-options";
 import { db } from "@/server/db";
 import { projectSubmissions, users } from "@/server/db/schema";
 import { projectQuerySchema } from "@/server/db/validators";

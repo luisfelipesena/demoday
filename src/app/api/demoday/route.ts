@@ -1,8 +1,7 @@
 import { db } from "@/server/db";
-import { demodays, demoDayPhases, demodayStatusEnum } from "@/server/db/schema";
+import { demodays, demoDayPhases } from "@/server/db/schema";
 import { getSessionWithRole } from "@/lib/session-utils";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/auth/auth-options";
 import { desc, eq } from "drizzle-orm";
 import { demodaySchema } from "@/server/db/validators";
 

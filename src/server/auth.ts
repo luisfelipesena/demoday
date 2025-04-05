@@ -5,10 +5,11 @@ import { users } from "./db/schema";
 import bcrypt from "bcryptjs";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from "./db/schema";
+import {env} from "@/env"
 
 export const auth = betterAuth({
   // Secret for sessions and tokens encryption
-  secret: process.env.NEXTAUTH_SECRET!,
+  secret: env.NEXTAUTH_SECRET!,
   
   // Database integration - use the drizzle adapter
   database: drizzleAdapter(db, {
