@@ -11,8 +11,18 @@ export interface Project {
   description: string
   userId: string
   type: string
+  videoUrl?: string
+  repositoryUrl?: string
+  developmentYear?: string
+  authors?: string
   createdAt: string
   updatedAt: string
+  author?: {
+    id: string
+    name: string
+    email: string
+    role: string
+  }
 }
 
 /**

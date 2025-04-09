@@ -1,5 +1,6 @@
-import { pgTable, text, timestamp, varchar, integer, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
+import { relations } from "drizzle-orm";
 
 export const roleEnum = pgEnum("role", ["admin", "user", "professor"]);
 export const demodayStatusEnum = pgEnum("demoday_status", ["active", "finished", "canceled"]);
@@ -63,6 +64,10 @@ export const projects = pgTable("projects", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // Disciplina, IC, TCC, Mestrado, Doutorado
+  videoUrl: text("video_url"),
+  repositoryUrl: text("repository_url"),
+  developmentYear: text("development_year"),
+  authors: text("authors"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -173,3 +178,15 @@ export type NewEvaluationCriteria = typeof evaluationCriteria.$inferInsert;
 
 export type ProjectSubmission = typeof projectSubmissions.$inferSelect;
 export type NewProjectSubmission = typeof projectSubmissions.$inferInsert;
+
+// Relações
+export const demodaysRelations = relations(demodays, ({ many }) => ({
+  phases: many(demoDayPhases),
+}));
+
+export const demoDayPhasesRelations = relations(demoDayPhases, ({ one }) => ({
+  demoday: one(demodays, {
+    fields: [demoDayPhases.demoday_id],
+    references: [demodays.id],
+  }),
+})); 

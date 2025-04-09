@@ -2,26 +2,38 @@ import { PROJECT_TYPES } from "@/types"
 import { z } from "zod"
 
 /**
- * Schema Zod para validação de dados do projeto
+ * Schema Zod para validação de dados do trabalho
  */
 export const projectSchema = z.object({
   title: z.string().min(2, "Título deve ter pelo menos 2 caracteres").max(100, "Título deve ter no máximo 100 caracteres"),
   description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres").max(5000, "Descrição deve ter no máximo 5000 caracteres"),
   type: z.enum(PROJECT_TYPES, {
-    errorMap: () => ({ message: `Tipo de projeto deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
+    errorMap: () => ({ message: `Tipo de trabalho deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
   }),
+  videoUrl: z.string().url("URL de vídeo inválida").optional(),
+  repositoryUrl: z.string().url("URL do repositório inválida").optional(),
+  developmentYear: z.string().regex(/^\d{4}$/, "Ano deve estar no formato YYYY"),
+  authors: z.string().min(2, "Autores deve ter pelo menos 2 caracteres"),
 })
 
 /**
- * Schema para submissão de projeto em um Demoday
+ * Schema para submissão de trabalho em um Demoday
  */
 export const projectSubmissionSchema = z.object({
-  projectId: z.string().min(1, "ID do projeto é obrigatório"),
+  title: z.string().min(2, "Título deve ter pelo menos 2 caracteres").max(100, "Título deve ter no máximo 100 caracteres"),
+  description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres").max(5000, "Descrição deve ter no máximo 5000 caracteres"),
+  type: z.enum(PROJECT_TYPES, {
+    errorMap: () => ({ message: `Tipo de trabalho deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
+  }),
+  videoUrl: z.string().url("URL de vídeo inválida").optional(),
+  repositoryUrl: z.string().url("URL do repositório inválida").optional(),
+  developmentYear: z.string().regex(/^\d{4}$/, "Ano deve estar no formato YYYY"),
+  authors: z.string().min(2, "Autores deve ter pelo menos 2 caracteres"),
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
 })
 
 /**
- * Schema para atualização de status da submissão de projeto
+ * Schema para atualização de status da submissão de trabalho
  */
 export const projectSubmissionStatusSchema = z.object({
   status: z.enum(['submitted', 'approved', 'rejected', 'finalist', 'winner'], {
@@ -30,7 +42,7 @@ export const projectSubmissionStatusSchema = z.object({
 })
 
 /**
- * Schema para busca de projetos com filtros
+ * Schema para busca de trabalhos com filtros
  */
 export const projectQuerySchema = z.object({
   type: z.enum(PROJECT_TYPES).optional(),
@@ -46,7 +58,7 @@ export const updateStatusSchema = z.object({
 
 // Schema para validação de votos
 export const voteSchema = z.object({
-  projectId: z.string().min(1, "ID do projeto é obrigatório"),
+  projectId: z.string().min(1, "ID do trabalho é obrigatório"),
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
 });
 
