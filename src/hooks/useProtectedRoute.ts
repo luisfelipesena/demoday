@@ -1,49 +1,31 @@
-import { useState, useLayoutEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth-client';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
-// Função auxiliar para verificar a sessão
-async function checkClientSession(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/auth/session');
-    if (response.ok) {
-      const session = await response.json();
-      return !!session && !!session.user;
-    }
-    return false;
-  } catch (error) {
-    console.error("Error checking client session:", error);
-    return false;
-  }
-}
-
 export function useProtectedRoute(): AuthStatus {
   const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
 
-  useLayoutEffect(() => {
-    let isMounted = true; // Flag para evitar atualizações em componente desmontado
+  // Sincronizar o status da sessão do Better Auth com o nosso estado local
+  useEffect(() => {
+    if (isPending) {
+      setAuthStatus('loading');
+    } else if (session) {
+      setAuthStatus('authenticated');
+    } else {
+      setAuthStatus('unauthenticated');
+    }
+  }, [session, isPending]);
 
-    const verifySession = async () => {
-      const isAuthenticated = await checkClientSession();
-
-      if (isMounted) {
-        if (!isAuthenticated) {
-          setAuthStatus('unauthenticated');
-          router.replace('/login'); // Redireciona para login
-        } else {
-          setAuthStatus('authenticated');
-        }
-      }
-    };
-
-    verifySession();
-
-    return () => {
-      isMounted = false; // Cleanup
-    };
-  }, [router]);
+  // Efeito separado para o redirecionamento para evitar problemas de estados durante a renderização
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [authStatus, router]);
 
   return authStatus;
 } 

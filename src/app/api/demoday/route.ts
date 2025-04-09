@@ -9,8 +9,12 @@ import { demodaySchema } from "@/server/db/validators";
 export async function GET() {
   try {
     // Aplicando a ordem por data de criação mais recente
+    // e incluindo as fases relacionadas
     const allDemodays = await db.query.demodays.findMany({
       orderBy: desc(demodays.createdAt),
+      with: {
+        phases: true, // Incluir as fases
+      },
     });
 
     return NextResponse.json(allDemodays);

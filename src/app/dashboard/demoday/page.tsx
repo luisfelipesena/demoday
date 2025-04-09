@@ -3,13 +3,12 @@
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-export default function EditProjectPage() {
+export default function DemodayRedirectPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirecionar para o dashboard
     router.push("/dashboard")
   }, [router])
 
-  return null  // Não renderiza nada, apenas redireciona
-}
+  return null
+} 

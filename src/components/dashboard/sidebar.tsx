@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Award, BarChart, FileText, GraduationCap, Home, LogOut, PlusCircle, Settings, Users } from "lucide-react"
+import { useSession, signOut } from "@/lib/auth-client"
+import { Award, BarChart, GraduationCap, Home, LogOut, Settings, Users } from "lucide-react"
 
 import {
   Sidebar,
@@ -17,16 +18,20 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { signOut, useSession } from "@/lib/auth-client"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useRouter } from "next/navigation"
+
 export function DashboardSidebar() {
   const pathname = usePathname()
-  const { data: session, isPending: loading } = useSession()
+  const { data: session } = useSession()
   const userRole = session?.user?.role || "user"
-  const router = useRouter()
+
   const isActive = (path: string) => {
     return pathname === path
+  }
+
+  const handleSignOut = async () => {
+    await signOut({
+      query: { callbackUrl: "/login" }
+    })
   }
 
   return (
@@ -50,35 +55,9 @@ export function DashboardSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/projects")}>
-                  <Link href="/dashboard/projects">
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>Meus Projetos</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/projects/new")}>
-                  <Link href="/dashboard/projects/new">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    <span>Novo Projeto</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
-        {loading && (
-          <SidebarGroup>
-            <SidebarGroupContent className="flex flex-col gap-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         {/* Menu específico para professores */}
         {userRole === "professor" && (
@@ -143,13 +122,7 @@ export function DashboardSidebar() {
         )}
       </SidebarContent>
       <SidebarFooter className="border-t p-4">
-        <Button variant="outline" className="w-full justify-start" onClick={() => signOut({
-          fetchOptions: {
-            onSuccess: () => {
-              router.push("/"); 
-            },
-          },
-        })}>
+        <Button variant="outline" className="w-full justify-start" onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           Sair
         </Button>

@@ -1,21 +1,42 @@
 "use client"
 
-import Link from "next/link"
-import { use } from "react"
+import { useSession } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
+import { use, useEffect } from "react"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectDetails } from "@/hooks/useProjects"
+import { formatDate } from "@/utils/date-utils"
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Desembrulhar (unwrap) o objeto params usando React.use
   const resolvedParams = use(params)
   const projectId = resolvedParams.id
 
-  const { data: project, isLoading: loading, error: queryError } = useProjectDetails(projectId)
+  const router = useRouter()
+  const { data: session, isPending } = useSession()
+  const { data: project, error: queryError } = useProjectDetails(projectId)
   const error = queryError?.message || null
 
-  if (loading) {
+  // Verificar de onde o usuário está vindo (referrer)
+  useEffect(() => {
+    // Se não estiver vindo de uma página de demoday, redirecionar para o dashboard
+    if (document.referrer && !document.referrer.includes('/dashboard/demoday/')) {
+      router.push("/dashboard")
+    }
+  }, [router])
+
+  // Verificar autenticação
+  if (!isPending && !session) {
+    router.push("/login")
+    return null
+  }
+
+  // Mostrar loading durante verificação da sessão
+  if (isPending) {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">
@@ -74,15 +95,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold">Detalhes do Projeto</h1>
-          <Link href="/dashboard/projects" className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">
+          <Button className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300" onClick={() => router.back()}>
             Voltar
-          </Link>
+          </Button>
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center p-12">
             <p className="text-red-500 text-lg">{error}</p>
-            <Button asChild className="mt-4">
-              <Link href="/dashboard/projects">Voltar para Projetos</Link>
+            <Button className="mt-4" onClick={() => router.back()}>
+              Voltar
             </Button>
           </CardContent>
         </Card>
@@ -95,15 +116,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold">Detalhes do Projeto</h1>
-          <Link href="/dashboard/projects" className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">
+          <Button className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300" onClick={() => router.back()}>
             Voltar
-          </Link>
+          </Button>
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center p-12">
             <p className="text-center text-gray-500 text-lg">Projeto não encontrado</p>
-            <Button asChild className="mt-4">
-              <Link href="/dashboard/projects">Voltar para Projetos</Link>
+            <Button className="mt-4" onClick={() => router.back()}>
+              Voltar
             </Button>
           </CardContent>
         </Card>
@@ -115,9 +136,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     <div className="mx-auto max-w-3xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Detalhes do Projeto</h1>
-        <Link href="/dashboard/projects" className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300">
+        <Button className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300" onClick={() => router.back()}>
           Voltar
-        </Link>
+        </Button>
       </div>
 
       <Card>
@@ -150,18 +171,30 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div>
                 <p className="text-sm text-gray-500">Data de Criação</p>
-                <p className="font-medium">{new Date(project.createdAt).toLocaleDateString()}</p>
+                <p className="font-medium">{formatDate(project.createdAt)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Última Atualização</p>
-                <p className="font-medium">{new Date(project.updatedAt).toLocaleDateString()}</p>
+                <p className="font-medium">{formatDate(project.updatedAt)}</p>
               </div>
+              {project.authors && (
+                <div>
+                  <p className="text-sm text-gray-500">Autores</p>
+                  <p className="font-medium">{project.authors}</p>
+                </div>
+              )}
+              {project.developmentYear && (
+                <div>
+                  <p className="text-sm text-gray-500">Ano de Desenvolvimento</p>
+                  <p className="font-medium">{project.developmentYear}</p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2 border-t">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/projects/${project.id}/edit`}>Editar Projeto</Link>
+          <Button variant="outline" onClick={() => router.back()}>
+            Voltar
           </Button>
         </CardFooter>
       </Card>

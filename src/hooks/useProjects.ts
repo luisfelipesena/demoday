@@ -11,6 +11,13 @@ export type CreateProjectInput = {
   type: string;
 };
 
+export type CreateAndSubmitProjectInput = {
+  title: string;
+  description: string;
+  type: string;
+  demodayId: string;
+};
+
 export type UpdateProjectInput = {
   id: string;
   title: string;
@@ -82,6 +89,34 @@ export function useCreateProject() {
     onSuccess: () => {
       // Invalidar e buscar novamente projetos após criação bem-sucedida
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+// Criar e submeter um projeto em um único passo
+export function useCreateAndSubmitProject() {
+  const queryClient = useQueryClient();
+  const createProject = useCreateProject();
+  const submitProject = useSubmitProject();
+
+  return useMutation<Project, Error, CreateAndSubmitProjectInput>({
+    mutationFn: async ({ title, description, type, demodayId }: CreateAndSubmitProjectInput) => {
+      // Primeiro cria o projeto
+      const newProject = await createProject.mutateAsync({ title, description, type });
+      
+      // Depois submete o projeto criado para o demoday
+      await submitProject.mutateAsync({ 
+        projectId: newProject.id, 
+        demodayId 
+      });
+      
+      return newProject;
+    },
+    onSuccess: () => {
+      // Invalidar consultas após criação e submissão bem-sucedidas
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projectSubmissions"] });
+      queryClient.invalidateQueries({ queryKey: ["demodayProjects"] });
     },
   });
 }
@@ -163,6 +198,7 @@ export function useSubmitProject() {
     onSuccess: () => {
       // Invalidar consultas relacionadas
       queryClient.invalidateQueries({ queryKey: ["projectSubmissions"] });
+      queryClient.invalidateQueries({ queryKey: ["demodayProjects"] });
     },
   });
 } 

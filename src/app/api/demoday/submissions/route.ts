@@ -1,67 +1,53 @@
 import { db } from "@/server/db";
-import { projectSubmissions, projects, users } from "@/server/db/schema";
-import { projectQuerySchema } from "@/server/db/validators";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { projectSubmissions, projects, users, demodays } from "@/server/db/schema";
+import { and, asc, eq } from "drizzle-orm";
 import { getSessionWithRole } from "@/lib/session-utils";
 import { NextRequest, NextResponse } from "next/server";
 
-// GET - Buscar projetos de um Demoday com filtros
+// GET - Buscar todas as submissões de todos os DemoDays
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const demodayId = searchParams.get("demodayId");
     const status = searchParams.get("status");
     const type = searchParams.get("type");
 
-    // Validar parâmetros
-    const queryParams = {
-      demodayId: demodayId || undefined,
-      status: status || undefined,
-      type: type || undefined,
-    };
-
-    const result = projectQuerySchema.safeParse(queryParams);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Parâmetros de busca inválidos", details: result.error.format() },
-        { status: 400 }
-      );
-    }
-
-    // Verificar se o demodayId é fornecido (obrigatório)
-    if (!demodayId) {
-      return NextResponse.json(
-        { error: "ID do demoday é obrigatório" },
-        { status: 400 }
-      );
-    }
-
-    // Verificar sessão para permissões (opcionalmente restringir visualização)
+    // Verificar sessão para permissões
     const session = await getSessionWithRole();
     const isAdmin = session?.user?.role === "admin";
     const isProfessor = session?.user?.role === "professor";
+    
+    // Verificar se o usuário pode visualizar as submissões
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 401 }
+      );
+    }
+
+    // Se não for admin ou professor, não tem permissão para ver todas as submissões
+    if (!isAdmin && !isProfessor) {
+      return NextResponse.json(
+        { error: "Apenas administradores e professores podem visualizar todas as submissões" },
+        { status: 403 }
+      );
+    }
 
     // Construir as condições WHERE para a consulta
-    const conditions = [eq(projectSubmissions.demoday_id, demodayId)];
+    const conditions = [];
     
     // Adicionar filtro de status se fornecido
     if (status) {
       conditions.push(eq(projectSubmissions.status, status));
     }
 
-    // Se não for admin ou professor, apenas projetos aprovados/finalistas/vencedores
-    // são visíveis para usuários comuns (a menos que o status seja explicitamente definido)
-    if (!isAdmin && !isProfessor && !status) {
-      conditions.push(inArray(projectSubmissions.status, ["approved", "finalist", "winner"]));
-    }
-
     // Criar a condição WHERE final
-    const whereCondition = conditions.length === 1 
-      ? conditions[0] 
-      : and(...conditions);
+    const whereCondition = conditions.length === 0 
+      ? undefined 
+      : conditions.length === 1 
+        ? conditions[0] 
+        : and(...conditions);
 
-    // Buscar as submissões com joins para projetos - Selecionar apenas colunas específicas
+    // Buscar as submissões com joins para projetos e demodays
     const submissions = await db
       .select({
         id: projectSubmissions.id,
@@ -78,10 +64,17 @@ export async function GET(req: NextRequest) {
           type: projects.type,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
+        },
+        demoday: {
+          id: demodays.id,
+          name: demodays.name,
+          active: demodays.active,
+          status: demodays.status,
         }
       })
       .from(projectSubmissions)
       .leftJoin(projects, eq(projectSubmissions.projectId, projects.id))
+      .leftJoin(demodays, eq(projectSubmissions.demoday_id, demodays.id))
       .where(whereCondition)
       .orderBy(asc(projectSubmissions.createdAt));
 
@@ -124,9 +117,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(projectsWithAuthors);
   } catch (error) {
-    console.error("Erro ao buscar projetos do demoday:", error);
+    console.error("Erro ao buscar submissões:", error);
     return NextResponse.json(
-      { error: "Erro ao buscar projetos do demoday" },
+      { error: "Erro ao buscar submissões" },
       { status: 500 }
     );
   }

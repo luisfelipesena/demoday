@@ -7,13 +7,11 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { signIn } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
 
 type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginForm() {
   const [loginError, setLoginError] = useState("")
-  const router = useRouter()
 
   const {
     register,
@@ -29,19 +27,26 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoginError("")
-    const result = await signIn.email({
-      email: data.email,
-      password: data.password,
-      callbackURL: "/dashboard",
-      rememberMe: true,
-      fetchOptions: {
-        credentials: "include",
-      },
-    })
+    try {
+      const result = await signIn.email({
+        email: data.email,
+        password: data.password,
+        callbackURL: "/dashboard",
+        rememberMe: true,
+        fetchOptions: {
+          credentials: "include",
+        },
+      })
 
-    if (result?.error?.message) {
-      setLoginError(result.error.message)
-      return
+      if (result?.error?.message) {
+        setLoginError(result.error.message)
+        return
+      }
+
+      // Se não houver erro, o usuário será redirecionado automaticamente
+    } catch (error) {
+      console.error("Erro ao fazer login:", error)
+      setLoginError("Ocorreu um erro durante o login. Tente novamente.")
     }
   }
 

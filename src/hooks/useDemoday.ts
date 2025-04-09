@@ -39,6 +39,20 @@ export function useDemodays() {
   });
 }
 
+// Fetch active demoday
+export function useActiveDemoday() {
+  const { data: demodays, isLoading, error } = useDemodays();
+  
+  // Encontrar o demoday ativo nos dados carregados
+  const activeDemoday = demodays?.find(demoday => demoday.active) || null;
+  
+  return {
+    data: activeDemoday,
+    isLoading,
+    error
+  };
+}
+
 // Fetch demoday details
 export function useDemodayDetails(demodayId: string | null) {
   return useQuery<Demoday, Error>({
