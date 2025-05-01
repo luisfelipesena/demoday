@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users } from "./db/schema";
+import { users, accounts } from "./db/schema";
 import bcrypt from "bcryptjs";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from "./db/schema";
@@ -38,9 +38,16 @@ export const auth = betterAuth({
         where: eq(users.email, email),
       });
       
-      if (!user || !user.password) return null;
+      if (!user) return null;
       
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      // Buscar conta do usuário para verificar a senha
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.userId, user.id),
+      });
+      
+      if (!account || !account.password) return null;
+      
+      const isPasswordValid = await bcrypt.compare(password, account.password);
       if (!isPasswordValid) return null;
       
       return {
@@ -66,9 +73,16 @@ export const auth = betterAuth({
           where: eq(users.email, email),
         });
         
-        if (!user || !user.password) return null;
+        if (!user) return null;
         
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        // Buscar conta do usuário para verificar a senha
+        const account = await db.query.accounts.findFirst({
+          where: eq(accounts.userId, user.id),
+        });
+        
+        if (!account || !account.password) return null;
+        
+        const isPasswordValid = await bcrypt.compare(password, account.password);
         if (!isPasswordValid) return null;
         
         return {
@@ -99,19 +113,38 @@ export const auth = betterAuth({
     jwt: (params: any) => {
       const { token, user } = params;
       if (user) {
-        token.role = user.role;
+        return {
+          ...token,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       }
       return token;
     },
+    
     session: (params: any) => {
       const { session, token } = params;
-      if (token && session.user) {
-        session.user.id = token.sub;
-        session.user.role = token.role;
+      if (token) {
+        session.user = {
+          ...session.user,
+          id: token.id,
+          name: token.name,
+          email: token.email,
+          role: token.role,
+        };
       }
       return session;
     },
   },
 }); 
 
-export type Session = typeof auth.$Infer.Session
+export type Session = {
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+};
