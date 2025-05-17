@@ -144,6 +144,35 @@ export const projectSubmissions = pgTable("project_submissions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// New tables for professor evaluations
+export const professorEvaluations = pgTable("professor_evaluations", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  submissionId: text("submission_id")
+    .notNull()
+    .references(() => projectSubmissions.id, { onDelete: "cascade" }),
+  professorId: text("professor_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  totalScore: integer("total_score").notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const evaluationScores = pgTable("evaluation_scores", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  evaluationId: text("evaluation_id")
+    .notNull()
+    .references(() => professorEvaluations.id, { onDelete: "cascade" }),
+  criteriaId: text("criteria_id")
+    .notNull()
+    .references(() => evaluationCriteria.id, { onDelete: "cascade" }),
+  score: integer("score").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Tipos para TS
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -179,6 +208,12 @@ export type NewEvaluationCriteria = typeof evaluationCriteria.$inferInsert;
 export type ProjectSubmission = typeof projectSubmissions.$inferSelect;
 export type NewProjectSubmission = typeof projectSubmissions.$inferInsert;
 
+export type ProfessorEvaluation = typeof professorEvaluations.$inferSelect;
+export type NewProfessorEvaluation = typeof professorEvaluations.$inferInsert;
+
+export type EvaluationScore = typeof evaluationScores.$inferSelect;
+export type NewEvaluationScore = typeof evaluationScores.$inferInsert;
+
 // Relações
 export const demodaysRelations = relations(demodays, ({ many }) => ({
   phases: many(demoDayPhases),
@@ -188,5 +223,40 @@ export const demoDayPhasesRelations = relations(demoDayPhases, ({ one }) => ({
   demoday: one(demodays, {
     fields: [demoDayPhases.demoday_id],
     references: [demodays.id],
+  }),
+}));
+
+export const projectSubmissionsRelations = relations(projectSubmissions, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [projectSubmissions.projectId],
+    references: [projects.id],
+  }),
+  demoday: one(demodays, {
+    fields: [projectSubmissions.demoday_id],
+    references: [demodays.id],
+  }),
+  evaluations: many(professorEvaluations),
+}));
+
+export const professorEvaluationsRelations = relations(professorEvaluations, ({ one, many }) => ({
+  submission: one(projectSubmissions, {
+    fields: [professorEvaluations.submissionId],
+    references: [projectSubmissions.id],
+  }),
+  professor: one(users, {
+    fields: [professorEvaluations.professorId],
+    references: [users.id],
+  }),
+  scores: many(evaluationScores),
+}));
+
+export const evaluationScoresRelations = relations(evaluationScores, ({ one }) => ({
+  evaluation: one(professorEvaluations, {
+    fields: [evaluationScores.evaluationId],
+    references: [professorEvaluations.id],
+  }),
+  criteria: one(evaluationCriteria, {
+    fields: [evaluationScores.criteriaId],
+    references: [evaluationCriteria.id],
   }),
 })); 
