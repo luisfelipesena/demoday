@@ -173,6 +173,28 @@ export const evaluationScores = pgTable("evaluation_scores", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const passwordResets = pgTable("password_resets", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const invites = pgTable("invites", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  email: text("email"),
+  token: text("token").notNull().unique(),
+  type: text("type").notNull(),
+  accepted: boolean("accepted").default(false).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Tipos para TS
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -260,3 +282,14 @@ export const evaluationScoresRelations = relations(evaluationScores, ({ one }) =
     references: [evaluationCriteria.id],
   }),
 })); 
+
+export type Invite = {
+  id: string;
+  email: string;
+  token: string;
+  accepted: boolean;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+export type NewInvite = Omit<Invite, 'id' | 'accepted' | 'createdAt' | 'updatedAt'>; 

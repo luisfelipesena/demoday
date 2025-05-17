@@ -158,6 +158,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           currentPassword: passwordSettings.currentPassword,
           newPassword: passwordSettings.newPassword,
+          confirmPassword: passwordSettings.confirmPassword
         }),
       })
 
