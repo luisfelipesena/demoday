@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useDemodays, useUpdateDemodayStatus } from "@/hooks/useDemoday"
 import { DotsHorizontalIcon } from "@radix-ui/react-icons"
 import Link from "next/link"
+import InvitePanel from '@/components/admin/InvitePanel'
 
 export default function DemodayListPage() {
   const { data: demodays, isLoading, error } = useDemodays()
@@ -236,6 +237,11 @@ export default function DemodayListPage() {
           </table>
         </div>
       )}
+
+      {/* Painel de convites */}
+      <div className="mt-12">
+        <InvitePanel />
+      </div>
     </div>
   )
 }
