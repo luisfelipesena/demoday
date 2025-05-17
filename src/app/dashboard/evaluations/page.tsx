@@ -81,8 +81,8 @@ export default function EvaluationsPage() {
     } catch (error) {
       console.error("Failed to fetch evaluations:", error)
       toast({
-        title: "Error",
-        description: "Failed to load evaluation data. Please try again later.",
+        title: "Erro",
+        description: "Falha ao carregar dados de avaliação. Por favor, tente novamente mais tarde.",
         variant: "destructive",
       })
     } finally {
@@ -103,7 +103,7 @@ export default function EvaluationsPage() {
   const handleSubmitEvaluation = async (evaluationData: { scores: Array<{ criteriaId: string; score: number; comment?: string }>; totalScore: number }) => {
     try {
       if (!selectedSubmission) {
-        throw new Error("No submission selected")
+        throw new Error("Nenhuma submissão selecionada")
       }
 
       const response = await fetch("/api/evaluations", {
@@ -119,12 +119,12 @@ export default function EvaluationsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to submit evaluation")
+        throw new Error(errorData.error || "Falha ao enviar avaliação")
       }
 
       toast({
-        title: "Success",
-        description: "Evaluation submitted successfully",
+        title: "Sucesso",
+        description: "Avaliação enviada com sucesso",
       })
       
       setIsEvaluating(false)
@@ -133,8 +133,8 @@ export default function EvaluationsPage() {
     } catch (error) {
       console.error("Error submitting evaluation:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit evaluation. Please try again.",
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Falha ao enviar avaliação. Por favor, tente novamente.",
         variant: "destructive",
       })
     }
@@ -143,7 +143,7 @@ export default function EvaluationsPage() {
   if (loading) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="mb-6 text-2xl font-bold">Project Evaluations</h1>
+        <h1 className="mb-6 text-2xl font-bold">Avaliação de Projetos</h1>
         <div className="grid gap-6">
           {Array(3).fill(0).map((_, i) => (
             <Card key={i}>
@@ -165,14 +165,14 @@ export default function EvaluationsPage() {
     return (
       <div className="container mx-auto p-6">
         <Button variant="outline" onClick={handleCancelEvaluation} className="mb-6">
-          Back to submissions
+          Voltar para submissões
         </Button>
         
         <Card>
           <CardHeader>
-            <CardTitle>Evaluating: {selectedSubmission.project.title}</CardTitle>
+            <CardTitle>Avaliando: {selectedSubmission.project.title}</CardTitle>
             <CardDescription>
-              {selectedSubmission.project.type} - {selectedSubmission.project.authors || "No authors specified"}
+              {selectedSubmission.project.type} - {selectedSubmission.project.authors || "Nenhum autor especificado"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -193,10 +193,10 @@ export default function EvaluationsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Project Evaluations</h1>
+        <h1 className="text-2xl font-bold">Avaliação de Projetos</h1>
         <Button variant="outline" onClick={() => router.push("/dashboard/reports")}>
           <FileText className="mr-2 h-4 w-4" />
-          View Reports
+          Ver Relatórios
         </Button>
       </div>
       
@@ -205,8 +205,8 @@ export default function EvaluationsPage() {
           <CardContent className="flex items-center justify-center p-6">
             <div className="text-center">
               <AlertCircle className="mx-auto mb-2 h-8 w-8 text-amber-500" />
-              <p className="text-lg font-medium">No active Demoday found</p>
-              <p className="text-sm text-gray-500">Contact an administrator to create a Demoday event.</p>
+              <p className="text-lg font-medium">Nenhum Demoday ativo encontrado</p>
+              <p className="text-sm text-gray-500">Entre em contato com um administrador para criar um evento Demoday.</p>
             </div>
           </CardContent>
         </Card>
@@ -218,23 +218,23 @@ export default function EvaluationsPage() {
             <CardHeader>
               <CardTitle>{evaluationsData.demoday.name}</CardTitle>
               <CardDescription>
-                Active Demoday - {evaluationsData.submissions.length} projects to evaluate
+                Demoday Ativo - {evaluationsData.submissions.length} projetos para avaliar
               </CardDescription>
             </CardHeader>
           </Card>
           
           <Tabs defaultValue="pending" className="w-full">
             <TabsList className="mb-4">
-              <TabsTrigger value="pending">Pending Evaluations</TabsTrigger>
-              <TabsTrigger value="completed">Completed Evaluations</TabsTrigger>
+              <TabsTrigger value="pending">Avaliações Pendentes</TabsTrigger>
+              <TabsTrigger value="completed">Avaliações Concluídas</TabsTrigger>
             </TabsList>
             
             <TabsContent value="pending">
               {evaluationsData.submissions.filter(s => !s.evaluated).length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
                   <Check className="mx-auto mb-2 h-8 w-8 text-green-500" />
-                  <h3 className="text-lg font-medium">All projects evaluated!</h3>
-                  <p className="text-gray-500">You have evaluated all available submissions.</p>
+                  <h3 className="text-lg font-medium">Todos os projetos avaliados!</h3>
+                  <p className="text-gray-500">Você avaliou todas as submissões disponíveis.</p>
                 </div>
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -248,7 +248,7 @@ export default function EvaluationsPage() {
                             <Badge>{submission.project.type}</Badge>
                           </div>
                           <CardDescription className="line-clamp-2">
-                            {submission.project.authors || "No authors specified"}
+                            {submission.project.authors || "Nenhum autor especificado"}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -257,7 +257,7 @@ export default function EvaluationsPage() {
                             onClick={() => handleStartEvaluation(submission)} 
                             className="w-full"
                           >
-                            Evaluate
+                            Avaliar
                           </Button>
                         </CardContent>
                       </Card>
@@ -270,8 +270,8 @@ export default function EvaluationsPage() {
               {evaluationsData.submissions.filter(s => s.evaluated).length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
                   <Info className="mx-auto mb-2 h-8 w-8 text-blue-500" />
-                  <h3 className="text-lg font-medium">No evaluations yet</h3>
-                  <p className="text-gray-500">You haven&apos;t evaluated any projects yet.</p>
+                  <h3 className="text-lg font-medium">Nenhuma avaliação ainda</h3>
+                  <p className="text-gray-500">Você ainda não avaliou nenhum projeto.</p>
                 </div>
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -284,7 +284,7 @@ export default function EvaluationsPage() {
                             <CardTitle className="truncate">{submission.project.title}</CardTitle>
                             <Badge variant="outline" className="bg-green-50 text-green-700">
                               <Check className="mr-1 h-3 w-3" />
-                              Evaluated
+                              Avaliado
                             </Badge>
                           </div>
                           <CardDescription>{submission.project.type}</CardDescription>
