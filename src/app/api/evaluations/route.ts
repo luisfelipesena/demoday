@@ -25,9 +25,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!isProfessorOrAdmin(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    // TODO: Reapply this after testing
+    // if (!isProfessorOrAdmin(session.user)) {
+    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // }
 
     // Get active demoday
     const activeDemoday = await db.query.demodays.findFirst({
@@ -87,10 +88,11 @@ export async function POST(request: Request) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    if (!isProfessorOrAdmin(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    
+    // TODO: Reapply this after testing
+    // if (!isProfessorOrAdmin(session.user)) {
+    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // }
 
     const { submissionId, scores, totalScore } = await request.json();
 

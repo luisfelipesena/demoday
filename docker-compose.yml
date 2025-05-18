@@ -1,17 +1,15 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: demoday
+    image: postgres:16.3-alpine
+    environment:
+      - POSTGRES_DB=demoday
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/backup:/backup
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data: 
+    container_name: demoday_postgres
