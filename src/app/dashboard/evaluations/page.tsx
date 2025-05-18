@@ -73,7 +73,7 @@ export default function EvaluationsPage() {
       const response = await fetch("/api/evaluations")
       
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
+        return
       }
       
       const data = await response.json()
