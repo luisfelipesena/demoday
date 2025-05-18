@@ -2,12 +2,18 @@
   "version": "7",
   "dialect": "postgresql",
   "entries": [
-
     {
       "idx": 2,
       "version": "7",
       "when": 1744211193421,
       "tag": "0002_heavy_warstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1747581971072,
+      "tag": "0003_military_anita_blake",
       "breakpoints": true
     }
   ]
