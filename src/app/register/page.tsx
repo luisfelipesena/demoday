@@ -1,4 +1,5 @@
 import RegisterForm from "@/components/auth/register-form";
+import { Suspense } from "react";
 
 export default function RegisterPage() {
   return (
@@ -8,7 +9,9 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold">Cadastro</h1>
           <p className="text-gray-600">Crie sua conta na plataforma Demoday</p>
         </div>
-        <RegisterForm />
+        <Suspense fallback={<p>Loading page...</p>}>
+          <RegisterForm />
+        </Suspense>
       </div>
     </div>
   );

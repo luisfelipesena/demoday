@@ -12,14 +12,20 @@ type Criterion = {
   description: string
 }
 
+type ScoreEntry = {
+  criteriaId: string;
+  score: number;
+  comment: string;
+};
+
 type EvaluationFormProps = {
   criteria: Criterion[]
-  onSubmit: (data: { scores: Array<{ criteriaId: string; score: number; comment?: string }>; totalScore: number }) => void
+  onSubmit: (data: { scores: ScoreEntry[]; totalScore: number }) => void
   onCancel: () => void
 }
 
 export default function EvaluationForm({ criteria, onSubmit, onCancel }: EvaluationFormProps) {
-  const [scores, setScores] = useState<Array<{ criteriaId: string; score: number; comment: string }>>(() =>
+  const [scores, setScores] = useState<ScoreEntry[]>(() =>
     criteria.map((criterion) => ({
       criteriaId: criterion.id,
       score: 5, // Default score in the middle (scale 0-10)
@@ -28,19 +34,26 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
   )
   
   const handleScoreChange = (index: number, value: number[]) => {
-    const newScores = [...scores]
-    newScores[index] = { ...newScores[index], score: value[0] }
-    setScores(newScores)
+    const newScores = [...scores];
+    const currentEntry = newScores[index];
+    if (currentEntry) {
+      newScores[index] = { ...currentEntry, score: value[0] ??  0 };
+      setScores(newScores);
+    }
   }
   
   const handleCommentChange = (index: number, comment: string) => {
-    const newScores = [...scores]
-    newScores[index] = { ...newScores[index], comment }
-    setScores(newScores)
+    const newScores = [...scores];
+    const currentEntry = newScores[index];
+    if (currentEntry) {
+      newScores[index] = { ...currentEntry, comment };
+      setScores(newScores);
+    }
   }
   
   const calculateTotalScore = () => {
-    const sum = scores.reduce((total, score) => total + score.score, 0)
+    if (criteria.length === 0) return 0; // Avoid division by zero
+    const sum = scores.reduce((total, scoreEntry) => total + scoreEntry.score, 0)
     return Math.round((sum / (criteria.length * 10)) * 100) // Calculate percentage
   }
   
@@ -69,7 +82,7 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Score:</span>
               <span className="rounded-full bg-blue-100 px-2 py-1 text-sm font-semibold text-blue-800">
-                {scores[index]?.score || 0}/10
+                {scores[index]?.score ?? 0}/10
               </span>
             </div>
             
@@ -77,7 +90,7 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
               defaultValue={[5]}
               max={10}
               step={1}
-              value={[scores[index]?.score || 0]}
+              value={[scores[index]?.score ?? 0]}
               onValueChange={(value) => handleScoreChange(index, value)}
               className="py-4"
             />
@@ -96,7 +109,7 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
             <Textarea
               id={`comment-${index}`}
               placeholder="Add any additional comments or feedback regarding this criterion..."
-              value={scores[index]?.comment || ""}
+              value={scores[index]?.comment ?? ""}
               onChange={(e) => handleCommentChange(index, e.target.value)}
               rows={3}
             />

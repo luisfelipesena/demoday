@@ -48,7 +48,6 @@ export default function RegisterForm() {
       name: data.name,
       callbackURL: '/login?registered=true',
       role: data.role,
-        inviteCode: data.inviteCode,
     })
     if (result?.error?.message) {
       setRegisterError(result.error.message)
