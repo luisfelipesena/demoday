@@ -95,6 +95,11 @@ export default function LoginForm() {
           Entrar
         </button>
       </div>
+      <div className="text-center text-sm mt-2">
+        <Link href="/forgot-password" className="text-blue-600 hover:text-blue-500">
+          Esqueci minha senha
+        </Link>
+      </div>
       <div className="text-center text-sm">
         <p>
           Não tem uma conta?{" "}

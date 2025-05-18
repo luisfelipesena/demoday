@@ -130,6 +130,7 @@ export const registerSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
   role: z.enum(["admin", "professor", "user"]),
+  inviteCode: z.string().min(1, "Código de convite obrigatório"),
 });
 
 // Schema para validação de login de usuário

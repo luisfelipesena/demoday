@@ -2,7 +2,7 @@
 
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
-import { use, useEffect } from "react"
+import { use, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,19 +15,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   // Desembrulhar (unwrap) o objeto params usando React.use
   const resolvedParams = use(params)
   const projectId = resolvedParams.id
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const { data: project, error: queryError } = useProjectDetails(projectId)
   const error = queryError?.message || null
-
-  // Verificar de onde o usuário está vindo (referrer)
-  useEffect(() => {
-    // Se não estiver vindo de uma página de demoday, redirecionar para o dashboard
-    if (document.referrer && !document.referrer.includes('/dashboard/demoday/')) {
-      router.push("/dashboard")
-    }
-  }, [router])
 
   // Verificar autenticação
   if (!isPending && !session) {
@@ -155,7 +148,25 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         <CardContent className="space-y-6">
           <div>
             <h3 className="text-lg font-medium mb-2">Descrição</h3>
-            <p className="text-gray-700 whitespace-pre-line">{project.description}</p>
+            <div className="relative">
+              <div className="relative">
+                {!isDescriptionExpanded && project.description && project.description.length > 150 && (
+                  <div className="absolute bottom-0 right-0 w-24 h-6 bg-gradient-to-l from-white to-transparent"></div>
+                )}
+                <p className={`text-gray-700 whitespace-pre-line ${!isDescriptionExpanded && project.description && project.description.length > 150 ? "line-clamp-3" : ""}`}>
+                  {project.description}
+                </p>
+              </div>
+              {project.description && project.description.length > 150 && (
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-xs font-medium text-primary hover:no-underline mt-1"
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                >
+                  {isDescriptionExpanded ? "Ver menos" : "Ver mais"}
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="border-t pt-4">
@@ -193,9 +204,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2 border-t">
-          <Button variant="outline" onClick={() => router.back()}>
-            Voltar
-          </Button>
         </CardFooter>
       </Card>
     </div>
