@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { projectSubmissions, projects, demodays, demoDayPhases } from "@/server/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, or } from "drizzle-orm";
-import { projectSubmissionSchema } from "@/server/db/validators";
+import { projectDemoDaySubmissionSchema } from "@/server/db/validators";
 import { getSessionWithRole } from "@/lib/session-utils";
 // GET - Listar todas as submissões do usuário atual
 export async function GET(req: NextRequest) {
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const result = projectSubmissionSchema.safeParse(body);
+    const result = projectDemoDaySubmissionSchema.safeParse(body);
 
     if (!result.success) {
       return NextResponse.json(

@@ -33,6 +33,14 @@ export const projectSubmissionSchema = z.object({
 })
 
 /**
+ * Schema para submissão de projeto existente para um Demoday
+ */
+export const projectDemoDaySubmissionSchema = z.object({
+  projectId: z.string().min(1, "ID do projeto é obrigatório"),
+  demodayId: z.string().min(1, "ID do demoday é obrigatório"),
+})
+
+/**
  * Schema para atualização de status da submissão de trabalho
  */
 export const projectSubmissionStatusSchema = z.object({

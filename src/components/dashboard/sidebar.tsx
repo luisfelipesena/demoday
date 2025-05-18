@@ -60,7 +60,7 @@ export function DashboardSidebar() {
         </SidebarGroup>
 
         {/* Menu específico para professores */}
-        {userRole === "professor" && (
+        {(userRole === "professor" || userRole === "admin") && (
           <SidebarGroup>
             <SidebarGroupLabel>Professor</SidebarGroupLabel>
             <SidebarGroupContent>

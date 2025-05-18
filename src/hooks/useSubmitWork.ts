@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useSession } from "@/lib/auth-client";
-import { toast } from "sonner";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "@/components/ui/use-toast";
 
 export type SubmitWorkInput = {
   title: string;
@@ -67,10 +67,16 @@ export function useSubmitWork() {
     mutationFn: ({ demodayId, formData }: { demodayId: string, formData: ProjectSubmissionFormData }) => 
       submitWork(demodayId, formData),
     onSuccess: () => {
-      toast.success("Trabalho submetido com sucesso!");
+      toast({
+        title: "Trabalho submetido com sucesso!",
+        description: "Seu trabalho foi enviado para o Demoday com sucesso.",
+      });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Erro ao submeter o trabalho");
+      toast({
+        title: "Erro ao submeter o trabalho",
+        description: error.message || "Ocorreu um erro ao submeter o trabalho. Por favor, tente novamente.",
+      });
     },
   });
 
