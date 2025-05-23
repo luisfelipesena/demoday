@@ -54,13 +54,8 @@ export default function EvaluationsPage() {
   const [isEvaluating, setIsEvaluating] = useState(false)
 
   useEffect(() => {
-    // Check if user is professor or admin
-    if (session?.user) {
-      if (session.user.role !== "professor" && session.user.role !== "admin") {
-        router.push("/unauthorized")
-        return
-      }
-      
+    // TODO: Check if user is professor or admin
+    if (session?.user) {      
       fetchEvaluations()
     } else if (session === null) {
       router.push("/login")

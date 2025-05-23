@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDemodays } from "@/hooks/useDemoday"
 import { isInSubmissionPhase, formatDate } from "@/utils/date-utils"
-import { CalendarIcon, ClockIcon } from "lucide-react"
+import { CalendarIcon, ClockIcon, Loader } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -26,9 +26,8 @@ export default function DashboardPage() {
   if (sessionLoading || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p>Verificando autenticação...</p>
-        </div>
+        <Loader className="h-12 w-12 rounded-full animate-spin" />
+        <p className="ml-4">Verificando autenticação...</p>
       </div>
     )
   }

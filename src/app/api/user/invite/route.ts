@@ -51,7 +51,15 @@ export async function POST(req: NextRequest) {
       await sendEmail({
         to: email,
         subject: "Convite para Demoday",
-        html: `<p>Você foi convidado para participar do Demoday!</p><br><p>Use este <a href="${inviteLink}" target="_blank" rel="noopener noreferrer">LINK</a> para se cadastrar.</p><br><p>Se não solicitou, ignore este e-mail.</p>`
+        html: `<h2>Convite para Demoday</h2>
+        <p>Olá!</p>
+        <p>Você foi convidado para participar da plataforma Demoday.</p>
+        <p>Para criar sua conta, clique no link abaixo:</p>
+        <p><a href="${inviteLink}" target="_blank" rel="noopener noreferrer" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Criar Conta</a></p>
+        <p>Este link expira em 7 dias.</p>
+        <p>Se você não solicitou este convite, ignore este e-mail.</p>
+        <hr>
+        <p><small>Demoday - Plataforma de Projetos Acadêmicos</small></p>`
       })
       results.push({ email, token, link: inviteLink });
     }

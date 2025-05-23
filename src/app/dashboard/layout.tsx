@@ -9,6 +9,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Loader } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession()
@@ -24,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isPending) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">
-        <Skeleton className="h-12 w-12 rounded-full" /> 
+        <Loader className="h-12 w-12 rounded-full animate-spin" />
         <p className="ml-4">Verificando autenticação...</p>
       </div>
     );

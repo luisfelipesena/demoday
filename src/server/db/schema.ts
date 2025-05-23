@@ -173,14 +173,13 @@ export const evaluationScores = pgTable("evaluation_scores", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-
-
 export const invites = pgTable("invites", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   email: text("email"),
   token: text("token").notNull().unique(),
-  type: text("type").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   accepted: boolean("accepted").default(false).notNull(),
+  usedAt: timestamp("used_at"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -278,9 +277,11 @@ export type Invite = {
   id: string;
   email: string;
   token: string;
+  role: string;
   accepted: boolean;
+  usedAt: Date | null;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
 };
-export type NewInvite = Omit<Invite, 'id' | 'accepted' | 'createdAt' | 'updatedAt'>; 
+export type NewInvite = Omit<Invite, 'id' | 'usedAt' | 'createdAt' | 'updatedAt'>; 

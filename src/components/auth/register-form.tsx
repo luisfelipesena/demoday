@@ -23,6 +23,7 @@ export default function RegisterForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
+    getValues,
   } = useForm<RegisterFormData & { inviteCode?: string }>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -38,22 +39,79 @@ export default function RegisterForm() {
     if (inviteParam) setValue("inviteCode", inviteParam)
   }, [inviteParam, setValue])
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: RegisterFormData & { inviteCode?: string }) => {
     setRegisterError("")
     setSuccess(false)
+    
     try {
-    const result = await signUp.email({
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      callbackURL: '/login?registered=true',
-      role: data.role,
-    })
-    if (result?.error?.message) {
-      setRegisterError(result.error.message)
-      return
+      if (!data.inviteCode) {
+        setRegisterError("Código de convite é obrigatório")
+        return
       }
-      setSuccess(true)
+
+      const inviteValidation = await fetch("/api/auth/validate-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inviteCode: data.inviteCode,
+          userEmail: data.email,
+        }),
+      })
+
+      const inviteResult = await inviteValidation.json()
+
+      if (!inviteResult.success) {
+        setRegisterError(inviteResult.message)
+        return
+      }
+
+      const registrationData = {
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        callbackURL: '/verify-email/success',
+        role: inviteResult.role || data.role,
+      }
+
+      const result = await signUp.email(registrationData, {
+        onRequest: () => {
+          if (data.email === "demoday.ic.ufba@gmail.com") {
+            throw new Error("Cadastro do super usuário só pode ser feito manualmente pelo administrador do sistema.")
+          }
+        },
+        onSuccess: () => {
+          setSuccess(true)
+          
+          setTimeout(() => {
+            router.push(`/verify-email?email=${encodeURIComponent(data.email)}`)
+          }, 2000)
+        },
+        onError: (ctx) => {
+          if (ctx.error.status === 403) {
+            setRegisterError("Verificação de email necessária. Verifique sua caixa de entrada.")
+          } else {
+            setRegisterError(ctx.error.message || "Erro ao cadastrar usuário")
+          }
+        }
+      })
+
+      if (result?.error) {
+        setRegisterError(result.error.message || "Erro ao cadastrar usuário")
+        return
+      }
+
+      await fetch("/api/auth/complete-registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inviteCode: data.inviteCode,
+        }),
+      })
+
     } catch (err: any) {
       setRegisterError(err.message || "Erro ao cadastrar usuário")
     }
@@ -133,27 +191,32 @@ export default function RegisterForm() {
         />
         {errors.inviteCode && <p className="mt-1 text-xs text-red-500">{errors.inviteCode.message || "Código de convite obrigatório"}</p>}
       </div>
+      
       {registerError && (
         <div className="rounded-md bg-red-50 p-3">
           <p className="text-sm text-red-500">{registerError}</p>
         </div>
       )}
+      
       {success && (
         <div className="rounded-md bg-green-50 p-3 text-green-700 text-center">
-          Cadastro realizado com sucesso!<br />
-          <button type="button" className="mt-2 underline text-blue-600" onClick={() => router.push("/")}>Ir para tela inicial</button>
-          <button type="button" className="mt-2 ml-4 underline text-blue-600" onClick={() => router.push("/login")}>Ir para login</button>
+          <p className="font-medium">Cadastro realizado com sucesso! 🎉</p>
+          <p className="text-sm mt-1">
+            Enviamos um email de verificação. Você será redirecionado em alguns segundos...
+          </p>
         </div>
       )}
+      
       <div>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || success}
           className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
         >
-          {isSubmitting ? "Cadastrando..." : "Cadastrar"}
+          {isSubmitting ? "Cadastrando..." : success ? "Redirecionando..." : "Cadastrar"}
         </button>
       </div>
+      
       <div className="text-center text-sm">
         <p>
           Já tem uma conta?{" "}

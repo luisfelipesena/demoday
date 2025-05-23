@@ -8,4 +8,4 @@ export const authClient = createAuthClient({
   baseURL: env.NEXTAUTH_URL,
 });
 
-export const { signIn, signUp, signOut, useSession, forgetPassword, resetPassword } = authClient; 
+export const { signIn, signUp, signOut, useSession, forgetPassword, resetPassword, changePassword } = authClient; 

@@ -20,13 +20,8 @@ export default function ReportsPage() {
   const [reportData, setReportData] = useState<any>(null)
 
   useEffect(() => {
-    // Check if user is professor or admin
+    // TODO: Check if user is professor or admin
     if (session?.user) {
-      if (session.user.role !== "professor" && session.user.role !== "admin") {
-        router.push("/unauthorized")
-        return
-      }
-      
       fetchReports()
     }
   }, [session, router])

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession, signOut } from "@/lib/auth-client"
+import { useSession, signOut, changePassword } from "@/lib/auth-client"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -151,58 +151,28 @@ export default function SettingsPage() {
     setIsPasswordLoading(true)
     
     try {
-      const response = await fetch('/api/user/change-password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          currentPassword: passwordSettings.currentPassword,
-          newPassword: passwordSettings.newPassword,
-          confirmPassword: passwordSettings.confirmPassword
-        }),
+      const { data, error } = await changePassword({
+        currentPassword: passwordSettings.currentPassword,
+        newPassword: passwordSettings.newPassword,
+        revokeOtherSessions: true,
       })
 
-      const data = await response.json()
-      
-      if (!response.ok) {
-        if (response.status === 400 && data.error === "Senha atual incorreta") {
-          toast({
-            title: "Senha incorreta",
-            description: "A senha atual está incorreta. Verifique e tente novamente.",
-            variant: "destructive",
-            duration: 5000,
-          })
-        } else if (response.status === 404) {
-          toast({
-            title: "Conta não encontrada",
-            description: "Não foi possível encontrar sua conta. Entre em contato com o suporte.",
-            variant: "destructive",
-            duration: 5000,
-          })
-        } else if (response.status === 401) {
-          toast({
-            title: "Não autorizado",
-            description: "Sua sessão pode ter expirado. Faça login novamente.",
-            variant: "destructive",
-            duration: 5000,
-          })
-        } else {
-          throw new Error(data.error || 'Erro ao alterar senha')
-        }
-      } else {
-        setPasswordSettings({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        })
-        
-        toast({
-          title: "Senha alterada",
-          description: "Senha alterada com sucesso!",
-          variant: "success",
-          duration: 5000,
-        })
+      if (error) {
+        throw new Error(error.message || 'Erro ao alterar senha')
       }
+
+      setPasswordSettings({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      })
+      
+      toast({
+        title: "Senha alterada",
+        description: "Senha alterada com sucesso!",
+        variant: "success",
+        duration: 5000,
+      })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro ao tentar alterar a senha"
       
