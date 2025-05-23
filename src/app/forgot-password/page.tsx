@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -14,13 +15,15 @@ export default function ForgotPasswordPage() {
     setError("");
     setSuccess(false);
     try {
-      const res = await fetch("/api/user/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+      const { data, error: authError } = await authClient.forgetPassword({
+        email,
+        redirectTo: "/reset-password",
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro ao enviar e-mail");
+      
+      if (authError) {
+        throw new Error(authError.message || "Erro ao enviar e-mail");
+      }
+      
       setSuccess(true);
     } catch (err: any) {
       setError(err.message);

@@ -173,16 +173,7 @@ export const evaluationScores = pgTable("evaluation_scores", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const passwordResets = pgTable("password_resets", {
-  id: text("id").primaryKey().$defaultFn(() => createId()),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  token: text("token").notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+
 
 export const invites = pgTable("invites", {
   id: text("id").primaryKey().$defaultFn(() => createId()),

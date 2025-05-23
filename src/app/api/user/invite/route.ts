@@ -4,6 +4,7 @@ import { invites } from "@/server/db/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { desc } from "drizzle-orm";
 import { sendEmail } from "@/server/emailService"
+import { env } from "@/env";
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/register?invite=${token}`;
+      const inviteLink = `${env.NEXTAUTH_URL}/register?invite=${token}`;
       await sendEmail({
         to: email,
         subject: "Convite para Demoday",

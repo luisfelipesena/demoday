@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -18,13 +19,15 @@ function ResetPasswordContent() {
     setError("");
     setSuccess(false);
     try {
-      const res = await fetch("/api/user/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword }),
+      const { data, error: authError } = await authClient.resetPassword({
+        newPassword,
+        token,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro ao redefinir senha");
+      
+      if (authError) {
+        throw new Error(authError.message || "Erro ao redefinir senha");
+      }
+      
       setSuccess(true);
       setTimeout(() => router.push("/login"), 2000);
     } catch (err: any) {
