@@ -12,6 +12,15 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use } from "react"
 import { formatDate } from "@/utils/date-utils"
+import { useCategories, Category } from "@/hooks/useCategories"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useState } from "react"
 
 interface DemodayProjectsProps {
   params: Promise<{ id: string }>
@@ -23,8 +32,13 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
   const { data: session, isPending } = useSession()
   const demodayId = resolvedParams.id
   
-  const { data: demoday } = useDemodayDetails(demodayId)
-  const { data: projects = [] } = useDemodayProjects(demodayId)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("")
+
+  const { data: demoday, isLoading: isLoadingDemoday } = useDemodayDetails(demodayId)
+  const { data: categories, isLoading: isLoadingCategories } = useCategories(demodayId)
+  const { data: projects = [], isLoading: isLoadingProjects } = useDemodayProjects(demodayId, {
+    categoryId: selectedCategoryId || undefined,
+  })
   
   // Redirecionar para login se não estiver autenticado
   if (!isPending && !session) {
@@ -33,7 +47,7 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
   }
 
   // Mostrar carregamento durante verificação da sessão
-  if (isPending) {
+  if (isPending || isLoadingDemoday || isLoadingCategories || isLoadingProjects) {
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-between">
@@ -71,7 +85,7 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
 
   return (
     <div className="w-full space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
           <p className="text-muted-foreground">
@@ -83,6 +97,25 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
           Voltar
         </Button>
       </div>
+
+      {/* Category Filter Dropdown */}
+      {categories && categories.length > 0 && (
+        <div className="mb-4 max-w-xs">
+          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas as Categorias</SelectItem>
+              {categories.map((category: Category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {projects.length === 0 ? (
         <Card>

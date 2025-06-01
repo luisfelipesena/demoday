@@ -25,6 +25,7 @@ type ErrorResponse = {
 type ProjectFilters = {
   status?: "submitted" | "approved" | "rejected" | "finalist" | "winner";
   type?: string;
+  categoryId?: string;
 };
 
 // Hook para buscar projetos de um Demoday específico com filtros
@@ -44,6 +45,10 @@ export function useDemodayProjects(demodayId: string | null, filters?: ProjectFi
 
       if (filters?.type) {
         url += `&type=${filters.type}`;
+      }
+
+      if (filters?.categoryId) {
+        url += `&categoryId=${filters.categoryId}`;
       }
 
       const response = await fetch(url);

@@ -13,7 +13,7 @@ export interface DemodayFormProps {
     evaluationCriteria?: { name: string; description: string; demoday_id?: string }[]
   }
   demodayId?: string
-  onSubmit: (data: DemodayFormData) => void
+  onSubmit: (data: DemodayFormData & { categories?: any[] }) => void
   isSubmitting: boolean
   error: string | null
   submitButtonText: string
