@@ -20,7 +20,6 @@ export default function ReportsPage() {
   const [reportData, setReportData] = useState<any>(null)
 
   useEffect(() => {
-    // TODO: Check if user is professor or admin
     if (session?.user) {
       fetchReports()
     }
