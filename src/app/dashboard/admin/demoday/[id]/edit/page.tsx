@@ -72,7 +72,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
     )
   }
 
-  const onSubmit = (data: DemodayFormData) => {
+  const onSubmit = (data: DemodayFormData & { categories?: any[] }) => {
     setError(null)
 
     // Filter out empty criteria and select only necessary fields

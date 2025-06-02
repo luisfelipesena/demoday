@@ -1,0 +1,202 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/server/db";
+import { demodays, projectCategories, projects, projectSubmissions, votes, users } from "@/server/db/schema";
+import { eq, and, sql, desc, count, sum } from "drizzle-orm";
+
+interface ProjectResult {
+  id: string;
+  title: string;
+  type: string;
+  authors: string | null;
+  status: string; 
+  popularVoteCount: number;
+  finalWeightedScore: number; 
+  submissionId: string;
+}
+
+interface CategoryResult {
+  id: string;
+  name: string;
+  projects: ProjectResult[];
+}
+
+interface DemodayOverallStats {
+  totalSubmittedProjects: number;
+  totalUniqueParticipants: number;
+  totalPopularVotes: number;
+  totalFinalVotes: number;
+  // Add more stats as needed, e.g., average evaluations if available
+}
+
+interface DemodayResultsData {
+  demodayName: string;
+  categories: CategoryResult[];
+  overallStats: DemodayOverallStats;
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const demodayId = params.id;
+
+    const demoday = await db.query.demodays.findFirst({
+      where: eq(demodays.id, demodayId),
+    });
+
+    if (!demoday) {
+      return NextResponse.json({ error: "Demoday not found" }, { status: 404 });
+    }
+
+    const categories = await db.query.projectCategories.findMany({
+      where: eq(projectCategories.demodayId, demodayId),
+    });
+
+    const categoryResults: CategoryResult[] = [];
+
+    for (const category of categories) {
+      const submissionsInCategory = await db
+        .select({
+          submissionId: projectSubmissions.id,
+          status: projectSubmissions.status,
+          project: projects,
+        })
+        .from(projectSubmissions)
+        .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
+        .where(and(eq(projectSubmissions.demoday_id, demodayId), eq(projects.categoryId, category.id)));
+
+      const projectResults: ProjectResult[] = [];
+
+      for (const sub of submissionsInCategory) {
+        if (!sub.project) continue;
+
+        // Calculate Popular Vote Count
+        const popularVotes = await db
+          .select({ value: sum(votes.weight) })
+          .from(votes)
+          .where(and(eq(votes.projectId, sub.project.id), eq(votes.votePhase, "popular")));
+        const popularVoteCount = Number(popularVotes[0]?.value) || 0;
+
+        // Calculate Final Weighted Score (Popular votes + Final votes with weights)
+        const allPhaseVotes = await db
+          .select({
+            weight: votes.weight, 
+            phase: votes.votePhase, 
+            role: votes.voterRole
+          })
+          .from(votes)
+          .where(eq(votes.projectId, sub.project.id));
+        
+        let finalWeightedScore = 0;
+        allPhaseVotes.forEach((vote: { phase: "popular" | "final" | null, weight: number | null, role: string | null }) => {
+          if (vote.phase === 'popular') {
+            finalWeightedScore += Number(vote.weight) || 1; // Default weight 1 for popular
+          } else if (vote.phase === 'final') {
+            // Assuming professor weight is 3 as per vote API logic, others 1
+            const weight = (vote.role === 'professor' || vote.role === 'admin') ? 3 : 1;
+            finalWeightedScore += weight;
+          }
+        });
+        
+        // Determine effective status (winner, finalist, participant)
+        // For now, use submission.status. Winner logic might be more complex (e.g., top N by final score among finalists)
+        const effectiveStatus = sub.status;
+        // Basic winner determination: if status is finalist and in top N by finalWeightedScore for this category (complex to do here without full category sort)
+        // For simplicity, if a project is already marked 'winner', we keep it. Otherwise, 'finalist' or 'participant'.
+        // This part will likely need refinement or be handled by an admin action to set winners.
+        
+        projectResults.push({
+          id: sub.project.id,
+          submissionId: sub.submissionId,
+          title: sub.project.title,
+          type: sub.project.type,
+          authors: sub.project.authors,
+          status: effectiveStatus, // This might need to be refined based on ranking
+          popularVoteCount: popularVoteCount,
+          finalWeightedScore: finalWeightedScore,
+        });
+      }
+
+      // Sort projects within category by finalWeightedScore DESC, then popularVoteCount DESC
+      projectResults.sort((a, b) => {
+        if (b.finalWeightedScore !== a.finalWeightedScore) {
+            return b.finalWeightedScore - a.finalWeightedScore;
+        }
+        return b.popularVoteCount - a.popularVoteCount;
+      });
+
+      // Assign winner status based on sorted order if not already winner (e.g., top 1 for now)
+      if (projectResults.length > 0 && projectResults[0]?.status === 'finalist') {
+        // This is a simplified winner assignment. A more robust system might be needed.
+        // Check if there's already a winner; if not, assign top finalist as winner.
+        const hasExistingWinner = projectResults.some(p => p.status === 'winner');
+        if (!hasExistingWinner) {
+            if (projectResults[0]) {
+                projectResults[0].status = 'winner';
+            }
+        }
+      }
+
+      categoryResults.push({
+        id: category.id,
+        name: category.name,
+        projects: projectResults,
+      });
+    }
+
+    // Calculate Overall Demoday Statistics
+    const allSubmissionsForDemoday = await db
+      .select({
+        projectId: projectSubmissions.projectId,
+        userId: projects.userId, // Assuming projects table has userId of the submitter
+      })
+      .from(projectSubmissions)
+      .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
+      .where(eq(projectSubmissions.demoday_id, demodayId));
+
+    const totalSubmittedProjects = allSubmissionsForDemoday.length;
+    const uniqueParticipantIds = new Set(allSubmissionsForDemoday.map((s: { userId: string | null }) => s.userId));
+    const totalUniqueParticipants = uniqueParticipantIds.size;
+
+    const allVotesForDemoday = await db
+      .select({
+        phase: votes.votePhase,
+        weight: votes.weight,
+      })
+      .from(votes)
+      .innerJoin(projectSubmissions, eq(votes.projectId, projectSubmissions.projectId))
+      .where(eq(projectSubmissions.demoday_id, demodayId));
+
+    let totalPopularVotes = 0;
+    let totalFinalVotes = 0;
+    allVotesForDemoday.forEach((vote: { phase: "popular" | "final" | null; weight: number | null }) => {
+      if (vote.phase === "popular") {
+        totalPopularVotes += Number(vote.weight) || 1;
+      } else if (vote.phase === "final") {
+        totalFinalVotes += Number(vote.weight) || 1; // Or apply specific logic for final vote weights
+      }
+    });
+
+    const overallStats: DemodayOverallStats = {
+      totalSubmittedProjects,
+      totalUniqueParticipants,
+      totalPopularVotes,
+      totalFinalVotes,
+    };
+
+    const responseData: DemodayResultsData = {
+      demodayName: demoday.name,
+      categories: categoryResults,
+      overallStats,
+    };
+
+    return NextResponse.json(responseData);
+  } catch (error) {
+    console.error("Error fetching demoday results:", error);
+    if (error instanceof Error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "An unknown error occurred" }, { status: 500 });
+  }
+} 

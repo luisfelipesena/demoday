@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { projectId, demodayId } = result.data;
+    const { projectId, demodayId, votePhase = "popular" } = result.data;
 
     // Verificar se o projeto existe
     const project = await db.query.projects.findFirst({
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar em qual fase estamos (votação pública deve ser nas fases 3 ou 4)
+    // Verificar em qual fase estamos
     const phases = await db.query.demoDayPhases.findMany({
       where: eq(demoDayPhases.demoday_id, demodayId),
       orderBy: demoDayPhases.phaseNumber,
@@ -128,9 +128,10 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
     let isVotingPeriod = false;
-    let currentPhase;
+    // let currentPhase; // Removido pois não está sendo usado
+    let allowedVotePhase = "popular";
 
-    // Verificar fase 3 (finalistas)
+    // Verificar fase 3 (votação popular para finalistas)
     const phase3 = phases.find((phase: any) => phase.phaseNumber === 3);
     if (phase3) {
       const startDate = new Date(phase3.startDate);
@@ -138,11 +139,12 @@ export async function POST(req: NextRequest) {
 
       if (now >= startDate && now <= endDate) {
         isVotingPeriod = true;
-        currentPhase = phase3;
+        // currentPhase = phase3;
+        allowedVotePhase = "popular";
       }
     }
 
-    // Verificar fase 4 (vencedores) se não estamos na fase 3
+    // Verificar fase 4 (votação final - apenas professores)
     if (!isVotingPeriod) {
       const phase4 = phases.find((phase: any) => phase.phaseNumber === 4);
       if (phase4) {
@@ -151,7 +153,16 @@ export async function POST(req: NextRequest) {
 
         if (now >= startDate && now <= endDate) {
           isVotingPeriod = true;
-          currentPhase = phase4;
+          // currentPhase = phase4;
+          allowedVotePhase = "final";
+
+          // Na fase 4, apenas professores podem votar
+          if (session.user.role !== "professor" && session.user.role !== "admin") {
+            return NextResponse.json(
+              { error: "Apenas professores podem votar na fase final" },
+              { status: 403 }
+            );
+          }
 
           // Na fase 4, apenas projetos finalistas podem receber votos
           if (submission.status !== "finalist") {
@@ -171,19 +182,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar se o usuário já votou neste projeto
+    // Verificar se o tipo de voto é permitido para a fase atual
+    if (votePhase !== allowedVotePhase) {
+      return NextResponse.json(
+        { error: `Tipo de votação '${votePhase}' não permitido na fase atual. Use '${allowedVotePhase}'` },
+        { status: 400 }
+      );
+    }
+
+    // Verificar se o usuário já votou neste projeto nesta fase
     const existingVote = await db.query.votes.findFirst({
       where: and(
         eq(votes.userId, userId as string),
-        eq(votes.projectId, projectId)
+        eq(votes.projectId, projectId),
+        eq(votes.votePhase, votePhase)
       ),
     });
 
     if (existingVote) {
       return NextResponse.json(
-        { error: "Você já votou neste projeto" },
+        { error: `Você já votou neste projeto na votação ${votePhase === 'popular' ? 'popular' : 'final'}` },
         { status: 400 }
       );
+    }
+
+    // Determinar peso do voto baseado no role e fase
+    let weight = 1;
+    if (votePhase === "final" && session.user.role === "professor") {
+      weight = 3; // Professores têm peso maior na votação final
     }
 
     // Registrar o voto
@@ -192,6 +218,9 @@ export async function POST(req: NextRequest) {
       .values({
         userId,
         projectId,
+        voterRole: session.user.role,
+        votePhase: votePhase,
+        weight: weight,
       })
       .returning();
 
@@ -222,6 +251,7 @@ export async function DELETE(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");
+    const votePhaseParam = searchParams.get("votePhase") || "popular";
 
     if (!projectId) {
       return NextResponse.json(
@@ -234,7 +264,8 @@ export async function DELETE(req: NextRequest) {
     const existingVote = await db.query.votes.findFirst({
       where: and(
         eq(votes.userId, userId as string),
-        eq(votes.projectId, projectId)
+        eq(votes.projectId, projectId),
+        eq(votes.votePhase, votePhaseParam as "popular" | "final")
       ),
     });
 
@@ -250,7 +281,8 @@ export async function DELETE(req: NextRequest) {
       .delete(votes)
       .where(and(
         eq(votes.userId, userId as string),
-        eq(votes.projectId, projectId)
+        eq(votes.projectId, projectId),
+        eq(votes.votePhase, votePhaseParam as "popular" | "final")
       ));
 
     return NextResponse.json(

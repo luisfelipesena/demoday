@@ -18,7 +18,7 @@ export default function NewDemodayPage() {
 
 
 
-  const onSubmit = (data: DemodayFormData) => {
+  const onSubmit = (data: DemodayFormData & { categories?: any[] }) => {
     setError(null)
 
     // Filter out empty criteria
@@ -34,42 +34,65 @@ export default function NewDemodayPage() {
     createDemoday(
       { name: data.name, phases: data.phases },
       {
-        onSuccess: (createdDemoday) => {
-          // Extraia apenas os campos name e description para cada critério
-          const registrationForAPI = validRegistrationCriteria.map(({ name, description }) => ({
-            name,
-            description,
-          }))
+        onSuccess: async (createdDemoday) => {
+          try {
+            // Extraia apenas os campos name e description para cada critério
+            const registrationForAPI = validRegistrationCriteria.map(({ name, description }) => ({
+              name,
+              description,
+            }))
 
-          const evaluationForAPI = validEvaluationCriteria.map(({ name, description }) => ({
-            name,
-            description,
-          }))
+            const evaluationForAPI = validEvaluationCriteria.map(({ name, description }) => ({
+              name,
+              description,
+            }))
 
-          // Se não houver critérios para submeter, vá direto para a dashboard
-          if (registrationForAPI.length === 0 && evaluationForAPI.length === 0) {
-            router.push("/dashboard/admin/demoday")
-            return
-          }
-
-          // Now submit the criteria with demoday_id
-          submitCriteria(
-            {
-              demodayId: createdDemoday.id,
-              registration: registrationForAPI,
-              evaluation: evaluationForAPI,
-            },
-            {
-              onSuccess: () => {
-                console.log("Critérios adicionados com sucesso")
-                router.push("/dashboard/admin/demoday")
-              },
-              onError: (error) => {
-                console.error("Erro ao adicionar critérios:", error)
-                setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
-              },
+            // Salvar categorias se existirem
+            if (data.categories && data.categories.length > 0) {
+              for (const category of data.categories) {
+                try {
+                  await fetch("/api/categories", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...category,
+                      demodayId: createdDemoday.id,
+                    }),
+                  });
+                } catch (categoryError) {
+                  console.error("Erro ao criar categoria:", categoryError);
+                }
+              }
             }
-          )
+
+            // Se não houver critérios para submeter, vá direto para a dashboard
+            if (registrationForAPI.length === 0 && evaluationForAPI.length === 0) {
+              router.push("/dashboard/admin/demoday")
+              return
+            }
+
+            // Now submit the criteria with demoday_id
+            submitCriteria(
+              {
+                demodayId: createdDemoday.id,
+                registration: registrationForAPI,
+                evaluation: evaluationForAPI,
+              },
+              {
+                onSuccess: () => {
+                  console.log("Critérios adicionados com sucesso")
+                  router.push("/dashboard/admin/demoday")
+                },
+                onError: (error) => {
+                  console.error("Erro ao adicionar critérios:", error)
+                  setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
+                },
+              }
+            )
+          } catch (error) {
+            console.error("Erro no processo de criação:", error);
+            setError("Erro durante a criação do demoday");
+          }
         },
         onError: (error) => {
           setError(error.message)
