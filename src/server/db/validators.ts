@@ -57,6 +57,7 @@ export const projectQuerySchema = z.object({
   demodayId: z.string().optional(),
   status: z.enum(['submitted', 'approved', 'rejected', 'finalist', 'winner']).optional(),
   userId: z.string().optional(),
+  categoryId: z.string().optional(),
 }).optional()
 
 // Schema para validação do status de atualização
@@ -68,6 +69,7 @@ export const updateStatusSchema = z.object({
 export const voteSchema = z.object({
   projectId: z.string().min(1, "ID do trabalho é obrigatório"),
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
+  votePhase: z.enum(["popular", "final"]).default("popular"),
 });
 
 // Schema for validating demoday data

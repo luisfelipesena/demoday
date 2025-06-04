@@ -12,12 +12,14 @@ export async function GET(req: NextRequest) {
     const demodayId = searchParams.get("demodayId");
     const status = searchParams.get("status");
     const type = searchParams.get("type");
+    const categoryId = searchParams.get("categoryId");
 
     // Validar parâmetros
     const queryParams = {
       demodayId: demodayId || undefined,
       status: status || undefined,
       type: type || undefined,
+      categoryId: categoryId || undefined,
     };
 
     const result = projectQuerySchema.safeParse(queryParams);
@@ -48,6 +50,11 @@ export async function GET(req: NextRequest) {
     // Adicionar filtro de status se fornecido
     if (status) {
       conditions.push(eq(projectSubmissions.status, status));
+    }
+
+    // Add categoryId filter if provided
+    if (categoryId) {
+      conditions.push(eq(projects.categoryId, categoryId));
     }
 
     // Se não for admin ou professor, apenas projetos aprovados/finalistas/vencedores

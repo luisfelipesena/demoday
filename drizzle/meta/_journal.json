@@ -29,6 +29,13 @@
       "when": 1747959357997,
       "tag": "0005_aromatic_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1748803203350,
+      "tag": "0006_chief_jubilee",
+      "breakpoints": true
     }
   ]
 }

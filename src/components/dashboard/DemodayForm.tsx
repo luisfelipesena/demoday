@@ -4,12 +4,22 @@ import { CriteriaType, DemodayFormData, DemodayFormProps } from "@/components/da
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/ui/simple-datepicker"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Phase } from "@/hooks/useDemoday"
 import { demodayFormSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PlusCircle, X } from "lucide-react"
+import { PlusCircle, X, Tags } from "lucide-react"
 import { DateRange } from "react-day-picker"
 import { Controller, useForm } from "react-hook-form"
+import { useState, useEffect, useCallback } from "react"
+import { toast } from "sonner"
+
+interface Category {
+  id?: string;
+  name: string;
+  description: string | null;
+  maxFinalists: number;
+}
 
 export function DemodayForm({
   initialData,
@@ -20,6 +30,8 @@ export function DemodayForm({
   submitButtonText,
   loadingButtonText,
 }: DemodayFormProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState<Category>({ name: "", description: null, maxFinalists: 5 });
   const defaultPhases: Phase[] = [
     {
       name: "Fase 1",
@@ -102,6 +114,64 @@ export function DemodayForm({
   const registrationCriteria = watch("registrationCriteria")
   const evaluationCriteria = watch("evaluationCriteria")
 
+  const fetchCategories = useCallback(async () => {
+    if (!demodayId) return;
+    
+    try {
+      const response = await fetch(`/api/categories?demodayId=${demodayId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  }, [demodayId]);
+
+  // Carregar categorias existentes se editando
+  useEffect(() => {
+    if (demodayId) {
+      fetchCategories();
+    }
+  }, [demodayId, fetchCategories]);
+
+  const addCategory = () => {
+    if (!newCategory.name.trim()) {
+      toast.error("Nome da categoria é obrigatório");
+      return;
+    }
+    // Ensure description is passed as null if empty, or string if it has value
+    const categoryToAdd: Category = {
+      ...newCategory,
+      description: newCategory.description?.trim() ? newCategory.description.trim() : null,
+    };
+    setCategories([...categories, categoryToAdd]);
+    setNewCategory({ name: "", description: null, maxFinalists: 5 });
+  };
+
+  const removeCategory = (index: number) => {
+    setCategories(categories.filter((_, i) => i !== index));
+  };
+
+  const updateCategory = (index: number, field: keyof Category, value: string | number | null) => {
+    setCategories(prevCategories =>
+      prevCategories.map((cat, i) => {
+        if (i === index) {
+          const updatedCat: Category = { ...cat }; // Ensure updatedCat is of type Category
+          if (field === "name") {
+            updatedCat.name = String(value);
+          } else if (field === "description") {
+            updatedCat.description = value ? String(value).trim() : null;
+          } else if (field === "maxFinalists") {
+            updatedCat.maxFinalists = parseInt(String(value), 10) || 0;
+          }
+          return updatedCat;
+        }
+        return cat;
+      })
+    );
+  };
+
   const updatePhaseDates = (index: number, dateRange: DateRange | undefined) => {
     if (!dateRange || !dateRange.from) {
       setValue(`phases.${index}.startDate`, "")
@@ -177,13 +247,16 @@ export function DemodayForm({
       console.warn('Algumas fases estão com datas em branco. Serão usadas datas padrão.');
     }
     
-    // Enviar os dados
-    onSubmit({
+    // Enviar os dados do demoday (incluindo categorias se aplicável)
+    const submitData = {
       name: data.name,
       phases: data.phases,
       registrationCriteria: data.registrationCriteria,
       evaluationCriteria: data.evaluationCriteria,
-    });
+      ...(categories.length > 0 && { categories: categories }),
+    };
+    
+    onSubmit(submitData);
   }
 
   const getPhaseRangeDates = (phase: Phase): DateRange | undefined => {
@@ -497,6 +570,135 @@ export function DemodayForm({
           ))}
         </div>
       </div>
+
+      {/* Categorias do Demoday */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Tags className="h-5 w-5" />
+                Categorias do Demoday
+              </CardTitle>
+              <CardDescription>
+                Defina as categorias para organizar e classificar os projetos. Cada categoria pode ter um número máximo de finalistas.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Formulário Nova Categoria */}
+          <div className="rounded-lg border p-4 bg-gray-50">
+            <h3 className="text-md font-medium mb-4">Adicionar Nova Categoria</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nome da Categoria</label>
+                <Input
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  placeholder="Ex: Inovação Tecnológica"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Descrição</label>
+                <Input
+                  value={newCategory.description || ""}
+                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value || null })}
+                  placeholder="Ex: Inovação Tecnológica"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Máx. Finalistas</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={newCategory.maxFinalists}
+                    onChange={(e) => setNewCategory({ ...newCategory, maxFinalists: parseInt(e.target.value) || 5 })}
+                    disabled={isSubmitting}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addCategory}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    disabled={isSubmitting}
+                  >
+                    <PlusCircle size={16} />
+                    Adicionar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de Categorias */}
+          <div className="space-y-4">
+            <h3 className="text-md font-medium">Categorias Configuradas ({categories.length})</h3>
+            {categories.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Tags className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma categoria configurada ainda.</p>
+                <p className="text-sm">Adicione categorias para organizar melhor os projetos.</p>
+              </div>
+            ) : (
+              categories.map((category, index) => (
+                <div key={index} className="rounded-lg border p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="text-md font-medium">Categoria {index + 1}</h4>
+                    <Button
+                      type="button"
+                      onClick={() => removeCategory(index)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      disabled={isSubmitting}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Nome</label>
+                      <Input
+                        value={category.name}
+                        onChange={(e) => updateCategory(index, "name", e.target.value)}
+                        placeholder="Nome da categoria"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Descrição</label>
+                      <Input
+                        value={category.description || ""}
+                        onChange={(e) => updateCategory(index, "description", e.target.value || null)}
+                        placeholder="Descrição"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Máx. Finalistas</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={category.maxFinalists}
+                        onChange={(e) => updateCategory(index, "maxFinalists", parseInt(e.target.value) || 5)}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Submit Button */}
       <Button 

@@ -56,6 +56,18 @@ export const verifications = pgTable("verification", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const projectCategories = pgTable("project_categories", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  name: text("name").notNull(),
+  description: text("description"),
+  maxFinalists: integer("max_finalists").default(5).notNull(),
+  demodayId: text("demoday_id")
+    .notNull()
+    .references(() => demodays.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const projects = pgTable("projects", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   title: text("title").notNull(),
@@ -64,6 +76,8 @@ export const projects = pgTable("projects", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // Disciplina, IC, TCC, Mestrado, Doutorado
+  categoryId: text("category_id")
+    .references(() => projectCategories.id, { onDelete: "set null" }),
   videoUrl: text("video_url"),
   repositoryUrl: text("repository_url"),
   developmentYear: text("development_year"),
@@ -71,6 +85,8 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const votePhaseEnum = pgEnum("vote_phase", ["popular", "final"]);
 
 export const votes = pgTable("votes", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -80,6 +96,9 @@ export const votes = pgTable("votes", {
   projectId: text("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
+  voterRole: roleEnum("voter_role").notNull(),
+  votePhase: votePhaseEnum("vote_phase").default("popular").notNull(),
+  weight: integer("weight").default(1).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -185,6 +204,36 @@ export const invites = pgTable("invites", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const certificates = pgTable("certificates", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  demodayId: text("demoday_id")
+    .notNull()
+    .references(() => demodays.id, { onDelete: "cascade" }),
+  participatedEvaluation: boolean("participated_evaluation").default(false).notNull(),
+  attendedEvent: boolean("attended_event").default(false).notNull(),
+  generatedAt: timestamp("generated_at"),
+  pdfUrl: text("pdf_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userFeedback = pgTable("user_feedback", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  demodayId: text("demoday_id")
+    .notNull()
+    .references(() => demodays.id, { onDelete: "cascade" }),
+  usabilityRating: integer("usability_rating").notNull(),
+  comments: text("comments"),
+  suggestions: text("suggestions"),
+  wouldParticipateAgain: boolean("would_participate_again"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Tipos para TS
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -226,9 +275,40 @@ export type NewProfessorEvaluation = typeof professorEvaluations.$inferInsert;
 export type EvaluationScore = typeof evaluationScores.$inferSelect;
 export type NewEvaluationScore = typeof evaluationScores.$inferInsert;
 
+export type ProjectCategory = typeof projectCategories.$inferSelect;
+export type NewProjectCategory = typeof projectCategories.$inferInsert;
+
+export type Certificate = typeof certificates.$inferSelect;
+export type NewCertificate = typeof certificates.$inferInsert;
+
+export type UserFeedback = typeof userFeedback.$inferSelect;
+export type NewUserFeedback = typeof userFeedback.$inferInsert;
+
 // Relações
 export const demodaysRelations = relations(demodays, ({ many }) => ({
   phases: many(demoDayPhases),
+  categories: many(projectCategories),
+}));
+
+export const projectCategoriesRelations = relations(projectCategories, ({ one, many }) => ({
+  demoday: one(demodays, {
+    fields: [projectCategories.demodayId],
+    references: [demodays.id],
+  }),
+  projects: many(projects),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  user: one(users, {
+    fields: [projects.userId],
+    references: [users.id],
+  }),
+  category: one(projectCategories, {
+    fields: [projects.categoryId],
+    references: [projectCategories.id],
+  }),
+  submissions: many(projectSubmissions),
+  votes: many(votes),
 }));
 
 export const demoDayPhasesRelations = relations(demoDayPhases, ({ one }) => ({
