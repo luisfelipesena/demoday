@@ -1,20 +1,13 @@
-import { NextResponse } from "next/server";
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
-import { headers } from "next/headers";
 import { getSessionWithRole, isProfessorOrAdmin } from "@/lib/session-utils";
+import { eq, inArray } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 import { db } from "@/server/db";
-import { 
-  demodays, 
-  evaluationCriteria, 
-  evaluationScores, 
-  professorEvaluations, 
-  projectSubmissions, 
-  projects, 
-  users,
-  type ProjectSubmission,
-  type EvaluationCriteria,
-  type ProfessorEvaluation
+import {
+  demodays,
+  evaluationCriteria,
+  professorEvaluations,
+  projectSubmissions
 } from "@/server/db/schema";
 
 // GET report data for all projects
@@ -22,7 +15,7 @@ export async function GET(request: Request) {
   try {
     // Check authentication
     const session = await getSessionWithRole();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -30,16 +23,16 @@ export async function GET(request: Request) {
     if (!isProfessorOrAdmin(session.user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    
+
     // Get request parameters
     const url = new URL(request.url);
     const demodayId = url.searchParams.get("demodayId");
-    
+
     // Get demoday data
-    const demoday = demodayId 
+    const demoday = demodayId
       ? await db.query.demodays.findFirst({ where: eq(demodays.id, demodayId) })
       : await db.query.demodays.findFirst({ where: eq(demodays.active, true) });
-    
+
     if (!demoday) {
       return NextResponse.json({ error: "No active demoday found" }, { status: 404 });
     }
@@ -59,7 +52,7 @@ export async function GET(request: Request) {
 
     // Get all evaluations for this demoday's submissions
     const submissionIds = submissions.map((sub: any) => sub.id);
-    
+
     if (submissionIds.length === 0) {
       return NextResponse.json({
         demoday,
@@ -88,15 +81,15 @@ export async function GET(request: Request) {
         (evaluation: any) => evaluation.submissionId === submission.id
       );
       const totalEvaluations = projectEvaluations.length;
-      
+
       // Calculate average total score
       const avgTotalScore = totalEvaluations > 0
         ? projectEvaluations.reduce(
-            (sum: number, evaluation: any) => sum + evaluation.totalScore, 
-            0
-          ) / totalEvaluations
+          (sum: number, evaluation: any) => sum + evaluation.totalScore,
+          0
+        ) / totalEvaluations
         : 0;
-      
+
       // Calculate average score per criteria
       const criteriaScores = criteria.map((criterion: any) => {
         const scores = projectEvaluations.flatMap(
@@ -104,18 +97,18 @@ export async function GET(request: Request) {
             (score: any) => score.criteriaId === criterion.id
           )
         );
-        
+
         const avgScore = scores.length > 0
           ? scores.reduce((sum: number, score: any) => sum + score.score, 0) / scores.length
           : 0;
-        
+
         return {
           criteriaId: criterion.id,
           criteriaName: criterion.name,
           averageScore: avgScore,
         };
       });
-      
+
       return {
         submissionId: submission.id,
         projectId: submission.projectId,

@@ -1,8 +1,8 @@
+import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demodays, evaluationCriteria, registrationCriteria } from "@/server/db/schema";
 import { batchCriteriaSchema, criteriaSchema } from "@/server/db/validators";
 import { eq } from "drizzle-orm";
-import { getSessionWithRole } from "@/lib/session-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET - Fetch criteria for a specific demoday
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       const { demodayId, registration, evaluation } = batchResult.data;
 
       // Processar em uma transação
-      const result = await db.transaction(async (tx: any) => {
+      const result = await db.transaction(async (tx) => {
         // Adicionar critérios de inscrição
         if (registration && registration.length > 0) {
           for (const criteria of registration) {
@@ -129,6 +129,13 @@ export async function POST(req: NextRequest) {
       }
 
       const { demoday_id, name, description, type } = result.data;
+
+      if (!demoday_id) {
+        return NextResponse.json(
+          { error: "ID do demoday é obrigatório" },
+          { status: 400 }
+        );
+      }
 
       let newCriteria;
 
@@ -266,7 +273,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Atualizar todos os critérios em uma transação
-    await db.transaction(async (tx: typeof db) => {
+    await db.transaction(async (tx) => {
       // Remover todos os critérios existentes
       await tx.delete(registrationCriteria)
         .where(eq(registrationCriteria.demoday_id, demodayId));

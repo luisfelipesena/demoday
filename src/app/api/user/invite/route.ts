@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/env";
 import { db } from "@/server/db";
 import { invites } from "@/server/db/schema";
+import { sendEmail } from "@/server/emailService";
 import { createId } from "@paralleldrive/cuid2";
 import { desc } from "drizzle-orm";
-import { sendEmail } from "@/server/emailService"
-import { env } from "@/env";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,14 +17,10 @@ export async function POST(req: NextRequest) {
       const token = createId();
       const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // 7 dias
       await db.insert(invites).values({
-        id: createId(),
         email: null,
         token,
-        type: "global",
-        accepted: false,
+        role: "user",
         expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
       return NextResponse.json({ success: true, token, link: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/register?invite=${token}` });
     }
@@ -38,14 +34,10 @@ export async function POST(req: NextRequest) {
       const token = createId();
       const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
       await db.insert(invites).values({
-        id: createId(),
         email,
         token,
-        type: "individual",
-        accepted: false,
+        role: "user",
         expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
       const inviteLink = `${env.NEXTAUTH_URL}/register?invite=${token}`;
       await sendEmail({

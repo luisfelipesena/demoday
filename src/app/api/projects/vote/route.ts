@@ -218,8 +218,8 @@ export async function POST(req: NextRequest) {
       .values({
         userId,
         projectId,
-        voterRole: session.user.role,
-        votePhase: votePhase,
+        voterRole: session.user.role as "admin" | "user" | "professor",
+        votePhase: votePhase as "popular" | "final",
         weight: weight,
       })
       .returning();
