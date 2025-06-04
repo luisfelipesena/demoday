@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "@/components/ui/use-toast"
 import { useDemodayDetails } from "@/hooks/useDemoday"
-import { Award, CalendarIcon, CheckCircle2, Clock, FileText, Users, ListChecks } from "lucide-react"
+import { useSelectFinalists } from "@/hooks/useDemodayActions"
+import { Award, CalendarIcon, CheckCircle2, Clock, FileText, ListChecks, Users } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use } from "react"
-import { useSelectFinalists } from "@/hooks/useDemodayActions"
-import { toast } from "@/components/ui/use-toast"
 
 interface DemodayDetails {
   id: string
@@ -126,10 +126,10 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
   }
 
   const handleSelectFinalists = () => {
-    if (!demoday) return;
+    if (!demoday) return
 
     if (!confirm("Are you sure you want to automatically select finalists? This will update project statuses.")) {
-        return;
+      return
     }
 
     selectFinalists(demoday.id, {
@@ -138,20 +138,20 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
           title: "Finalists Selected",
           description: data.message || "Finalists have been automatically selected and project statuses updated.",
           variant: "success",
-        });
-        refetchDemodayDetails();
+        })
+        refetchDemodayDetails()
       },
       onError: (error) => {
-         toast({
-            title: "Finalist Selection Failed",
-            description: error.message || "An unexpected error occurred.",
-            variant: "destructive",
-        });
-      }
-    });
-  };
+        toast({
+          title: "Finalist Selection Failed",
+          description: error.message || "An unexpected error occurred.",
+          variant: "destructive",
+        })
+      },
+    })
+  }
 
-  const canSelectFinalists = demoday.active && demoday.currentPhase?.phaseNumber === 3;
+  const canSelectFinalists = demoday.active && demoday.currentPhase?.phaseNumber === 3
 
   return (
     <div className="container mx-auto p-6">
@@ -235,8 +235,8 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
                     <CardTitle>Ações do Demoday</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Button 
-                      onClick={handleSelectFinalists} 
+                    <Button
+                      onClick={handleSelectFinalists}
                       disabled={isSelectingFinalists || !canSelectFinalists}
                       className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                     >
@@ -249,10 +249,10 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
                         {demoday.currentPhase && ` (Fase Atual: ${demoday.currentPhase.phaseNumber})`}
                       </p>
                     )}
-                     <Link href={`/dashboard/admin/demoday/${demodayId}/edit`}>
-                        <Button variant="outline" className="w-full mt-2">
-                            Gerenciar Critérios e Fases
-                        </Button>
+                    <Link href={`/dashboard/admin/demoday/${demodayId}/edit`}>
+                      <Button variant="outline" className="w-full mt-2">
+                        Gerenciar Critérios e Fases
+                      </Button>
                     </Link>
                   </CardContent>
                 </Card>

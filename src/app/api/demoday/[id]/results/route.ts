@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { demodays, projectCategories, projects, projectSubmissions, votes, users } from "@/server/db/schema";
-import { eq, and, sql, desc, count, sum } from "drizzle-orm";
+import { demodays, projectCategories, projects, projectSubmissions, votes } from "@/server/db/schema";
+import { and, eq, sum } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
 interface ProjectResult {
   id: string;
   title: string;
   type: string;
   authors: string | null;
-  status: string; 
+  status: string;
   popularVoteCount: number;
-  finalWeightedScore: number; 
+  finalWeightedScore: number;
   submissionId: string;
 }
 
@@ -36,9 +36,10 @@ interface DemodayResultsData {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const demodayId = params.id;
 
     const demoday = await db.query.demodays.findFirst({
@@ -81,13 +82,13 @@ export async function GET(
         // Calculate Final Weighted Score (Popular votes + Final votes with weights)
         const allPhaseVotes = await db
           .select({
-            weight: votes.weight, 
-            phase: votes.votePhase, 
+            weight: votes.weight,
+            phase: votes.votePhase,
             role: votes.voterRole
           })
           .from(votes)
           .where(eq(votes.projectId, sub.project.id));
-        
+
         let finalWeightedScore = 0;
         allPhaseVotes.forEach((vote: { phase: "popular" | "final" | null, weight: number | null, role: string | null }) => {
           if (vote.phase === 'popular') {
@@ -98,14 +99,14 @@ export async function GET(
             finalWeightedScore += weight;
           }
         });
-        
+
         // Determine effective status (winner, finalist, participant)
         // For now, use submission.status. Winner logic might be more complex (e.g., top N by final score among finalists)
         const effectiveStatus = sub.status;
         // Basic winner determination: if status is finalist and in top N by finalWeightedScore for this category (complex to do here without full category sort)
         // For simplicity, if a project is already marked 'winner', we keep it. Otherwise, 'finalist' or 'participant'.
         // This part will likely need refinement or be handled by an admin action to set winners.
-        
+
         projectResults.push({
           id: sub.project.id,
           submissionId: sub.submissionId,
@@ -121,7 +122,7 @@ export async function GET(
       // Sort projects within category by finalWeightedScore DESC, then popularVoteCount DESC
       projectResults.sort((a, b) => {
         if (b.finalWeightedScore !== a.finalWeightedScore) {
-            return b.finalWeightedScore - a.finalWeightedScore;
+          return b.finalWeightedScore - a.finalWeightedScore;
         }
         return b.popularVoteCount - a.popularVoteCount;
       });
@@ -132,9 +133,9 @@ export async function GET(
         // Check if there's already a winner; if not, assign top finalist as winner.
         const hasExistingWinner = projectResults.some(p => p.status === 'winner');
         if (!hasExistingWinner) {
-            if (projectResults[0]) {
-                projectResults[0].status = 'winner';
-            }
+          if (projectResults[0]) {
+            projectResults[0].status = 'winner';
+          }
         }
       }
 
@@ -195,7 +196,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching demoday results:", error);
     if (error instanceof Error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ error: "An unknown error occurred" }, { status: 500 });
   }

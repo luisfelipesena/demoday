@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/server/db";
-import { projectSubmissions, votes, projects, projectCategories } from "@/server/db/schema";
 import { auth } from "@/server/auth";
-import { eq, and, count, sql } from "drizzle-orm";
+import { db } from "@/server/db";
+import { projectCategories, projects, projectSubmissions, votes } from "@/server/db/schema";
+import { and, count, eq, sql } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
-    
+
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { error: "Acesso negado. Apenas administradores podem selecionar finalistas." },
@@ -18,6 +18,7 @@ export async function POST(
       );
     }
 
+    const params = await context.params;
     const demodayId = params.id;
 
     // Buscar todas as categorias do demoday
@@ -71,7 +72,7 @@ export async function POST(
 
       // Marcar os projetos selecionados como finalistas
       const finalistIds = projectsWithVotes.map((p: { submissionId: string }) => p.submissionId);
-      
+
       if (finalistIds.length > 0) {
         await db
           .update(projectSubmissions)
@@ -108,9 +109,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const demodayId = params.id;
 
     // Buscar finalistas por categoria
@@ -156,7 +158,7 @@ export async function GET(
 
     // Organizar dados por categoria
     const categorizedFinalists: any = {};
-    
+
     finalistsByCategory.forEach((row: {
       categoryId: string;
       categoryName: string;
@@ -177,7 +179,7 @@ export async function GET(
           finalists: [],
         };
       }
-      
+
       if (row.submissionId && row.projectId) {
         categorizedFinalists[row.categoryId].finalists.push({
           projectId: row.projectId,

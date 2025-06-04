@@ -23,18 +23,18 @@
 
 ### Stack Tecnológica
 
-| Categoria | Tecnologia | Versão |
-|-----------|------------|--------|
-| **Framework** | Next.js (App Router) | 15.1.6 |
-| **Linguagem** | TypeScript | 5.0+ |
-| **Banco de Dados** | PostgreSQL | 16.3 |
-| **ORM** | Drizzle ORM | 0.39.0 |
-| **Autenticação** | Better Auth | 1.2.5 |
-| **Estilização** | Tailwind CSS | 4.0.6 |
-| **UI Components** | Shadcn/ui | - |
-| **Query Client** | TanStack Query | 5.66.0 |
-| **Email** | Nodemailer | 6.10.1 |
-| **Validação** | Zod | 3.24.2 |
+| Categoria          | Tecnologia           | Versão |
+| ------------------ | -------------------- | ------ |
+| **Framework**      | Next.js (App Router) | 15.1.6 |
+| **Linguagem**      | TypeScript           | 5.0+   |
+| **Banco de Dados** | PostgreSQL           | 16.3   |
+| **ORM**            | Drizzle ORM          | 0.39.0 |
+| **Autenticação**   | Better Auth          | 1.2.5  |
+| **Estilização**    | Tailwind CSS         | 4.0.6  |
+| **UI Components**  | Shadcn/ui            | -      |
+| **Query Client**   | TanStack Query       | 5.66.0 |
+| **Email**          | Nodemailer           | 6.10.1 |
+| **Validação**      | Zod                  | 3.24.2 |
 
 ### 📁 Estrutura do Projeto
 
@@ -67,6 +67,7 @@ demoday/
 ## 🔑 Funcionalidades por Perfil
 
 ### 👨‍💼 Administrador
+
 - ✅ Criar e gerenciar Demodays
 - ✅ Definir fases e critérios de avaliação
 - ✅ Aprovar/rejeitar projetos submetidos
@@ -75,12 +76,14 @@ demoday/
 - ✅ Alterar status dos projetos (finalista/vencedor)
 
 ### 👨‍🏫 Professor
+
 - ✅ Avaliar projetos com base nos critérios
 - ✅ Dar notas e comentários detalhados
 - ✅ Acessar relatórios de avaliação
 - ✅ Visualizar todos os projetos submetidos
 
 ### 👨‍🎓 Estudante
+
 - ✅ Submeter projetos durante fase de inscrição
 - ✅ Acompanhar status das submissões
 - ✅ Editar projetos (durante fase permitida)
@@ -116,22 +119,26 @@ graph LR
 ### Passo a Passo
 
 1. **Clone o repositório**
+
 ```bash
 git clone https://github.com/seu-usuario/demoday.git
 cd demoday
 ```
 
 2. **Instale as dependências**
+
 ```bash
 npm install
 ```
 
 3. **Configure as variáveis de ambiente**
+
 ```bash
-cp .env.example .env
+cp .env.sample .env
 ```
 
 Edite o arquivo `.env` com suas configurações:
+
 ```env
 NODE_ENV=development
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/demoday
@@ -142,44 +149,49 @@ EMAIL_PASS=
 ```
 
 4. **Inicie o banco de dados**
+
 ```bash
 docker compose up -d
 ```
 
 5. **Execute as migrations**
+
 ```bash
 npm run db:push
 ```
 
 6. **[Opcional] Abra o Drizzle Studio**
+
 ```bash
 npm run db:studio
 ```
 
 7. **Inicie o servidor de desenvolvimento**
+
 ```bash
 npm run dev
 ```
 
 8. **Acesse a aplicação**
+
 ```
 http://localhost:3000
 ```
 
 ## 📝 Scripts Disponíveis
 
-| Comando | Descrição |
-|---------|-----------|
-| `npm run dev` | Inicia o servidor de desenvolvimento |
-| `npm run build` | Gera build de produção |
-| `npm run start` | Inicia servidor de produção |
-| `npm run lint` | Executa linter no código |
-| `npm run lint:fix` | Corrige problemas de lint automaticamente |
-| `npm run db:push` | Sincroniza schema com banco |
-| `npm run db:generate` | Gera migrations |
-| `npm run db:migrate` | Executa migrations |
-| `npm run db:studio` | Abre interface visual do banco |
-| `npm run db:drop` | Remove todas as tabelas (CUIDADO!) |
+| Comando               | Descrição                                 |
+| --------------------- | ----------------------------------------- |
+| `npm run dev`         | Inicia o servidor de desenvolvimento      |
+| `npm run build`       | Gera build de produção                    |
+| `npm run start`       | Inicia servidor de produção               |
+| `npm run lint`        | Executa linter no código                  |
+| `npm run lint:fix`    | Corrige problemas de lint automaticamente |
+| `npm run db:push`     | Sincroniza schema com banco               |
+| `npm run db:generate` | Gera migrations                           |
+| `npm run db:migrate`  | Executa migrations                        |
+| `npm run db:studio`   | Abre interface visual do banco            |
+| `npm run db:drop`     | Remove todas as tabelas (CUIDADO!)        |
 
 ## 🗄️ Estrutura do Banco de Dados
 
@@ -236,6 +248,7 @@ erDiagram
 ## 📱 Responsividade
 
 A aplicação é totalmente responsiva, adaptando-se a:
+
 - 📱 Mobile (< 768px)
 - 💻 Tablet (768px - 1024px)
 - 🖥️ Desktop (> 1024px)
