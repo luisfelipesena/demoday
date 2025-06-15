@@ -32,12 +32,12 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
   const { data: session, isPending } = useSession()
   const demodayId = resolvedParams.id
   
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("")
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
 
   const { data: demoday, isLoading: isLoadingDemoday } = useDemodayDetails(demodayId)
   const { data: categories, isLoading: isLoadingCategories } = useCategories(demodayId)
   const { data: projects = [], isLoading: isLoadingProjects } = useDemodayProjects(demodayId, {
-    categoryId: selectedCategoryId || undefined,
+    categoryId: selectedCategoryId === "all" ? undefined : selectedCategoryId,
   })
   
   // Redirecionar para login se não estiver autenticado
@@ -106,7 +106,7 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
               <SelectValue placeholder="Filtrar por categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as Categorias</SelectItem>
+              <SelectItem value="all">Todas as Categorias</SelectItem>
               {categories.map((category: Category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}

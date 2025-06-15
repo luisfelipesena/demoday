@@ -42,19 +42,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (invite.email && invite.email !== userEmail) {
+    // Para convites individuais, verificar se é para o email correto
+    if (invite.type === "individual" && invite.email && invite.email !== userEmail) {
       return NextResponse.json(
         { success: false, message: "Este convite não é para este email" },
         { status: 400 }
       );
     }
 
-    if (invite.usedAt) {
+    // Para convites individuais, verificar se já foi usado
+    if (invite.type === "individual" && invite.usedAt) {
       return NextResponse.json(
         { success: false, message: "Este convite já foi utilizado" },
         { status: 400 }
       );
     }
+
+    // Para convites globais, não há restrição de uso (pode ser usado infinitas vezes)
 
     return NextResponse.json({
       success: true,

@@ -196,6 +196,7 @@ export const invites = pgTable("invites", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   email: text("email"),
   token: text("token").notNull().unique(),
+  type: text("type").notNull().default("individual"), // 'global' or 'individual'
   role: roleEnum("role").default("user").notNull(),
   accepted: boolean("accepted").default(false).notNull(),
   usedAt: timestamp("used_at"),
@@ -357,6 +358,7 @@ export type Invite = {
   id: string;
   email: string;
   token: string;
+  type: string;
   role: string;
   accepted: boolean;
   usedAt: Date | null;

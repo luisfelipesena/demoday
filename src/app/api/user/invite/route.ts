@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       await db.insert(invites).values({
         email: null,
         token,
+        type: "global",
         role: "user",
         expiresAt,
       });
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
       await db.insert(invites).values({
         email,
         token,
+        type: "individual",
         role: "user",
         expiresAt,
       });
