@@ -28,24 +28,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (invite.usedAt) {
+    // Para convites individuais, verificar se já foi usado
+    if (invite.type === "individual" && invite.usedAt) {
       return NextResponse.json(
         { success: false, message: "Este convite já foi utilizado" },
         { status: 400 }
       );
     }
 
-    await db
-      .update(invites)
-      .set({ 
-        usedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(invites.id, invite.id));
+    // Marcar como usado apenas convites individuais (convites globais podem ser reutilizados)
+    if (invite.type === "individual") {
+      await db
+        .update(invites)
+        .set({ 
+          usedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(invites.id, invite.id));
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: "Convite marcado como utilizado" 
+      message: invite.type === "global" ? "Convite global utilizado" : "Convite marcado como utilizado" 
     });
 
   } catch (error) {

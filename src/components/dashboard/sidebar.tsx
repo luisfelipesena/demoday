@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "@/lib/auth-client"
-import { Award, BarChart, GraduationCap, Home, LogOut, Settings, Users, Tags } from "lucide-react"
+import { Award, BarChart, GraduationCap, Home, LogOut, Settings, Users, Tags, TrendingUp } from "lucide-react"
 
 import {
   Sidebar,
@@ -59,20 +59,20 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Menu específico para professores */}
-        {(userRole) && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Professor</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/dashboard/evaluations")}>
-                    <Link href="/dashboard/evaluations">
-                      <Award className="mr-2 h-4 w-4" />
-                      <span>Avaliações</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+        {/* Menu de Avaliações - para todos os usuários */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Participação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/evaluations")}>
+                  <Link href="/dashboard/evaluations">
+                    <Award className="mr-2 h-4 w-4" />
+                    <span>Avaliações</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {(userRole === "professor" || userRole === "admin") && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/dashboard/reports")}>
                     <Link href="/dashboard/reports">
@@ -81,15 +81,15 @@ export function DashboardSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {/* Menu específico para administradores */}
         {userRole === "admin" && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administração</SidebarGroupLabel>
+            <SidebarGroupLabel>Gestão</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -113,6 +113,14 @@ export function DashboardSidebar() {
                     <Link href="/dashboard/admin/categories">
                       <Tags className="mr-2 h-4 w-4" />
                       <span>Categorias</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.includes("/dashboard/admin/results")}>
+                    <Link href="/dashboard/admin/results">
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      <span>Resultados</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

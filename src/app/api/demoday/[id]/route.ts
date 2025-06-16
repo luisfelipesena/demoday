@@ -210,33 +210,51 @@ export async function PUT(
 
       // Inserir novas fases
       for (const phase of phases) {
-        // Verificar se as datas são válidas
-        let startDateObj = new Date();  // Usar data atual como padrão
-        let endDateObj = new Date();
-        endDateObj.setDate(endDateObj.getDate() + 7);  // Data padrão é uma semana no futuro
+        // Verificar se as datas são válidas e obrigatórias
+        if (!phase.startDate || !phase.endDate || 
+            phase.startDate.trim() === '' || phase.endDate.trim() === '') {
+          throw new Error(`Datas são obrigatórias para a fase ${phase.name}`);
+        }
         
         // Validar e converter a data de início
-        if (phase.startDate && phase.startDate.trim() !== '') {
-          try {
-            const tempDate = new Date(`${phase.startDate}T12:00:00.000Z`);
-            if (!isNaN(tempDate.getTime())) {
-              startDateObj = tempDate;
+        let startDateObj: Date;
+        try {
+          // Se a data já contém timezone, usar diretamente, senão adicionar
+          if (phase.startDate.includes('T')) {
+            startDateObj = new Date(phase.startDate);
+          } else {
+            startDateObj = new Date(`${phase.startDate}T12:00:00.000Z`);
+          }
+          
+          if (isNaN(startDateObj.getTime())) {
+            throw new Error(`Data de início inválida: ${phase.startDate}`);
             }
           } catch (error) {
             console.error(`Erro ao converter data de início: ${phase.startDate}`, error);
-          }
+          throw new Error(`Data de início inválida para a fase ${phase.name}: ${phase.startDate}`);
         }
         
         // Validar e converter a data de fim
-        if (phase.endDate && phase.endDate.trim() !== '') {
-          try {
-            const tempDate = new Date(`${phase.endDate}T12:00:00.000Z`);
-            if (!isNaN(tempDate.getTime())) {
-              endDateObj = tempDate;
+        let endDateObj: Date;
+        try {
+          // Se a data já contém timezone, usar diretamente, senão adicionar
+          if (phase.endDate.includes('T')) {
+            endDateObj = new Date(phase.endDate);
+          } else {
+            endDateObj = new Date(`${phase.endDate}T12:00:00.000Z`);
+          }
+          
+          if (isNaN(endDateObj.getTime())) {
+            throw new Error(`Data de fim inválida: ${phase.endDate}`);
             }
           } catch (error) {
             console.error(`Erro ao converter data de fim: ${phase.endDate}`, error);
+          throw new Error(`Data de fim inválida para a fase ${phase.name}: ${phase.endDate}`);
           }
+        
+        // Verificar se a data de início é anterior à data de fim
+        if (startDateObj >= endDateObj) {
+          throw new Error(`Data de início deve ser anterior à data de fim para a fase ${phase.name}`);
         }
         
         await tx.insert(demoDayPhases).values({

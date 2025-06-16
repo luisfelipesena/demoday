@@ -172,7 +172,7 @@ export function DemodayForm({
     );
   };
 
-  const updatePhaseDates = (index: number, dateRange: DateRange | undefined) => {
+  const updatePhaseDates = useCallback((index: number, dateRange: DateRange | undefined) => {
     if (!dateRange || !dateRange.from) {
       setValue(`phases.${index}.startDate`, "")
       setValue(`phases.${index}.endDate`, "")
@@ -206,7 +206,7 @@ export function DemodayForm({
     } else {
        setValue(`phases.${index}.endDate`, "")
     }
-  }
+  }, [setValue])
 
   const addRegistrationCriteria = () => {
     setValue("registrationCriteria", [...registrationCriteria, createEmptyCriterion("registration")])
@@ -243,9 +243,17 @@ export function DemodayForm({
     );
     
     if (hasInvalidDates) {
-      // Mostrar aviso mas continuar o envio (a API usará datas padrão)
-      console.warn('Algumas fases estão com datas em branco. Serão usadas datas padrão.');
+      toast.error("Todas as fases devem ter datas de início e fim preenchidas.");
+      return;
     }
+    
+    // Log para debug
+    console.log('Dados das fases sendo enviados:', data.phases.map(p => ({
+      name: p.name,
+      phaseNumber: p.phaseNumber,
+      startDate: p.startDate,
+      endDate: p.endDate
+    })));
     
     // Enviar os dados do demoday (incluindo categorias se aplicável)
     const submitData = {
@@ -259,7 +267,7 @@ export function DemodayForm({
     onSubmit(submitData);
   }
 
-  const getPhaseRangeDates = (phase: Phase): DateRange | undefined => {
+  const getPhaseRangeDates = useCallback((phase: Phase): DateRange | undefined => {
     if (!phase.startDate && !phase.endDate) return undefined
 
     try {
@@ -332,7 +340,7 @@ export function DemodayForm({
       console.error("Erro ao converter datas para DateRange:", error)
       return undefined
     }
-  }
+  }, [])
 
   return (
     <form 
@@ -366,7 +374,7 @@ export function DemodayForm({
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2">
           {phases.map((phase, index) => (
-            <div key={index} className="space-y-5 rounded-lg border p-5 shadow-sm">
+            <div key={`phase-${phase.phaseNumber}-${index}`} className="space-y-5 rounded-lg border p-5 shadow-sm">
               <h3 className="text-lg font-medium">
                 Fase {phase.phaseNumber}: {phase.name}
               </h3>
@@ -374,13 +382,9 @@ export function DemodayForm({
 
               <div className="w-full">
                 <label className="mb-2 block text-sm font-medium">Período da fase:</label>
-                <Controller
-                  name={`phases.${index}.startDate`}
-                  control={control}
-                  render={() => (
                     <div>
                       <DatePickerWithRange
-                        id={`phase-dates-${index}`}
+                    id={`phase-dates-${phase.phaseNumber}-${index}`}
                         value={getPhaseRangeDates(phase)}
                         onChange={(dateRange) => updatePhaseDates(index, dateRange)}
                         disabled={isSubmitting}
@@ -393,8 +397,6 @@ export function DemodayForm({
                         </p>
                       )}
                     </div>
-                  )}
-                />
               </div>
             </div>
           ))}

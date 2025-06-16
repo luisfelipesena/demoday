@@ -54,73 +54,96 @@ export async function GET(
       where: eq(projectCategories.demodayId, demodayId),
     });
 
+    // Buscar TODOS os projetos submetidos no demoday
+    const allSubmissions = await db
+      .select({
+        submissionId: projectSubmissions.id,
+        status: projectSubmissions.status,
+        project: projects,
+        category: projectCategories,
+      })
+      .from(projectSubmissions)
+      .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
+      .leftJoin(projectCategories, eq(projects.categoryId, projectCategories.id))
+      .where(eq(projectSubmissions.demoday_id, demodayId));
+
+    // Agrupar projetos por categoria (incluindo projetos sem categoria)
+    const categoryMap = new Map<string, CategoryResult>();
+    
+    // Inicializar categorias existentes
+    for (const category of categories) {
+      categoryMap.set(category.id, {
+        id: category.id,
+        name: category.name,
+        projects: [],
+      });
+    }
+    
+    // Criar categoria especial para projetos sem categoria
+    const uncategorizedKey = "uncategorized";
+    categoryMap.set(uncategorizedKey, {
+      id: uncategorizedKey,
+      name: "Projetos Gerais",
+      projects: [],
+    });
+
     const categoryResults: CategoryResult[] = [];
 
-    for (const category of categories) {
-      const submissionsInCategory = await db
+    for (const sub of allSubmissions) {
+      if (!sub.project) continue;
+
+      // Calculate Popular Vote Count
+      const popularVotes = await db
+        .select({ value: sum(votes.weight) })
+        .from(votes)
+        .where(and(eq(votes.projectId, sub.project.id), eq(votes.votePhase, "popular")));
+      const popularVoteCount = Number(popularVotes[0]?.value) || 0;
+
+      // Calculate Final Weighted Score (Popular votes + Final votes with weights)
+      const allPhaseVotes = await db
         .select({
-          submissionId: projectSubmissions.id,
-          status: projectSubmissions.status,
-          project: projects,
+          weight: votes.weight,
+          phase: votes.votePhase,
+          role: votes.voterRole
         })
-        .from(projectSubmissions)
-        .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
-        .where(and(eq(projectSubmissions.demoday_id, demodayId), eq(projects.categoryId, category.id)));
+        .from(votes)
+        .where(eq(votes.projectId, sub.project.id));
 
-      const projectResults: ProjectResult[] = [];
+      let finalWeightedScore = 0;
+      allPhaseVotes.forEach((vote: { phase: "popular" | "final" | null, weight: number | null, role: string | null }) => {
+        if (vote.phase === 'popular') {
+          finalWeightedScore += Number(vote.weight) || 1; // Default weight 1 for popular
+        } else if (vote.phase === 'final') {
+          // Assuming professor weight is 3 as per vote API logic, others 1
+          const weight = (vote.role === 'professor' || vote.role === 'admin') ? 3 : 1;
+          finalWeightedScore += weight;
+        }
+      });
 
-      for (const sub of submissionsInCategory) {
-        if (!sub.project) continue;
+      const projectResult: ProjectResult = {
+        id: sub.project.id,
+        submissionId: sub.submissionId,
+        title: sub.project.title,
+        type: sub.project.type,
+        authors: sub.project.authors,
+        status: sub.status,
+        popularVoteCount: popularVoteCount,
+        finalWeightedScore: finalWeightedScore,
+      };
 
-        // Calculate Popular Vote Count
-        const popularVotes = await db
-          .select({ value: sum(votes.weight) })
-          .from(votes)
-          .where(and(eq(votes.projectId, sub.project.id), eq(votes.votePhase, "popular")));
-        const popularVoteCount = Number(popularVotes[0]?.value) || 0;
-
-        // Calculate Final Weighted Score (Popular votes + Final votes with weights)
-        const allPhaseVotes = await db
-          .select({
-            weight: votes.weight,
-            phase: votes.votePhase,
-            role: votes.voterRole
-          })
-          .from(votes)
-          .where(eq(votes.projectId, sub.project.id));
-
-        let finalWeightedScore = 0;
-        allPhaseVotes.forEach((vote: { phase: "popular" | "final" | null, weight: number | null, role: string | null }) => {
-          if (vote.phase === 'popular') {
-            finalWeightedScore += Number(vote.weight) || 1; // Default weight 1 for popular
-          } else if (vote.phase === 'final') {
-            // Assuming professor weight is 3 as per vote API logic, others 1
-            const weight = (vote.role === 'professor' || vote.role === 'admin') ? 3 : 1;
-            finalWeightedScore += weight;
-          }
-        });
-
-        // Determine effective status (winner, finalist, participant)
-        // For now, use submission.status. Winner logic might be more complex (e.g., top N by final score among finalists)
-        const effectiveStatus = sub.status;
-        // Basic winner determination: if status is finalist and in top N by finalWeightedScore for this category (complex to do here without full category sort)
-        // For simplicity, if a project is already marked 'winner', we keep it. Otherwise, 'finalist' or 'participant'.
-        // This part will likely need refinement or be handled by an admin action to set winners.
-
-        projectResults.push({
-          id: sub.project.id,
-          submissionId: sub.submissionId,
-          title: sub.project.title,
-          type: sub.project.type,
-          authors: sub.project.authors,
-          status: effectiveStatus, // This might need to be refined based on ranking
-          popularVoteCount: popularVoteCount,
-          finalWeightedScore: finalWeightedScore,
-        });
+      // Determinar a qual categoria o projeto pertence
+      const categoryKey = sub.category?.id || uncategorizedKey;
+      const targetCategory = categoryMap.get(categoryKey);
+      
+      if (targetCategory) {
+        targetCategory.projects.push(projectResult);
       }
+    }
 
+    // Processar cada categoria: ordenar projetos e determinar vencedores
+    for (const [categoryKey, categoryData] of categoryMap.entries()) {
       // Sort projects within category by finalWeightedScore DESC, then popularVoteCount DESC
-      projectResults.sort((a, b) => {
+      categoryData.projects.sort((a, b) => {
         if (b.finalWeightedScore !== a.finalWeightedScore) {
           return b.finalWeightedScore - a.finalWeightedScore;
         }
@@ -128,22 +151,21 @@ export async function GET(
       });
 
       // Assign winner status based on sorted order if not already winner (e.g., top 1 for now)
-      if (projectResults.length > 0 && projectResults[0]?.status === 'finalist') {
+      if (categoryData.projects.length > 0 && categoryData.projects[0]?.status === 'finalist') {
         // This is a simplified winner assignment. A more robust system might be needed.
         // Check if there's already a winner; if not, assign top finalist as winner.
-        const hasExistingWinner = projectResults.some(p => p.status === 'winner');
+        const hasExistingWinner = categoryData.projects.some(p => p.status === 'winner');
         if (!hasExistingWinner) {
-          if (projectResults[0]) {
-            projectResults[0].status = 'winner';
+          if (categoryData.projects[0]) {
+            categoryData.projects[0].status = 'winner';
           }
         }
       }
 
-      categoryResults.push({
-        id: category.id,
-        name: category.name,
-        projects: projectResults,
-      });
+      // Só adicionar categorias que têm projetos
+      if (categoryData.projects.length > 0) {
+        categoryResults.push(categoryData);
+      }
     }
 
     // Calculate Overall Demoday Statistics

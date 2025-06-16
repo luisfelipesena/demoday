@@ -1,0 +1,1 @@
+ALTER TABLE "invites" ADD COLUMN "type" text DEFAULT 'individual' NOT NULL;

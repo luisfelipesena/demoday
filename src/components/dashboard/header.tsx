@@ -7,6 +7,19 @@ export function DashboardHeader() {
   const { data: session, isPending: loading } = useSession()
   const user = session?.user
 
+  const getRoleDisplayName = (role: string | undefined) => {
+    switch (role) {
+      case "user":
+        return "Estudante"
+      case "professor":
+        return "Professor"
+      case "admin":
+        return "Administrador"
+      default:
+        return "Usuário"
+    }
+  }
+
   return (
     <header className="flex h-24 items-center border-b px-6">
       <SidebarTrigger className="mr-4" />
@@ -16,7 +29,7 @@ export function DashboardHeader() {
           <Skeleton className="h-10 w-24" />
         ) : (
           <span className="text-sm font-medium">
-            {user?.name} ({user?.role === "user" ? "Estudante" : user?.role})
+            {user?.name} ({getRoleDisplayName(user?.role)})
           </span>
         )}
       </div>
