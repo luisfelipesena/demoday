@@ -8,10 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import { useSession } from "@/lib/auth-client"
-import { AlertCircle, CalendarDays, Check, Clock, FileText, Info, Vote, ExternalLink } from "lucide-react"
+import { AlertCircle, CalendarDays, Check, Clock, ExternalLink, FileText, Info, Vote } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import Link from "next/link"
 
 // Define interfaces for the data we'll be working with
 interface Project {
@@ -198,28 +198,29 @@ export default function EvaluationsPage() {
 
   const getVotingPhaseInfo = () => {
     if (!evaluationsData?.currentPhase) return null
-    
+
     if (evaluationsData.currentPhase.phaseNumber === 3) {
       return {
         title: "Votação Popular",
-        description: "Vote nos projetos mais interessantes! Sua participação é fundamental para escolher os finalistas.",
+        description:
+          "Vote nos projetos mais interessantes! Sua participação é fundamental para escolher os finalistas.",
         buttonText: "Votar nos Projetos",
-        isActive: true
+        isActive: true,
       }
     }
-    
+
     if (evaluationsData.currentPhase.phaseNumber === 4) {
-      const isAuthorized = session?.user?.role === 'professor' || session?.user?.role === 'admin'
+      const isAuthorized = session?.user?.role === "professor" || session?.user?.role === "admin"
       return {
         title: "Votação Final",
-        description: isAuthorized 
-          ? "Votação final para escolher os vencedores entre os finalistas." 
+        description: isAuthorized
+          ? "Votação final para escolher os vencedores entre os finalistas."
           : "Votação final em andamento. Apenas professores podem votar nesta fase.",
         buttonText: isAuthorized ? "Votação Final" : "Ver Finalistas",
-        isActive: isAuthorized
+        isActive: isAuthorized,
       }
     }
-    
+
     return null
   }
 
@@ -253,12 +254,18 @@ export default function EvaluationsPage() {
   if (isEvaluating && selectedSubmission) {
     return (
       <div className="container mx-auto p-6">
-              <EvaluationForm
-          submission={selectedSubmission}
-                criteria={evaluationsData.criteria}
-                onSubmit={handleSubmitEvaluation}
-                onCancel={handleCancelEvaluation}
-              />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2">Avaliando: {selectedSubmission.project.title}</h2>
+          <p className="text-gray-600">
+            {selectedSubmission.project.type}
+            {selectedSubmission.project.authors && ` • ${selectedSubmission.project.authors}`}
+          </p>
+        </div>
+        <EvaluationForm
+          criteria={evaluationsData.criteria}
+          onSubmit={handleSubmitEvaluation}
+          onCancel={handleCancelEvaluation}
+        />
       </div>
     )
   }
@@ -279,12 +286,12 @@ export default function EvaluationsPage() {
         <div className="flex items-center gap-4">
           {getPhaseStatusBadge()}
           {/* Botão "Ver Relatórios" só para professores/admin */}
-          {(session?.user?.role === 'professor' || session?.user?.role === 'admin') && (
+          {(session?.user?.role === "professor" || session?.user?.role === "admin") && (
             <Link href="/dashboard/reports">
               <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
-          <FileText className="mr-2 h-4 w-4" />
-          Ver Relatórios
-        </Button>
+                <FileText className="mr-2 h-4 w-4" />
+                Ver Relatórios
+              </Button>
             </Link>
           )}
         </div>
@@ -298,14 +305,12 @@ export default function EvaluationsPage() {
               <Vote className="h-5 w-5" />
               {votingInfo.title}
             </CardTitle>
-            <CardDescription className="text-blue-700">
-              {votingInfo.description}
-            </CardDescription>
+            <CardDescription className="text-blue-700">{votingInfo.description}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4">
               <Link href={`/demoday/${evaluationsData.demoday.id}/voting`}>
-                <Button 
+                <Button
                   className={votingInfo.isActive ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-500 hover:bg-gray-600"}
                 >
                   <Vote className="mr-2 h-4 w-4" />
@@ -326,7 +331,7 @@ export default function EvaluationsPage() {
 
       {/* Current Phase Info */}
       <Card>
-            <CardHeader>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5" />
             Período de Avaliação
@@ -335,47 +340,45 @@ export default function EvaluationsPage() {
             De {formatDate(evaluationsData.evaluationPhase?.startDate || "")} até{" "}
             {formatDate(evaluationsData.evaluationPhase?.endDate || "")}
           </CardDescription>
-            </CardHeader>
-              <CardContent>
+        </CardHeader>
+        <CardContent>
           <div className="flex items-center gap-2">
-                  {evaluationsData.isEvaluationPeriod ? (
+            {evaluationsData.isEvaluationPeriod ? (
               <>
                 <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
                 <span className="text-sm text-green-600 font-medium">Ativo</span>
               </>
-                  ) : (
+            ) : (
               <>
                 <Clock className="h-4 w-4 text-orange-500" />
                 <span className="text-sm text-orange-600 font-medium">Inativo</span>
               </>
-                  )}
-                </div>
-              </CardContent>
-          </Card>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {!evaluationsData.isEvaluationPeriod && evaluationsData.currentPhase?.phaseNumber !== 3 && evaluationsData.currentPhase?.phaseNumber !== 4 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-800">
-              <Info className="h-5 w-5" />
-              Fora do período de avaliação
-            </CardTitle>
-            <CardDescription className="text-orange-700">
-                    As avaliações só podem ser realizadas durante a fase de avaliação do Demoday.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
+      {!evaluationsData.isEvaluationPeriod &&
+        evaluationsData.currentPhase?.phaseNumber !== 3 &&
+        evaluationsData.currentPhase?.phaseNumber !== 4 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
+                <Info className="h-5 w-5" />
+                Fora do período de avaliação
+              </CardTitle>
+              <CardDescription className="text-orange-700">
+                As avaliações só podem ser realizadas durante a fase de avaliação do Demoday.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
 
       {/* Evaluation Tabs */}
       <Tabs defaultValue="pending" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="pending">
-            Avaliações Pendentes ({pendingSubmissions.length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Avaliações Concluídas ({completedSubmissions.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Avaliações Pendentes ({pendingSubmissions.length})</TabsTrigger>
+          <TabsTrigger value="completed">Avaliações Concluídas ({completedSubmissions.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
@@ -391,11 +394,11 @@ export default function EvaluationsPage() {
                 </div>
               </CardContent>
             </Card>
-              ) : (
+          ) : (
             <div className="grid grid-cols-1 gap-4">
               {pendingSubmissions.map((submission) => (
                 <Card key={submission.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
+                  <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">{submission.project.title}</CardTitle>
@@ -405,23 +408,23 @@ export default function EvaluationsPage() {
                         </CardDescription>
                       </div>
                       <Badge variant="secondary">Pendente</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
                     <p className="text-gray-600 mb-4 line-clamp-2">{submission.project.description}</p>
-                          <Button
-                            onClick={() => handleStartEvaluation(submission)}
+                    <Button
+                      onClick={() => handleStartEvaluation(submission)}
                       disabled={!evaluationsData.isEvaluationPeriod}
-                            className="w-full"
-                          >
+                      className="w-full"
+                    >
                       {evaluationsData.isEvaluationPeriod ? "Iniciar Avaliação" : "Fora do período"}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
-              )}
-            </TabsContent>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
           {completedSubmissions.length === 0 ? (
@@ -434,11 +437,11 @@ export default function EvaluationsPage() {
                 </div>
               </CardContent>
             </Card>
-              ) : (
+          ) : (
             <div className="grid grid-cols-1 gap-4">
               {completedSubmissions.map((submission) => (
                 <Card key={submission.id} className="border-green-200">
-                        <CardHeader>
+                  <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">{submission.project.title}</CardTitle>
@@ -448,17 +451,17 @@ export default function EvaluationsPage() {
                         </CardDescription>
                       </div>
                       <Badge className="bg-green-500 hover:bg-green-600">Concluída</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
                     <p className="text-gray-600 line-clamp-2">{submission.project.description}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
