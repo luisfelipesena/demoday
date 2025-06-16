@@ -29,12 +29,28 @@ export async function GET(request: Request) {
     const demodayId = url.searchParams.get("demodayId");
 
     // Get demoday data
-    const demoday = demodayId
-      ? await db.query.demodays.findFirst({ where: eq(demodays.id, demodayId) })
-      : await db.query.demodays.findFirst({ where: eq(demodays.active, true) });
+    let demoday;
+    if (demodayId) {
+      demoday = await db.query.demodays.findFirst({ where: eq(demodays.id, demodayId) });
+    } else {
+      // Try to get active demoday first
+      demoday = await db.query.demodays.findFirst({ where: eq(demodays.active, true) });
+      
+      // If no active demoday, get the most recent one
+      if (!demoday) {
+        const allDemodays = await db.query.demodays.findMany({
+          orderBy: (demodays, { desc }) => [desc(demodays.createdAt)],
+          limit: 1,
+        });
+        demoday = allDemodays[0];
+      }
+    }
 
     if (!demoday) {
-      return NextResponse.json({ error: "No active demoday found" }, { status: 404 });
+      return NextResponse.json({ 
+        error: "No demoday found",
+        message: "Nenhum Demoday foi criado ainda. Crie um Demoday primeiro."
+      }, { status: 404 });
     }
 
     // Get all project submissions for this demoday
@@ -60,6 +76,7 @@ export async function GET(request: Request) {
         criteria,
         evaluationSummary: [],
         evaluationDetails: [],
+        message: "Nenhum projeto foi submetido para este Demoday ainda.",
       });
     }
 
@@ -119,6 +136,9 @@ export async function GET(request: Request) {
       };
     });
 
+    // Check if there are any evaluations
+    const hasEvaluations = evaluations.length > 0;
+    
     // Return detailed data for report generation
     return NextResponse.json({
       demoday,
@@ -126,6 +146,10 @@ export async function GET(request: Request) {
       criteria,
       evaluationSummary,
       evaluationDetails: evaluations,
+      hasEvaluations,
+      message: hasEvaluations 
+        ? `${evaluations.length} avaliações encontradas para ${submissions.length} projetos.`
+        : `${submissions.length} projetos submetidos, mas nenhuma avaliação foi feita ainda.`,
     });
   } catch (error) {
     console.error("Error generating report:", error);

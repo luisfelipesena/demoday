@@ -169,7 +169,7 @@ export const professorEvaluations = pgTable("professor_evaluations", {
   submissionId: text("submission_id")
     .notNull()
     .references(() => projectSubmissions.id, { onDelete: "cascade" }),
-  professorId: text("professor_id")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   totalScore: integer("total_score").notNull(),
@@ -337,7 +337,7 @@ export const professorEvaluationsRelations = relations(professorEvaluations, ({ 
     references: [projectSubmissions.id],
   }),
   professor: one(users, {
-    fields: [professorEvaluations.professorId],
+    fields: [professorEvaluations.userId],
     references: [users.id],
   }),
   scores: many(evaluationScores),

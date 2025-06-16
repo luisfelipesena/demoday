@@ -53,6 +53,51 @@ export function useActiveDemoday() {
   };
 }
 
+// Get current phase info for active demoday
+export function useActiveDemodayPhase() {
+  return useQuery<{
+    demoday: Demoday | null;
+    currentPhase: Phase | null;
+    isVotingPhase: boolean;
+    isFinalVotingPhase: boolean;
+    phases: Phase[];
+  }, Error>({
+    queryKey: ["activeDemodayPhase"],
+    queryFn: async () => {
+      const response = await fetch("/api/evaluations");
+      if (!response.ok) {
+        // If not authenticated, try to get basic demoday info
+        const demodayResponse = await fetch("/api/demoday");
+        if (!demodayResponse.ok) {
+          throw new Error("Erro ao buscar informações do demoday");
+        }
+        const demodays = await demodayResponse.json() as Demoday[];
+        const activeDemoday = demodays.find(d => d.active) || null;
+        
+        return {
+          demoday: activeDemoday,
+          currentPhase: null,
+          isVotingPhase: false,
+          isFinalVotingPhase: false,
+          phases: []
+        };
+      }
+      
+      const data = await response.json();
+      const isVotingPhase = data.currentPhase?.phaseNumber === 3;
+      const isFinalVotingPhase = data.currentPhase?.phaseNumber === 4;
+      
+      return {
+        demoday: data.demoday,
+        currentPhase: data.currentPhase,
+        isVotingPhase,
+        isFinalVotingPhase,
+        phases: data.phases || []
+      };
+    },
+  });
+}
+
 // Fetch demoday details
 export function useDemodayDetails(demodayId: string | null) {
   return useQuery<Demoday, Error>({
@@ -174,6 +219,7 @@ export function useUpdateDemodayStatus() {
     onSuccess: () => {
       // Invalidate and refetch demodays after successful update
       queryClient.invalidateQueries({ queryKey: ["demodays"] });
+      queryClient.invalidateQueries({ queryKey: ["activeDemodayPhase"] });
     },
   });
 } 

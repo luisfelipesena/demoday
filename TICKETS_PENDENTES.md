@@ -15,6 +15,29 @@ O cliente definiu requisitos específicos que precisam ser implementados:
 
 ## 🚨 **CRÍTICO - Funcionalidades Solicitadas pelo Cliente**
 
+### TICKET-021: Tela de Gestão de Resultados Admin ⭐ **NOVO - IMPLEMENTADO**
+**Descrição**: Tela administrativa completa para visualizar todos os projetos com dados detalhados, marcar vencedores e exportar dados.
+**Contexto Cliente**: "não conseguimos ver nem qual o projeto que foi o vencedor. além disso, era pra ter uma tela para visualizar todos eles, os votos, as notas etc."
+**Status Atual**: ✅ Implementado
+**Tarefas**:
+- [X] Criar página `/dashboard/admin/results` para listar demodays
+- [X] Criar página `/dashboard/admin/results/[demodayId]` para gestão detalhada
+- [X] API `/api/admin/demoday/[id]/detailed-results` com dados completos
+- [X] API `/api/admin/project-submissions/[id]/status` para atualizar status
+- [X] API `/api/admin/demoday/[id]/export` para exportar dados CSV
+- [X] Interface para visualizar todos os projetos com:
+  - Votos populares e finais
+  - Avaliações e notas médias
+  - Status atual (submitted/approved/finalist/winner)
+  - Funcionalidade para marcar/desmarcar vencedores
+- [X] Filtros por categoria e status
+- [X] Busca por título/autor
+- [X] Export completo para CSV
+- [X] Estatísticas gerais do demoday
+- [X] Link no sidebar admin
+
+**Prioridade**: 🔥 **CRÍTICA - CONCLUÍDA**
+
 ### TICKET-015: Sistema de Categorias para Projetos ⭐ **NOVO**
 **Descrição**: Implementar sistema de categorias customizáveis para organizar projetos.
 **Contexto Cliente**: "dos cinco que vão para a final, dos cinco finalistas... de cada categoria que a gente vai criar, a gente vai selecionar três ou cinco"

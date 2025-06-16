@@ -14,17 +14,13 @@ import {
   type ProfessorEvaluation
 } from "@/server/db/schema";
 
-// Get evaluations for professor
+// Get evaluations for any authenticated user
 export async function GET() {
   try {
     const session = await getSessionWithRole();
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!isProfessorOrAdmin(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const activeDemoday = await db.query.demodays.findFirst({
@@ -73,7 +69,7 @@ export async function GET() {
     });
 
     const evaluations = await db.query.professorEvaluations.findMany({
-      where: eq(professorEvaluations.professorId, session.user.id),
+      where: eq(professorEvaluations.userId, session.user.id),
     });
 
     const criteria = await db.query.evaluationCriteria.findMany({
@@ -106,17 +102,13 @@ export async function GET() {
   }
 }
 
-// Submit evaluation for a project
+// Submit evaluation for a project (any authenticated user during evaluation phase)
 export async function POST(request: Request) {
   try {
     const session = await getSessionWithRole();
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!isProfessorOrAdmin(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { submissionId, scores, totalScore } = await request.json();
@@ -171,7 +163,7 @@ export async function POST(request: Request) {
     const existingEvaluation = await db.query.professorEvaluations.findFirst({
       where: and(
         eq(professorEvaluations.submissionId, submissionId),
-        eq(professorEvaluations.professorId, session.user.id)
+        eq(professorEvaluations.userId, session.user.id)
       ),
     });
 
@@ -183,7 +175,7 @@ export async function POST(request: Request) {
       .insert(professorEvaluations)
       .values({
         submissionId,
-        professorId: session.user.id,
+        userId: session.user.id,
         totalScore,
       })
       .returning();
@@ -196,6 +188,12 @@ export async function POST(request: Request) {
         comment: scoreData.comment || null,
       });
     }
+
+    // Automatically approve the project after evaluation is completed
+    await db
+      .update(projectSubmissions)
+      .set({ status: "approved" })
+      .where(eq(projectSubmissions.id, submissionId));
 
     return NextResponse.json({ message: "Evaluation submitted", evaluationId: evaluation?.id || "" });
   } catch (error) {

@@ -31,7 +31,18 @@ export default function ReportsPage() {
       const response = await fetch("/api/reports")
       
       if (!response.ok) {
-        return
+        if (response.status === 403) {
+          toast({
+            title: "Acesso Negado",
+            description: "Apenas professores e administradores podem acessar relatórios.",
+            variant: "destructive",
+          })
+          router.push("/dashboard")
+          return
+        }
+        
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao carregar relatórios")
       }
       
       const data = await response.json()
@@ -40,7 +51,7 @@ export default function ReportsPage() {
       console.error("Failed to fetch reports:", error)
       toast({
         title: "Erro",
-        description: "Falha ao carregar dados do relatório. Por favor, tente novamente mais tarde.",
+        description: error instanceof Error ? error.message : "Falha ao carregar dados do relatório.",
         variant: "destructive",
       })
     } finally {
@@ -111,15 +122,79 @@ export default function ReportsPage() {
             <div className="text-center">
               <BarChartIcon className="mx-auto mb-2 h-8 w-8 text-gray-400" />
               <p className="text-lg font-medium">Nenhum dado de relatório disponível</p>
-              <p className="text-sm text-gray-500">Nenhum Demoday ativo ou nenhuma avaliação foi enviada ainda.</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => router.push("/dashboard/evaluations")}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Ir para Avaliações
-              </Button>
+              <p className="text-sm text-gray-500 mb-4">
+                {reportData?.message || "Nenhum Demoday ativo encontrado."}
+              </p>
+              <div className="space-y-2">
+                <Button 
+                  variant="default" 
+                  onClick={() => router.push("/dashboard/admin/demoday")}
+                >
+                  <BarChartIcon className="mr-2 h-4 w-4" />
+                  Gerenciar Demodays
+                </Button>
+                <br />
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push("/dashboard/evaluations")}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Ir para Avaliações
+                </Button>
+                <br />
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push("/dashboard/admin/results")}
+                >
+                  <BarChartIcon className="mr-2 h-4 w-4" />
+                  Ver Resultados Detalhados
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show message if there are projects but no evaluations
+  if (reportData?.demoday && !reportData?.hasEvaluations) {
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="mb-6 text-2xl font-bold">Relatórios de Avaliação</h1>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>{reportData.demoday.name} - Relatórios</CardTitle>
+            <CardDescription>
+              {reportData.message}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-center p-6">
+            <div className="text-center">
+              <Star className="mx-auto mb-2 h-8 w-8 text-yellow-400" />
+              <p className="text-lg font-medium">Aguardando Avaliações</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Há {reportData.submissions?.length || 0} projetos submetidos, mas nenhuma avaliação foi feita ainda.
+              </p>
+              <div className="space-y-2">
+                <Button 
+                  variant="default" 
+                  onClick={() => router.push("/dashboard/evaluations")}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Fazer Avaliações
+                </Button>
+                <br />
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push("/dashboard/admin/results")}
+                >
+                  <BarChartIcon className="mr-2 h-4 w-4" />
+                  Ver Resultados Detalhados
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

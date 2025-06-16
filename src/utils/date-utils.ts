@@ -30,6 +30,31 @@ export function isInPhase(demoday: any, phaseNumber: number): boolean {
 }
 
 /**
+ * Verifica se o Demoday terminou (todas as fases passaram)
+ * 
+ * @param demoday Objeto DemoDay com as fases
+ * @returns boolean indicando se o Demoday terminou
+ */
+export function isDemodayFinished(demoday: any): boolean {
+  if (!demoday || !demoday.phases || demoday.phases.length === 0) return false;
+  
+  const now = new Date();
+  
+  // Encontrar a última fase (maior phaseNumber)
+  const lastPhase = demoday.phases.reduce((latest: any, current: any) => {
+    return current.phaseNumber > latest.phaseNumber ? current : latest;
+  });
+  
+  if (!lastPhase) return false;
+  
+  const lastPhaseEndDate = new Date(lastPhase.endDate);
+  lastPhaseEndDate.setHours(23, 59, 59, 999);
+  
+  // O Demoday terminou se a data atual passou da última fase
+  return now > lastPhaseEndDate;
+}
+
+/**
  * Verifica se o DemoDay está na fase de submissão (phase 1)
  * 
  * @param demoday Objeto DemoDay com as fases
