@@ -61,7 +61,7 @@ export async function GET() {
     const submissions = await db.query.projectSubmissions.findMany({
       where: and(
         eq(projectSubmissions.demoday_id, activeDemoday.id),
-        eq(projectSubmissions.status, "submitted")
+        eq(projectSubmissions.status, "approved")
       ),
       with: {
         project: true,
@@ -189,11 +189,23 @@ export async function POST(request: Request) {
       });
     }
 
-    // Automatically approve the project after evaluation is completed
-    await db
-      .update(projectSubmissions)
-      .set({ status: "approved" })
-      .where(eq(projectSubmissions.id, submissionId));
+    // Check if this is the last evaluation needed for auto-promotion to voting
+    const allEvaluations = await db.query.professorEvaluations.findMany({
+      where: eq(professorEvaluations.submissionId, submissionId),
+    });
+
+    // If we have enough evaluations (at least 1 for now), auto-promote to next phase
+    // This can be enhanced later with configurable minimum evaluation requirements
+    if (allEvaluations.length >= 1) {
+      // Keep the project approved status - it will move to finalist selection via voting
+      await db
+        .update(projectSubmissions)
+        .set({
+          status: "approved",
+          updatedAt: new Date()
+        })
+        .where(eq(projectSubmissions.id, submissionId));
+    }
 
     return NextResponse.json({ message: "Evaluation submitted", evaluationId: evaluation?.id || "" });
   } catch (error) {

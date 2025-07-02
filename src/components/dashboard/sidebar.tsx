@@ -1,7 +1,19 @@
 "use client"
 
 import { signOut, useSession } from "@/lib/auth-client"
-import { Award, BarChart, FileText, GraduationCap, Home, LogOut, Settings, Tags, TrendingUp, Users } from "lucide-react"
+import {
+  Award,
+  BarChart,
+  FileText,
+  Filter,
+  GraduationCap,
+  Home,
+  LogOut,
+  Settings,
+  Tags,
+  TrendingUp,
+  Users,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -124,6 +136,14 @@ export function DashboardSidebar() {
                     <Link href="/dashboard/admin/demoday">
                       <GraduationCap className="mr-2 h-4 w-4" />
                       <span>Demodays</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/dashboard/admin/triagem")}>
+                    <Link href="/dashboard/admin/triagem">
+                      <Filter className="mr-2 h-4 w-4" />
+                      <span>Triagem</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

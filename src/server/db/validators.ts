@@ -78,6 +78,7 @@ export const voteSchema = z.object({
   projectId: z.string().min(1, "ID do trabalho é obrigatório"),
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
   votePhase: z.enum(["popular", "final"]).default("popular"),
+  rating: z.number().int().min(1).max(5).optional(),
 });
 
 // Schema for validating demoday data with maxFinalists

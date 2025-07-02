@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { projectId, demodayId, votePhase = "popular" } = result.data;
+    const { projectId, demodayId, votePhase = "popular", rating } = result.data;
 
     // Verificar se o projeto existe
     const project = await db.query.projects.findFirst({
@@ -164,6 +164,14 @@ export async function POST(req: NextRequest) {
             );
           }
 
+          // Na fase final, verificamos se o rating (estrelas) foi fornecido
+          if (votePhase === "final" && (!rating || rating < 1 || rating > 5)) {
+            return NextResponse.json(
+              { error: "Na votação final é necessário fornecer uma nota de 1 a 5 estrelas" },
+              { status: 400 }
+            );
+          }
+
           // Na fase 4, apenas projetos finalistas podem receber votos
           if (submission.status !== "finalist") {
             return NextResponse.json(
@@ -213,15 +221,29 @@ export async function POST(req: NextRequest) {
     }
 
     // Registrar o voto
+    const voteValues: {
+      userId: string;
+      projectId: string;
+      voterRole: "admin" | "user" | "professor" | "student" | "external";
+      votePhase: "popular" | "final";
+      weight: number;
+      rating?: number;
+    } = {
+      userId,
+      projectId,
+      voterRole: session.user.role as "admin" | "user" | "professor" | "student" | "external",
+      votePhase: votePhase as "popular" | "final",
+      weight: weight,
+    };
+
+    // Incluir rating apenas para fase final
+    if (votePhase === "final" && rating) {
+      voteValues.rating = rating;
+    }
+
     const [newVote] = await db
       .insert(votes)
-      .values({
-        userId,
-        projectId,
-        voterRole: session.user.role as "admin" | "user" | "professor",
-        votePhase: votePhase as "popular" | "final",
-        weight: weight,
-      })
+      .values(voteValues)
       .returning();
 
     return NextResponse.json(newVote, { status: 201 });

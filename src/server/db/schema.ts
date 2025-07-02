@@ -104,6 +104,7 @@ export const votes = pgTable("votes", {
   voterRole: roleEnum("voter_role").notNull(),
   votePhase: votePhaseEnum("vote_phase").default("popular").notNull(),
   weight: integer("weight").default(1).notNull(),
+  rating: integer("rating"), // Star rating (1-5) for final voting phase. NULL for popular voting (binary).
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
