@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       results.push({ email, token, link: inviteLink });
     }
     return NextResponse.json({ success: true, results });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Erro ao enviar convite" }, { status: 500 });
   }
 }
@@ -67,7 +67,7 @@ export async function GET() {
   try {
     const allInvites = await db.select().from(invites).orderBy(desc(invites.createdAt));
     return NextResponse.json({ invites: allInvites });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar convites" }, { status: 500 });
   }
 } 

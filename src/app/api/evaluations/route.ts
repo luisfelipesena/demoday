@@ -1,4 +1,4 @@
-import { getSessionWithRole, isProfessorOrAdmin } from "@/lib/session-utils";
+import { getSessionWithRole } from "@/lib/session-utils";
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 

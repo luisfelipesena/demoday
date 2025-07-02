@@ -1,14 +1,13 @@
 "use client"
 
-import type React from "react"
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
+import type React from "react"
 import { useEffect } from "react"
 
 import { DashboardHeader } from "@/components/dashboard/header"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Loader } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Loader className="h-12 w-12 rounded-full animate-spin" />
         <p className="ml-4">Verificando autenticação...</p>
       </div>
-    );
+    )
   }
 
   // Não renderiza nada durante o redirecionamento para o login
@@ -37,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex min-h-screen w-full items-center justify-center">
         <p>Redirecionando para o login...</p>
       </div>
-    );
+    )
   }
 
   // Só renderiza o layout do dashboard se estiver autenticado
@@ -51,5 +50,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </SidebarInset>
       </div>
     </SidebarProvider>
-  );
+  )
 }

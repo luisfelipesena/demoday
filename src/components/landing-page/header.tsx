@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { GraduationCap } from "lucide-react"
-import Link from "next/link"
 import Image from "next/image"
+import Link from "next/link"
 
 export function LandingPageHeader() {
   return (

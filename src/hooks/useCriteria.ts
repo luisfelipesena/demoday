@@ -107,8 +107,7 @@ export function useDeleteCriteria() {
   return useMutation({
     mutationFn: async ({
       id,
-      type,
-      demodayId
+      type
     }: {
       id: string;
       type: "registration" | "evaluation";

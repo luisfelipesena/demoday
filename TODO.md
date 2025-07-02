@@ -9,6 +9,29 @@ Based on client feedback, implementing comprehensive changes to support:
 - Professor pre-registration system
 - Improved admin controls with finalist limits
 - Better landing page with dates display
+- **NEW: Complete workflow with Triagem → Avaliação → Votação system**
+- **NEW: Binary voting system and finalist selection process**
+- **NEW: Automated results display and certificate generation**
+
+---
+
+## 🔄 **UPDATED WORKFLOW & BUSINESS RULES**
+
+### **Complete Demoday Flow**
+
+1. **Submissão** (Phase 1) - Project submission period
+2. **Triagem** (Phase 2) - Binary approval/rejection by admins (filtering only)
+3. **Avaliação** (Phase 3) - Evaluation by professors and committee
+4. **Votação Popular** (Phase 4) - Public voting to select finalists
+5. **Votação Final** (Phase 5) - Final voting among finalists
+6. **Apresentação** (Phase 6) - Results presentation event
+
+### **Key Business Rules**
+
+- Only one active Demoday at a time
+- Can only create new Demoday after finishing the current one
+- Each phase has specific start/end dates
+- Users only see content appropriate for their role and current phase
 
 ---
 
@@ -203,7 +226,68 @@ Based on client feedback, implementing comprehensive changes to support:
 
 ## 🔧 **REMAINING TASKS**
 
-### **Medium Priority**
+### **High Priority - New Workflow Implementation**
+
+- [ ] **Triagem System (Binary Filtering)**
+
+  - [ ] Create triagem interface for admins
+  - [ ] Binary approval/rejection system (not scoring-based)
+  - [ ] Criteria: practical project, software/system, fits Demoday
+  - [ ] Only approved projects proceed to evaluation phase
+  - [ ] Update project submission status workflow
+
+- [ ] **Enhanced Evaluation System**
+
+  - [ ] Implement single/few criteria evaluation
+  - [ ] Support binary evaluation with optional 0-10 scoring for testing
+  - [ ] Only approved projects from triagem can be evaluated
+  - [ ] Auto-approve to voting after evaluation completion
+
+- [ ] **Voting System Overhaul**
+
+  - [ ] **Popular Voting Phase**
+
+    - [ ] Voting by category (TCC, mestrado, doutorado, etc.)
+    - [ ] Binary vote: "should be finalist" (yes/no)
+    - [ ] User can vote on multiple projects (non-mandatory)
+    - [ ] Show projects list/table by category
+    - [ ] Hide partial results from regular users (admin only)
+    - [ ] Track who voted to prevent duplicate votes per person/project
+    - [ ] Equal weight for students and professors
+
+  - [ ] **Final Voting Phase**
+    - [ ] Equal voting weight for all users (students + professors)
+    - [ ] Maximum 5 finalists per category
+    - [ ] Star rating system (1-5 stars) preferred
+    - [ ] Optional vote justification (not mandatory)
+    - [ ] Evaluation criteria defined by committee
+    - [ ] Auto-display results after completion (no extra button)
+    - [ ] Show 1st, 2nd, 3rd place with tie-breaking by committee
+
+### **Medium Priority - UI/UX Improvements**
+
+- [ ] **Results Display Enhancement**
+
+  - [ ] Remove redundant information/lines
+  - [ ] Automatic result display after demoday completion
+  - [ ] Remove extra buttons for viewing final results
+  - [ ] Clear ranking display (1st, 2nd, 3rd place)
+  - [ ] Category-based result organization
+
+- [ ] **User Experience Improvements**
+
+  - [ ] Clear, fast, and simple flow for users
+  - [ ] Encourage engagement without excessive requirements
+  - [ ] Admin transparency with user privacy
+  - [ ] Control over voting participation and active phases
+
+- [ ] **Certificate System Enhancement**
+  - [ ] Automatic certificate generation for proper participants
+  - [ ] PDF reports for participation proof
+  - [ ] Validate participation: voted correctly + attended event
+  - [ ] Track hours for certificate compliance
+
+### **Medium Priority - System Enhancements**
 
 - [ ] **Professor Pre-registration System**
 
@@ -213,10 +297,18 @@ Based on client feedback, implementing comprehensive changes to support:
   - [ ] Professor password reset flow
 
 - [ ] **Admin Enhancements**
+
   - [ ] Remove fixed categories from demoday creation completely
   - [ ] Implement finalist selection based on maxFinalists
   - [ ] Add finalist management interface
   - [ ] Update results display to respect maxFinalists
+
+- [ ] **Access Control & Bug Fixes**
+  - [ ] Fix access bugs and repeated phases
+  - [ ] Remove inappropriate buttons
+  - [ ] Ensure students/professors only see appropriate content
+  - [ ] Prevent access to partial results by regular users
+  - [ ] Control phase-based content visibility
 
 ### **Low Priority**
 
@@ -225,6 +317,7 @@ Based on client feedback, implementing comprehensive changes to support:
   - [ ] Bulk actions for admin (approve/reject multiple)
   - [ ] Advanced filtering in submissions view
   - [ ] Export functionality for submissions
+  - [ ] Flexible dates adjustment for December deployment
 
 ### **Bug Fixes**
 
@@ -271,6 +364,15 @@ The core functionality has been successfully implemented and is ready for use:
 - ✅ Edit functionality only during submission periods
 - ✅ Finalist selection limited by maxFinalists setting
 
+### **New Business Rules to Implement**
+
+- 🔄 **Triagem system**: Binary approval for practical/eligible projects
+- 🔄 **Enhanced voting**: Binary popular voting + star-based final voting
+- 🔄 **Equal voting weights**: Students and professors have equal influence
+- 🔄 **Automatic results**: Direct display without extra buttons
+- 🔄 **Certificate automation**: Generate based on participation tracking
+- 🔄 **Phase-based visibility**: Users only see appropriate content for current phase
+
 ### **Database Changes Applied**
 
 - ✅ Schema migration completed successfully
@@ -293,9 +395,38 @@ The core functionality has been successfully implemented and is ready for use:
 - ✅ Core functionality tested
 - ✅ Database schema up-to-date
 - ✅ All client requirements addressed
+- 🔄 New workflow requirements identified and prioritized
 - ⚠️ Minor evaluation form interface issue (non-blocking)
 
 ---
 
+## 📊 **SUMMARY OF EXPECTED BEHAVIORS**
+
+### **Clear and Fast User Flow**
+
+- Simple, intuitive interface encouraging engagement
+- Non-mandatory participation where appropriate
+- Quick and responsive voting/evaluation process
+
+### **Transparency and Privacy Balance**
+
+- Admin transparency for monitoring and control
+- User privacy (no partial result visibility)
+- Clear tracking of participation and voting
+
+### **Automated and Direct Results**
+
+- Clear final results automatically displayed
+- Automatic certificate generation
+- Direct ranking without additional navigation
+
+### **Phase Control and Access**
+
+- Users only access content appropriate for current phase
+- Admins control all phases and transitions
+- Clear indication of active phases and permissions
+
+---
+
 _Last Updated: 2024-12-20_
-_Status: 🟢 Production Ready - Core requirements fully implemented_
+_Status: 🟡 Core Ready - New Workflow Features in Progress_

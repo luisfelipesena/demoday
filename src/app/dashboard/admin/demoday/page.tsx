@@ -1,5 +1,6 @@
 "use client"
 
+import InvitePanel from "@/components/admin/InvitePanel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,13 +16,11 @@ import { useToast } from "@/components/ui/use-toast"
 import { useDemodays, useUpdateDemodayStatus } from "@/hooks/useDemoday"
 import { DotsHorizontalIcon } from "@radix-ui/react-icons"
 import Link from "next/link"
-import InvitePanel from '@/components/admin/InvitePanel'
 
 export default function DemodayListPage() {
   const { data: demodays, isLoading, error } = useDemodays()
   const updateStatus = useUpdateDemodayStatus()
   const { toast } = useToast()
-
 
   // Show loading during session check
   if (isLoading) {
@@ -77,7 +76,7 @@ export default function DemodayListPage() {
         } com sucesso.`,
         variant: "default",
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o status do Demoday.",

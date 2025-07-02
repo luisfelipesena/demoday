@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/server/db";
-import { certificates, users, demodays } from "@/server/db/schema";
 import { auth } from "@/server/auth";
-import { eq, and } from "drizzle-orm";
+import { db } from "@/server/db";
+import { certificates, demodays } from "@/server/db/schema";
 import { createId } from "@paralleldrive/cuid2";
+import { and, eq } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
 interface GenerateCertificatePayload {
   demodayId: string;
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
     // For attendedEvent, we'll use the 'certificates.attendedEvent' field for now, 
     // assuming it's set by an admin or another process.
     // The 'users.attended_current_event' might be too generic if not reset per demoday.
-    
+
     // Placeholder for 'participated_evaluation' - This logic needs to be defined.
     // For now, we'll assume true if a certificate record can be made or already implies it.
-    const participatedEvaluation = true; // TODO: Implement actual logic
+    // const participatedEvaluation = true; // TODO: Implement actual logic
 
     // Check if user attended the event (e.g., an admin might set this flag directly on the certificates table or via users table)
     // For this example, we'll assume there's a mechanism to know this. 
@@ -55,11 +55,11 @@ export async function POST(request: NextRequest) {
 
     // 3. Check if certificate already exists
     let certificate = await db.query.certificates.findFirst({
-        where: and(eq(certificates.userId, userId), eq(certificates.demodayId, demodayId))
+      where: and(eq(certificates.userId, userId), eq(certificates.demodayId, demodayId))
     });
 
     if (certificate && certificate.generatedAt) {
-        return NextResponse.json({ message: "Certificate already generated.", certificate });
+      return NextResponse.json({ message: "Certificate already generated.", certificate });
     }
 
     // If certificate doesn't exist, create it with eligibility flags potentially set by admin/other process
@@ -72,12 +72,12 @@ export async function POST(request: NextRequest) {
     // The actual *setting* of participatedEvaluation and attendedEvent flags on the certificate entry is crucial and might be an admin task or automated.
 
     const eligibility = {
-        participatedEvaluation: true, // TODO: Replace with actual check
-        attendedEvent: true // TODO: Replace with actual check (e.g., from users table or a dedicated attendance table)
+      participatedEvaluation: true, // TODO: Replace with actual check
+      attendedEvent: true // TODO: Replace with actual check (e.g., from users table or a dedicated attendance table)
     }
 
     if (!eligibility.participatedEvaluation || !eligibility.attendedEvent) {
-        return NextResponse.json({ error: "User not eligible for a certificate for this Demoday. Evaluation or attendance criteria not met." }, { status: 403 });
+      return NextResponse.json({ error: "User not eligible for a certificate for this Demoday. Evaluation or attendance criteria not met." }, { status: 403 });
     }
 
     const now = new Date();
@@ -107,15 +107,15 @@ export async function POST(request: NextRequest) {
       certificate = newCertificate;
     }
 
-    return NextResponse.json({ 
-        message: "Certificate generated successfully.", 
-        certificate 
+    return NextResponse.json({
+      message: "Certificate generated successfully.",
+      certificate
     });
 
   } catch (error) {
     console.error("Error generating certificate:", error);
     if (error instanceof Error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ error: "An unknown server error occurred." }, { status: 500 });
   }

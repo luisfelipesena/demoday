@@ -13,35 +13,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use } from "react"
 
-interface DemodayDetails {
-  id: string
-  name: string
-  active: boolean
-  status: "active" | "finished" | "canceled"
-  createdAt: string
-  updatedAt: string
-  phases: Array<{
-    id: string
-    name: string
-    description: string
-    phaseNumber: number
-    startDate: string
-    endDate: string
-  }>
-  stats: {
-    totalProjects: number
-    submitted: number
-    approved: number
-    finalists: number
-    winners: number
-  }
-  currentPhase: {
-    id: string
-    name: string
-    phaseNumber: number
-  } | null
-}
-
 interface DemodayPageProps {
   params: Promise<{ id: string }>
 }

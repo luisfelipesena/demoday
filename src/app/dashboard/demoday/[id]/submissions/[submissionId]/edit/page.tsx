@@ -50,7 +50,7 @@ interface SubmissionData {
 export default function EditSubmissionPage({ params }: EditSubmissionProps) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const { id: demodayId, submissionId } = resolvedParams
+  const { submissionId } = resolvedParams
   const { data: session, isPending } = useSession()
 
   const [submission, setSubmission] = useState<SubmissionData | null>(null)

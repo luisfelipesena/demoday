@@ -6,7 +6,7 @@ import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET - Buscar todos os projetos do usuário atual
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
     const session = await getSessionWithRole();

@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
-import { demodays, demoDayPhases } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { demodays } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export async function POST() {
@@ -19,7 +19,7 @@ export async function POST() {
       if (!demoday.phases || demoday.phases.length === 0) continue;
 
       const now = new Date();
-      
+
       // Encontrar a última fase (maior phaseNumber)
       const lastPhase = demoday.phases.reduce((latest, current) => {
         return current.phaseNumber > latest.phaseNumber ? current : latest;

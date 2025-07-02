@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { users, accounts, sessions } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
-import bcrypt from "bcryptjs";
+import { accounts, sessions, users } from "@/server/db/schema";
 import { createId } from "@paralleldrive/cuid2";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { env } from "@/env";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {

@@ -171,7 +171,7 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
   }
 
   // Encontrar a fase de submissão
-  const submissionPhase = demoday.phases?.find((phase: any) => phase.phaseNumber === 1)
+  // const submissionPhase = demoday.phases?.find((phase: any) => phase.phaseNumber === 1)
 
   return (
     <div className="container mx-auto py-6">

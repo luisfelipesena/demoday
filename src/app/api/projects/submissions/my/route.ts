@@ -2,10 +2,10 @@ import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demodays, projectSubmissions, projects } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 // GET - Buscar todas as submissões do usuário atual
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Obter a sessão para verificar se o usuário está autenticado
     const session = await getSessionWithRole();

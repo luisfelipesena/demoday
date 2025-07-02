@@ -1,17 +1,17 @@
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { 
-  demodays, 
-  projectCategories, 
-  projects, 
-  projectSubmissions, 
-  votes, 
-  professorEvaluations,
+import {
+  demodays,
   evaluationCriteria,
   evaluationScores,
-  users
+  professorEvaluations,
+  projectCategories,
+  projects,
+  projectSubmissions,
+  users,
+  votes
 } from "@/server/db/schema";
-import { and, eq, avg, count, sum } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 interface ProjectEvaluation {
@@ -173,10 +173,10 @@ export async function GET(
 
       // Organizar avaliações por avaliador
       const evaluationsMap = new Map<string, ProjectEvaluation>();
-      
+
       for (const evalData of projectEvaluations) {
         const evalId = evalData.evaluation.id;
-        
+
         if (!evaluationsMap.has(evalId)) {
           evaluationsMap.set(evalId, {
             id: evalId,
@@ -199,7 +199,7 @@ export async function GET(
       }
 
       const evaluationsArray = Array.from(evaluationsMap.values());
-      
+
       // Calcular média das avaliações
       const averageEvaluationScore = evaluationsArray.length > 0
         ? evaluationsArray.reduce((sum, evaluation) => sum + evaluation.totalScore, 0) / evaluationsArray.length

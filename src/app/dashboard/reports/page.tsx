@@ -1,17 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useSession } from "@/lib/auth-client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { BarChart as BarChartIcon, Download, FileText, Star } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "@/components/ui/use-toast"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "@/components/ui/use-toast"
+import { useSession } from "@/lib/auth-client"
+import { BarChart as BarChartIcon, Download, FileText, Star } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function ReportsPage() {
   const router = useRouter()
@@ -23,13 +23,13 @@ export default function ReportsPage() {
     if (session?.user) {
       fetchReports()
     }
-  }, [session, router])
+  }, [session, router]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchReports = async () => {
     try {
       setLoading(true)
       const response = await fetch("/api/reports")
-      
+
       if (!response.ok) {
         if (response.status === 403) {
           toast({
@@ -40,11 +40,11 @@ export default function ReportsPage() {
           router.push("/dashboard")
           return
         }
-        
+
         const errorData = await response.json()
         throw new Error(errorData.error || "Erro ao carregar relatórios")
       }
-      
+
       const data = await response.json()
       setReportData(data)
     } catch (error) {
@@ -61,30 +61,36 @@ export default function ReportsPage() {
 
   const downloadCSV = () => {
     if (!reportData || !reportData.evaluationSummary) return
-    
+
     // Create CSV content
-    const headers = ["Título do Projeto", "Tipo", "Pontuação Média", "Total de Avaliações", ...reportData.criteria.map((c: any) => c.name)]
+    const headers = [
+      "Título do Projeto",
+      "Tipo",
+      "Pontuação Média",
+      "Total de Avaliações",
+      ...reportData.criteria.map((c: any) => c.name),
+    ]
     const rows = reportData.evaluationSummary.map((summary: any) => {
       const criteriaScores = reportData.criteria.map((criterion: any) => {
         const criterionScore = summary.criteriaScores.find((cs: any) => cs.criteriaId === criterion.id)
         return criterionScore ? criterionScore.averageScore.toFixed(2) : "N/A"
       })
-      
+
       return [
         summary.projectTitle,
         reportData.submissions.find((s: any) => s.id === summary.submissionId)?.project.type || "Desconhecido",
         summary.averageTotalScore.toFixed(2),
         summary.totalEvaluations,
-        ...criteriaScores
+        ...criteriaScores,
       ]
     })
-    
+
     // Convert to CSV string
     const csvContent = [
       headers.join(","),
-      ...rows.map((row: any) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      ...rows.map((row: any) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
     ].join("\n")
-    
+
     // Create and download file
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const url = URL.createObjectURL(blob)
@@ -94,7 +100,7 @@ export default function ReportsPage() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     toast({
       title: "Sucesso",
       description: "Relatório baixado com sucesso",
@@ -122,30 +128,19 @@ export default function ReportsPage() {
             <div className="text-center">
               <BarChartIcon className="mx-auto mb-2 h-8 w-8 text-gray-400" />
               <p className="text-lg font-medium">Nenhum dado de relatório disponível</p>
-              <p className="text-sm text-gray-500 mb-4">
-                {reportData?.message || "Nenhum Demoday ativo encontrado."}
-              </p>
+              <p className="text-sm text-gray-500 mb-4">{reportData?.message || "Nenhum Demoday ativo encontrado."}</p>
               <div className="space-y-2">
-                <Button 
-                  variant="default" 
-                  onClick={() => router.push("/dashboard/admin/demoday")}
-                >
+                <Button variant="default" onClick={() => router.push("/dashboard/admin/demoday")}>
                   <BarChartIcon className="mr-2 h-4 w-4" />
                   Gerenciar Demodays
                 </Button>
                 <br />
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push("/dashboard/evaluations")}
-                >
+                <Button variant="outline" onClick={() => router.push("/dashboard/evaluations")}>
                   <FileText className="mr-2 h-4 w-4" />
                   Ir para Avaliações
                 </Button>
                 <br />
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push("/dashboard/admin/results")}
-                >
+                <Button variant="outline" onClick={() => router.push("/dashboard/admin/results")}>
                   <BarChartIcon className="mr-2 h-4 w-4" />
                   Ver Resultados Detalhados
                 </Button>
@@ -165,9 +160,7 @@ export default function ReportsPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>{reportData.demoday.name} - Relatórios</CardTitle>
-            <CardDescription>
-              {reportData.message}
-            </CardDescription>
+            <CardDescription>{reportData.message}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
@@ -179,18 +172,12 @@ export default function ReportsPage() {
                 Há {reportData.submissions?.length || 0} projetos submetidos, mas nenhuma avaliação foi feita ainda.
               </p>
               <div className="space-y-2">
-                <Button 
-                  variant="default" 
-                  onClick={() => router.push("/dashboard/evaluations")}
-                >
+                <Button variant="default" onClick={() => router.push("/dashboard/evaluations")}>
                   <FileText className="mr-2 h-4 w-4" />
                   Fazer Avaliações
                 </Button>
                 <br />
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push("/dashboard/admin/results")}
-                >
+                <Button variant="outline" onClick={() => router.push("/dashboard/admin/results")}>
                   <BarChartIcon className="mr-2 h-4 w-4" />
                   Ver Resultados Detalhados
                 </Button>
@@ -220,7 +207,8 @@ export default function ReportsPage() {
         <CardHeader>
           <CardTitle>{reportData.demoday.name} - Relatórios</CardTitle>
           <CardDescription>
-            {reportData.evaluationSummary.length} avaliações de projetos | {reportData.criteria.length} critérios de avaliação
+            {reportData.evaluationSummary.length} avaliações de projetos | {reportData.criteria.length} critérios de
+            avaliação
           </CardDescription>
         </CardHeader>
       </Card>
@@ -230,7 +218,7 @@ export default function ReportsPage() {
           <TabsTrigger value="summary">Resumo</TabsTrigger>
           <TabsTrigger value="details">Detalhes dos Projetos</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="summary">
           <Card>
             <CardHeader>
@@ -275,7 +263,7 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="details">
           <div className="grid gap-6">
             {sortedSummary.map((summary: any) => {
@@ -326,4 +314,4 @@ export default function ReportsPage() {
       </Tabs>
     </div>
   )
-} 
+}

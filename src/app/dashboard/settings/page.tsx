@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useSession, signOut, changePassword } from "@/lib/auth-client"
-import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
+import { changePassword, signOut, useSession } from "@/lib/auth-client"
 import { RefreshCw } from "lucide-react"
+import { useEffect, useState } from "react"
 
 export default function SettingsPage() {
   const { data: session } = useSession()
@@ -44,15 +44,11 @@ export default function SettingsPage() {
     }
   }, [session])
 
-  const handleInputChange = (
-    key: string, 
-    value: string, 
-    stateUpdater: React.Dispatch<React.SetStateAction<any>>
-  ) => {
+  const handleInputChange = (key: string, value: string, stateUpdater: React.Dispatch<React.SetStateAction<any>>) => {
     stateUpdater((prev: any) => ({ ...prev, [key]: value }))
-    
+
     if (errors[key as keyof typeof errors]) {
-      setErrors(prev => ({ ...prev, [key]: "" }))
+      setErrors((prev) => ({ ...prev, [key]: "" }))
     }
   }
 
@@ -110,21 +106,21 @@ export default function SettingsPage() {
     if (!validateProfileData()) return
 
     setIsLoading(true)
-    
+
     try {
-      const response = await fetch('/api/user/update-profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/user/update-profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(profileSettings),
       })
 
       const data = await response.json()
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao atualizar perfil')
+        throw new Error(data.error || "Erro ao atualizar perfil")
       }
-      
+
       toast({
         title: "Perfil atualizado",
         description: "Informações do perfil atualizadas com sucesso!",
@@ -136,7 +132,8 @@ export default function SettingsPage() {
     } catch (error) {
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao tentar salvar as informações do perfil.",
+        description:
+          error instanceof Error ? error.message : "Ocorreu um erro ao tentar salvar as informações do perfil.",
         variant: "destructive",
         duration: 5000,
       })
@@ -149,16 +146,16 @@ export default function SettingsPage() {
     if (isPasswordLoading || !validatePasswordData()) return
 
     setIsPasswordLoading(true)
-    
+
     try {
-      const { data, error } = await changePassword({
+      const { error } = await changePassword({
         currentPassword: passwordSettings.currentPassword,
         newPassword: passwordSettings.newPassword,
         revokeOtherSessions: true,
       })
 
       if (error) {
-        throw new Error(error.message || 'Erro ao alterar senha')
+        throw new Error(error.message || "Erro ao alterar senha")
       }
 
       setPasswordSettings({
@@ -166,7 +163,7 @@ export default function SettingsPage() {
         newPassword: "",
         confirmPassword: "",
       })
-      
+
       toast({
         title: "Senha alterada",
         description: "Senha alterada com sucesso!",
@@ -175,7 +172,7 @@ export default function SettingsPage() {
       })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro ao tentar alterar a senha"
-      
+
       toast({
         title: "Erro",
         description: errorMessage,
@@ -211,37 +208,33 @@ export default function SettingsPage() {
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="account">Conta</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="profile" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Informações do Perfil</CardTitle>
-              <CardDescription>
-                Gerencie seus dados pessoais e como eles são exibidos.
-              </CardDescription>
+              <CardDescription>Gerencie seus dados pessoais e como eles são exibidos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="text-sm font-medium">Nome</div>
-                <Input 
-                  id="name" 
-                  value={profileSettings.name} 
-                  onChange={e => handleInputChange("name", e.target.value, setProfileSettings)}
+                <Input
+                  id="name"
+                  value={profileSettings.name}
+                  onChange={(e) => handleInputChange("name", e.target.value, setProfileSettings)}
                 />
                 {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium">Email</div>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={profileSettings.email} 
-                  onChange={e => handleInputChange("email", e.target.value, setProfileSettings)}
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileSettings.email}
+                  onChange={(e) => handleInputChange("email", e.target.value, setProfileSettings)}
                 />
                 {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-                <p className="text-sm text-gray-500">
-                  Este email é usado para notificações e login.
-                </p>
+                <p className="text-sm text-gray-500">Este email é usado para notificações e login.</p>
               </div>
             </CardContent>
             <CardFooter>
@@ -251,7 +244,9 @@ export default function SettingsPage() {
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
-                ) : "Salvar alterações"}
+                ) : (
+                  "Salvar alterações"
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -261,41 +256,37 @@ export default function SettingsPage() {
           <Card className="mb-4">
             <CardHeader>
               <CardTitle>Alterar Senha</CardTitle>
-              <CardDescription>
-                Atualize sua senha para manter sua conta segura.
-              </CardDescription>
+              <CardDescription>Atualize sua senha para manter sua conta segura.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="text-sm font-medium">Senha atual</div>
-                <Input 
-                  id="currentPassword" 
-                  type="password" 
-                  value={passwordSettings.currentPassword} 
-                  onChange={e => handleInputChange("currentPassword", e.target.value, setPasswordSettings)}
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={passwordSettings.currentPassword}
+                  onChange={(e) => handleInputChange("currentPassword", e.target.value, setPasswordSettings)}
                 />
                 {errors.currentPassword && <p className="text-sm text-red-500">{errors.currentPassword}</p>}
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium">Nova senha</div>
-                <Input 
-                  id="newPassword" 
-                  type="password" 
-                  value={passwordSettings.newPassword} 
-                  onChange={e => handleInputChange("newPassword", e.target.value, setPasswordSettings)}
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordSettings.newPassword}
+                  onChange={(e) => handleInputChange("newPassword", e.target.value, setPasswordSettings)}
                 />
                 {errors.newPassword && <p className="text-sm text-red-500">{errors.newPassword}</p>}
-                <p className="text-sm text-gray-500">
-                  A senha deve ter pelo menos 6 caracteres.
-                </p>
+                <p className="text-sm text-gray-500">A senha deve ter pelo menos 6 caracteres.</p>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium">Confirmar nova senha</div>
-                <Input 
-                  id="confirmPassword" 
-                  type="password" 
-                  value={passwordSettings.confirmPassword} 
-                  onChange={e => handleInputChange("confirmPassword", e.target.value, setPasswordSettings)}
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordSettings.confirmPassword}
+                  onChange={(e) => handleInputChange("confirmPassword", e.target.value, setPasswordSettings)}
                 />
                 {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
               </div>
@@ -307,7 +298,9 @@ export default function SettingsPage() {
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     Alterando senha...
                   </>
-                ) : "Alterar senha"}
+                ) : (
+                  "Alterar senha"
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -315,27 +308,30 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Segurança da Conta</CardTitle>
-              <CardDescription>
-                Gerencie as configurações de segurança da sua conta.
-              </CardDescription>
+              <CardDescription>Gerencie as configurações de segurança da sua conta.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="text-sm font-medium">Detalhes da conta</div>
                 <div className="text-sm text-gray-500">
-                  <p><span className="font-medium">ID:</span> {session?.user?.id}</p>
-                  <p><span className="font-medium">Função:</span> {session?.user?.role}</p>
-                  <p><span className="font-medium">Conta criada em:</span> {session?.user?.createdAt ? new Date(session.user.createdAt).toLocaleDateString() : 'N/A'}</p>
+                  <p>
+                    <span className="font-medium">ID:</span> {session?.user?.id}
+                  </p>
+                  <p>
+                    <span className="font-medium">Função:</span> {session?.user?.role}
+                  </p>
+                  <p>
+                    <span className="font-medium">Conta criada em:</span>{" "}
+                    {session?.user?.createdAt ? new Date(session.user.createdAt).toLocaleDateString() : "N/A"}
+                  </p>
                 </div>
                 <Separator className="my-4" />
-                <div className="text-sm text-gray-500">
-                  Último acesso: {new Date().toLocaleDateString()}
-                </div>
+                <div className="text-sm text-gray-500">Último acesso: {new Date().toLocaleDateString()}</div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
                 onClick={handleSignOut}
               >

@@ -69,7 +69,7 @@ export async function GET(
 
     // Agrupar projetos por categoria (incluindo projetos sem categoria)
     const categoryMap = new Map<string, CategoryResult>();
-    
+
     // Inicializar categorias existentes
     for (const category of categories) {
       categoryMap.set(category.id, {
@@ -78,7 +78,7 @@ export async function GET(
         projects: [],
       });
     }
-    
+
     // Criar categoria especial para projetos sem categoria
     const uncategorizedKey = "uncategorized";
     categoryMap.set(uncategorizedKey, {
@@ -134,14 +134,14 @@ export async function GET(
       // Determinar a qual categoria o projeto pertence
       const categoryKey = sub.category?.id || uncategorizedKey;
       const targetCategory = categoryMap.get(categoryKey);
-      
+
       if (targetCategory) {
         targetCategory.projects.push(projectResult);
       }
     }
 
     // Processar cada categoria: ordenar projetos e determinar vencedores
-    for (const [categoryKey, categoryData] of categoryMap.entries()) {
+    for (const [, categoryData] of categoryMap.entries()) {
       // Sort projects within category by finalWeightedScore DESC, then popularVoteCount DESC
       categoryData.projects.sort((a, b) => {
         if (b.finalWeightedScore !== a.finalWeightedScore) {

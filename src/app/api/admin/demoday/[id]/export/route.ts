@@ -1,16 +1,15 @@
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { 
-  demodays, 
-  projectCategories, 
-  projects, 
-  projectSubmissions, 
-  votes, 
+import {
+  demodays,
   professorEvaluations,
-  evaluationScores,
-  users
+  projectCategories,
+  projects,
+  projectSubmissions,
+  users,
+  votes
 } from "@/server/db/schema";
-import { and, eq, count } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -57,12 +56,12 @@ export async function GET(
 
     // Preparar dados para CSV
     const csvData = [];
-    
+
     // Header
     csvData.push([
       "ID Projeto",
       "Título",
-      "Descrição", 
+      "Descrição",
       "Tipo",
       "Categoria",
       "Autores",
