@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StarRating } from "@/components/ui/star-rating"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { useCategories } from "@/hooks/useCategories"
 import { useDemodayDetails } from "@/hooks/useDemoday"
@@ -13,7 +14,7 @@ import { useDemodayProjects } from "@/hooks/useDemodayProjects"
 import { useSubmitVote } from "@/hooks/useVoting"
 import { useSession } from "@/lib/auth-client"
 import { isDemodayFinished } from "@/utils/date-utils"
-import { AlertCircle, ArrowLeft, CheckCircle, Star, ThumbsUp, Trophy } from "lucide-react"
+import { AlertCircle, ArrowLeft, CheckCircle, MessageSquare, Star, ThumbsUp, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -51,6 +52,7 @@ interface VoteData {
   hasVoted: boolean
   votePhase?: "popular" | "final"
   rating?: number
+  justification?: string
 }
 
 interface DemodayInfo {
@@ -94,6 +96,7 @@ export default function PublicVotingPage() {
   const [categories, setCategories] = useState<VotingCategory[]>([])
   const [userVotes, setUserVotes] = useState<Map<string, VoteData>>(new Map())
   const [projectRatings, setProjectRatings] = useState<Map<string, number>>(new Map())
+  const [projectJustifications, setProjectJustifications] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [votingPhase, setVotingPhase] = useState<"popular" | "final" | null>(null)
   const [isVotingPeriod, setIsVotingPeriod] = useState(false)
@@ -248,6 +251,7 @@ export default function PublicVotingPage() {
             hasVoted: data.hasVoted,
             votePhase: data.vote?.votePhase,
             rating: data.vote?.rating,
+            justification: data.vote?.justification,
           })
         }
       } catch (error) {
@@ -274,6 +278,7 @@ export default function PublicVotingPage() {
         demodayId: string
         votePhase: "popular" | "final"
         rating?: number
+        justification?: string
       } = {
         projectId,
         demodayId,
@@ -292,7 +297,14 @@ export default function PublicVotingPage() {
           return
         }
 
-        Object.assign(voteData, { rating })
+        // Add rating to vote data
+        voteData.rating = rating
+
+        // Add justification if provided (optional)
+        const justification = projectJustifications.get(projectId)
+        if (justification) {
+          voteData.justification = justification
+        }
       }
 
       const response = await fetch("/api/projects/vote", {
@@ -315,6 +327,7 @@ export default function PublicVotingPage() {
           hasVoted: true,
           votePhase: votingPhase,
           rating: voteData.rating,
+          justification: voteData.justification,
         }
         setUserVotes((prev) => new Map(prev.set(projectId, newVoteData)))
       } else {
@@ -337,6 +350,10 @@ export default function PublicVotingPage() {
 
   const handleRatingChange = (projectId: string, rating: number) => {
     setProjectRatings((prev) => new Map(prev.set(projectId, rating)))
+  }
+
+  const handleJustificationChange = (projectId: string, justification: string) => {
+    setProjectJustifications((prev) => new Map(prev.set(projectId, justification)))
   }
 
   const getPhaseDescription = () => {
@@ -610,6 +627,24 @@ export default function PublicVotingPage() {
                                 onChange={(rating) => handleRatingChange(submission.project.id, rating)}
                                 readonly={voteData?.hasVoted && voteData?.votePhase === "final"}
                                 size="md"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label
+                                htmlFor={`justification-${submission.project.id}`}
+                                className="text-sm font-medium flex items-center gap-1"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                                Justificativa (opcional):
+                              </label>
+                              <Textarea
+                                id={`justification-${submission.project.id}`}
+                                placeholder="Por que você considera este projeto merecedor? (opcional)"
+                                value={projectJustifications.get(submission.project.id) || ""}
+                                onChange={(e) => handleJustificationChange(submission.project.id, e.target.value)}
+                                disabled={voteData?.hasVoted && voteData?.votePhase === "final"}
+                                className="h-24 resize-none"
                               />
                             </div>
 

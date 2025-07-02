@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { projectId, demodayId, votePhase = "popular", rating } = result.data;
+    const { projectId, demodayId, votePhase = "popular", rating, justification } = result.data;
 
     // Verificar se o projeto existe
     const project = await db.query.projects.findFirst({
@@ -228,6 +228,7 @@ export async function POST(req: NextRequest) {
       votePhase: "popular" | "final";
       weight: number;
       rating?: number;
+      justification?: string;
     } = {
       userId,
       projectId,
@@ -239,6 +240,11 @@ export async function POST(req: NextRequest) {
     // Incluir rating apenas para fase final
     if (votePhase === "final" && rating) {
       voteValues.rating = rating;
+    }
+
+    // Incluir justification se fornecido (opcional)
+    if (justification) {
+      voteValues.justification = justification;
     }
 
     const [newVote] = await db

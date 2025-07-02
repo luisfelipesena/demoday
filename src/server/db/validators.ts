@@ -79,6 +79,7 @@ export const voteSchema = z.object({
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
   votePhase: z.enum(["popular", "final"]).default("popular"),
   rating: z.number().int().min(1).max(5).optional(),
+  justification: z.string().max(1000, "Justificativa deve ter no máximo 1000 caracteres").optional(),
 });
 
 // Schema for validating demoday data with maxFinalists

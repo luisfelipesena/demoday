@@ -1,10 +1,12 @@
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface VotePayload {
   projectId: string;
   demodayId: string;
   votePhase?: "popular" | "final";
+  rating?: number;
+  justification?: string;
 }
 
 interface VoteResponse {
@@ -14,6 +16,8 @@ interface VoteResponse {
   voterRole: string;
   votePhase: "popular" | "final";
   weight: number;
+  rating?: number;
+  justification?: string;
   createdAt: string;
 }
 

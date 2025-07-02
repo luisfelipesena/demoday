@@ -212,7 +212,7 @@ Based on client feedback, implementing comprehensive changes to support:
 - [x] **Final Voting Phase Enhancements**
 
   - [x] Star rating system (1-5 stars) implementation for final phase
-  - [ ] Optional vote justification field (not mandatory)
+  - [x] Optional vote justification field (not mandatory)
   - [x] Evaluation criteria display defined by committee
   - [x] Professor-only access enforcement for final voting phase
   - [x] Maximum finalists enforcement (5 per category or custom)
