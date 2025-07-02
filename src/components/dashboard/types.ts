@@ -8,6 +8,7 @@ export type CriteriaType = "registration" | "evaluation"
 export interface DemodayFormProps {
   initialData?: {
     name: string
+    maxFinalists?: number
     phases: Phase[]
     registrationCriteria?: { name: string; description: string; demoday_id?: string }[]
     evaluationCriteria?: { name: string; description: string; demoday_id?: string }[]

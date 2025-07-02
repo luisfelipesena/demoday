@@ -1,10 +1,11 @@
 "use client"
 
+import { signOut, useSession } from "@/lib/auth-client"
+import { Award, BarChart, FileText, GraduationCap, Home, LogOut, Settings, Tags, TrendingUp, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useSession, signOut } from "@/lib/auth-client"
-import { Award, BarChart, GraduationCap, Home, LogOut, Settings, Users, Tags, TrendingUp } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
@@ -30,7 +30,7 @@ export function DashboardSidebar() {
 
   const handleSignOut = async () => {
     await signOut({
-      query: { callbackUrl: "/login" }
+      query: { callbackUrl: "/login" },
     })
   }
 
@@ -58,6 +58,25 @@ export function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Menu para Estudantes e Usuários Externos */}
+        {(userRole === "student" || userRole === "external" || userRole === "user") && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Meus Projetos</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/dashboard/my-submissions")}>
+                    <Link href="/dashboard/my-submissions">
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>Minhas Submissões</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Menu de Avaliações - para todos os usuários */}
         <SidebarGroup>
@@ -135,7 +154,7 @@ export function DashboardSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}> 
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}>
                   <Link href="/dashboard/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Configurações</span>

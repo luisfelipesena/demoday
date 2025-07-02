@@ -1,9 +1,9 @@
+import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
 import { projectSchema } from "@/server/db/validators";
 import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionWithRole } from "@/lib/session-utils";
 
 // GET - Buscar todos os projetos do usuário atual
 export async function GET(req: NextRequest) {
@@ -77,7 +77,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { title, description, type } = result.data;
+    const {
+      title,
+      description,
+      type,
+      contactEmail,
+      contactPhone,
+      advisor,
+      authors,
+      developmentYear,
+      videoUrl,
+      repositoryUrl,
+      workCategory,
+    } = result.data;
 
     // Criar o projeto
     const [newProject] = await db
@@ -87,6 +99,14 @@ export async function POST(req: NextRequest) {
         description,
         type,
         userId,
+        contactEmail,
+        contactPhone,
+        advisor,
+        authors,
+        developmentYear,
+        videoUrl,
+        repositoryUrl,
+        workCategory,
       })
       .returning();
 

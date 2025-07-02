@@ -10,10 +10,14 @@ export const projectSchema = z.object({
   type: z.enum(PROJECT_TYPES, {
     errorMap: () => ({ message: `Tipo de trabalho deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
   }),
-  videoUrl: z.string().url("URL de vídeo inválida").optional(),
+  contactEmail: z.string().email("Email de contato inválido"),
+  contactPhone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").max(15, "Telefone deve ter no máximo 15 dígitos"),
+  advisor: z.string().min(2, "Nome do orientador deve ter pelo menos 2 caracteres"),
+  videoUrl: z.string().url("URL de vídeo inválida"),
   repositoryUrl: z.string().url("URL do repositório inválida").optional(),
   developmentYear: z.string().regex(/^\d{4}$/, "Ano deve estar no formato YYYY"),
   authors: z.string().min(2, "Autores deve ter pelo menos 2 caracteres"),
+  workCategory: z.string().min(2, "Categoria do trabalho deve ter pelo menos 2 caracteres").optional(),
 })
 
 /**
@@ -25,10 +29,14 @@ export const projectSubmissionSchema = z.object({
   type: z.enum(PROJECT_TYPES, {
     errorMap: () => ({ message: `Tipo de trabalho deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
   }),
-  videoUrl: z.string().url("URL de vídeo inválida").optional(),
+  contactEmail: z.string().email("Email de contato inválido"),
+  contactPhone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").max(15, "Telefone deve ter no máximo 15 dígitos"),
+  advisor: z.string().min(2, "Nome do orientador deve ter pelo menos 2 caracteres"),
+  videoUrl: z.string().url("URL de vídeo inválida (vídeo com até 3 minutos)"),
   repositoryUrl: z.string().url("URL do repositório inválida").optional(),
   developmentYear: z.string().regex(/^\d{4}$/, "Ano deve estar no formato YYYY"),
   authors: z.string().min(2, "Autores deve ter pelo menos 2 caracteres"),
+  workCategory: z.string().min(2, "Categoria do trabalho deve ter pelo menos 2 caracteres").optional(),
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
 })
 
@@ -72,9 +80,10 @@ export const voteSchema = z.object({
   votePhase: z.enum(["popular", "final"]).default("popular"),
 });
 
-// Schema for validating demoday data
+// Schema for validating demoday data with maxFinalists
 export const demodaySchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  maxFinalists: z.number().int().min(1, "Número de finalistas deve ser pelo menos 1").max(50, "Número de finalistas deve ser no máximo 50").default(10),
   phases: z.array(
     z.object({
       name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -131,8 +140,7 @@ export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
-  role: z.enum(["admin", "professor", "user"]),
-  inviteCode: z.string().min(1, "Código de convite obrigatório"),
+  role: z.enum(["student", "external"]).default("student"),
 });
 
 // Schema para validação de login de usuário
@@ -140,7 +148,6 @@ export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
 });
-
 
 // Schema para validação de critérios de inscrição
 export const registrationCriteriaSchema = z.object({
@@ -159,6 +166,7 @@ export const phaseSchema = z.object({
 
 export const demodayFormSchema = z.object({
   name: z.string().min(1, "Nome do demoday é obrigatório"),
+  maxFinalists: z.number().int().min(1, "Número de finalistas deve ser pelo menos 1").max(50, "Número de finalistas deve ser no máximo 50").default(10),
   phases: z.array(phaseSchema).min(1, "Pelo menos uma fase é necessária"),
   registrationCriteria: z.array(criteriaSchema).min(1, "Pelo menos um critério de inscrição é obrigatório"),
   evaluationCriteria: z.array(criteriaSchema).default([]),

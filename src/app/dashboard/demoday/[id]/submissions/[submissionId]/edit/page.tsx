@@ -1,38 +1,62 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useSession } from "@/lib/auth-client"
+import { projectSubmissionSchema } from "@/server/db/validators"
+import { PROJECT_TYPES } from "@/types"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { AlertCircle, CalendarCheck } from "lucide-react"
+import { AlertCircle, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { use, useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Textarea } from "@/components/ui/textarea"
-import { useDemodayDetails } from "@/hooks/useDemoday"
-import { useSubmitWork } from "@/hooks/useSubmitWork"
-import { projectSubmissionSchema } from "@/server/db/validators"
-import { PROJECT_TYPES } from "@/types"
-import { isInSubmissionPhase } from "@/utils/date-utils"
-
 type SubmissionFormData = z.infer<typeof projectSubmissionSchema>
 
-interface DemodaySubmitProps {
-  params: Promise<{ id: string }>
+interface EditSubmissionProps {
+  params: Promise<{ id: string; submissionId: string }>
 }
 
-export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
+interface SubmissionData {
+  id: string
+  projectId: string
+  demoday_id: string
+  status: string
+  project: {
+    id: string
+    title: string
+    description: string
+    type: string
+    contactEmail: string
+    contactPhone: string
+    advisor: string
+    videoUrl: string
+    repositoryUrl?: string
+    authors: string
+    workCategory?: string
+    developmentYear: string
+  }
+  demoday: {
+    id: string
+    name: string
+    active: boolean
+    status: string
+  }
+}
+
+export default function EditSubmissionPage({ params }: EditSubmissionProps) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const demodayId = resolvedParams.id
+  const { id: demodayId, submissionId } = resolvedParams
   const { data: session, isPending } = useSession()
+
+  const [submission, setSubmission] = useState<SubmissionData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { data: demoday } = useDemodayDetails(demodayId)
-  const { submitWork, isSubmitting } = useSubmitWork()
 
   const {
     register,
@@ -42,26 +66,45 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
     formState: { errors },
   } = useForm<SubmissionFormData>({
     resolver: zodResolver(projectSubmissionSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      type: undefined,
-      contactEmail: "",
-      contactPhone: "",
-      advisor: "",
-      videoUrl: "",
-      repositoryUrl: "",
-      developmentYear: new Date().getFullYear().toString(),
-      authors: "",
-      workCategory: "",
-      demodayId: demodayId,
-    },
   })
 
-  // Definir o demodayId quando o componente montar
+  // Buscar dados da submissão
   useEffect(() => {
-    setValue("demodayId", demodayId)
-  }, [demodayId, setValue])
+    const fetchSubmission = async () => {
+      try {
+        const response = await fetch(`/api/projects/submissions/${submissionId}`)
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Erro ao carregar submissão")
+        }
+
+        const data: SubmissionData = await response.json()
+        setSubmission(data)
+
+        // Pré-popular o formulário
+        setValue("title", data.project.title)
+        setValue("description", data.project.description)
+        setValue("type", data.project.type as any)
+        setValue("contactEmail", data.project.contactEmail)
+        setValue("contactPhone", data.project.contactPhone)
+        setValue("advisor", data.project.advisor)
+        setValue("videoUrl", data.project.videoUrl)
+        setValue("repositoryUrl", data.project.repositoryUrl || "")
+        setValue("authors", data.project.authors)
+        setValue("workCategory", data.project.workCategory || "")
+        setValue("developmentYear", data.project.developmentYear)
+        setValue("demodayId", data.demoday_id)
+      } catch (error: any) {
+        setError(error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (session && submissionId) {
+      fetchSubmission()
+    }
+  }, [session, submissionId, setValue])
 
   // Verificar autenticação
   if (!isPending && !session) {
@@ -69,117 +112,145 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
     return null
   }
 
-  // Mostrar loading durante verificação da sessão
-  if (isPending) {
-    return (
-      <div className="mx-auto max-w-3xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-
-        <div className="rounded-lg border p-6 shadow-sm">
-          <Skeleton className="h-8 w-48 mb-4" />
-          <Skeleton className="h-6 w-64 mb-8" />
-
-          <div className="space-y-6">
-            <div>
-              <Skeleton className="h-5 w-36 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-
-            <div>
-              <Skeleton className="h-5 w-24 mb-2" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-
-            <div>
-              <Skeleton className="h-5 w-32 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 mt-8">
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-40" />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Verificar se o demoday existe
-  if (!demoday) {
-    return (
-      <div className="mx-auto max-w-3xl p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-amber-600">DemoDay não encontrado</CardTitle>
-            <CardDescription>Não foi possível encontrar o DemoDay especificado.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center p-6">
-            <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button onClick={() => router.push("/dashboard")}>Voltar para o Dashboard</Button>
-          </CardFooter>
-        </Card>
-      </div>
-    )
-  }
-
-  // Se não estiver no período de submissão, mostrar aviso
-  if (!isInSubmissionPhase(demoday)) {
-    return (
-      <div className="mx-auto max-w-3xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Submeter Trabalho</h1>
-          <Button variant="outline" onClick={() => router.back()}>
-            Voltar
-          </Button>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-amber-600">Período de submissão fechado</CardTitle>
-            <CardDescription>
-              O período de submissão de trabalhos para este DemoDay não está aberto no momento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center p-6">
-            <CalendarCheck className="h-16 w-16 text-amber-500 mb-4" />
-            <p className="text-center text-muted-foreground">
-              Verifique as datas das fases do DemoDay e tente novamente durante o período de submissão.
-            </p>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button onClick={() => router.push("/dashboard")}>Voltar para o Dashboard</Button>
-          </CardFooter>
-        </Card>
-      </div>
-    )
-  }
-
   const onSubmit = async (data: SubmissionFormData) => {
+    if (!submission) return
+
     setError(null)
+    setIsSubmitting(true)
+
     try {
-      await submitWork({ demodayId, formData: data })
-      router.push(`/dashboard/demoday/${demodayId}`)
+      const response = await fetch(`/api/projects/submissions/${submissionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao atualizar submissão")
+      }
+
+      router.push(`/dashboard/my-submissions`)
     } catch (error: any) {
       setError(error.message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  // Encontrar a fase de submissão
-  const submissionPhase = demoday.phases?.find((phase: any) => phase.phaseNumber === 1)
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              <div className="space-y-2">
+                <div className="h-10 bg-gray-200 rounded"></div>
+                <div className="h-32 bg-gray-200 rounded"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error && !submission) {
+    return (
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Erro ao carregar submissão
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-600 mb-4">{error}</p>
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => router.push("/dashboard/my-submissions")}>
+                Voltar às Minhas Submissões
+              </Button>
+              <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!submission) {
+    return null
+  }
+
+  // Verificar se pode editar
+  const canEdit = submission.status === "submitted" && submission.demoday.active
+
+  if (!canEdit) {
+    return (
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
+              Edição não permitida
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {submission.status !== "submitted" && (
+                <p className="text-amber-600">
+                  Só é possível editar submissões com status &quot;Submetido&quot;. Status atual:{" "}
+                  <strong>{submission.status}</strong>
+                </p>
+              )}
+              {!submission.demoday.active && (
+                <p className="text-amber-600">Não é possível editar submissões de demodays inativos.</p>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard/my-submissions")}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar às Minhas Submissões
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-6">
+      <div className="mb-6 flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => router.push("/dashboard/my-submissions")}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Editar Submissão</h1>
+          <p className="text-muted-foreground">
+            {submission.demoday.name} - {submission.project.title}
+          </p>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Submeter Trabalho</CardTitle>
+          <CardTitle>Editar Projeto</CardTitle>
           <p className="text-muted-foreground">
-            Preencha as informações do seu projeto para submissão ao {demoday?.name}
+            Atualize as informações do seu projeto. Certifique-se de salvar as alterações.
           </p>
         </CardHeader>
         <CardContent>
@@ -383,11 +454,11 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
             {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">{error}</div>}
 
             <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={() => router.push(`/dashboard/demoday/${demodayId}`)}>
+              <Button type="button" variant="outline" onClick={() => router.push("/dashboard/my-submissions")}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Submetendo..." : "Submeter Trabalho"}
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
           </form>

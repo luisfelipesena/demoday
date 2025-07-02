@@ -1,9 +1,9 @@
-import { db } from "@/server/db";
-import { demodays, demoDayPhases } from "@/server/db/schema";
 import { getSessionWithRole } from "@/lib/session-utils";
-import { NextRequest, NextResponse } from "next/server";
-import { desc, eq } from "drizzle-orm";
+import { db } from "@/server/db";
+import { demoDayPhases, demodays } from "@/server/db/schema";
 import { demodaySchema } from "@/server/db/validators";
+import { desc, eq } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
 // GET - Fetch all demodays
 export async function GET() {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, phases } = result.data;
+    const { name, phases, maxFinalists = 10 } = result.data;
 
     // Create demoday in a transaction
     const [newDemoday] = await db.transaction(async (tx: any) => {
@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
           createdById: userId,
           active: true,
           status: "active",
+          maxFinalists,
         })
         .returning();
 

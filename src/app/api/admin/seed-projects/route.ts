@@ -1,14 +1,14 @@
+import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { projects, projectSubmissions } from "@/server/db/schema";
-import { getSessionWithRole } from "@/lib/session-utils";
-import { NextRequest, NextResponse } from "next/server";
 import { createId } from "@paralleldrive/cuid2";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
     // Verificar se o usuário é admin
     const session = await getSessionWithRole();
-    
+
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { error: "Apenas administradores podem usar esta função" },
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       for (const projectData of projectsData) {
         // Criar o projeto
         const projectId = createId();
-        
+
         await tx.insert(projects).values({
           id: projectId,
           title: projectData.title,
@@ -41,9 +41,13 @@ export async function POST(req: NextRequest) {
           type: projectData.type,
           userId: userId,
           authors: projectData.authors,
+          contactEmail: projectData.contactEmail || "admin@example.com",
+          contactPhone: projectData.contactPhone || "(00) 00000-0000",
+          advisor: projectData.advisor || "Admin Seeded",
           developmentYear: projectData.developmentYear,
           videoUrl: projectData.videoUrl || null,
           repositoryUrl: projectData.repositoryUrl || null,
+          workCategory: projectData.workCategory || null,
         });
 
         // Criar a submissão já aprovada

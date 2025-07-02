@@ -1,1 +1,1 @@
-ALTER TABLE "invites" ADD COLUMN "type" text DEFAULT 'individual' NOT NULL;
+ALTER TABLE "invites" ADD COLUMN IF NOT EXISTS "type" text DEFAULT 'individual' NOT NULL;

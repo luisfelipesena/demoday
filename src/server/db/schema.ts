@@ -1,8 +1,8 @@
-import { pgTable, text, timestamp, integer, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
+import { boolean, integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-export const roleEnum = pgEnum("role", ["admin", "user", "professor"]);
+export const roleEnum = pgEnum("role", ["admin", "user", "professor", "student", "external"]);
 export const demodayStatusEnum = pgEnum("demoday_status", ["active", "finished", "canceled"]);
 
 export const users = pgTable("user", {
@@ -14,6 +14,7 @@ export const users = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   role: roleEnum("role").default("user").notNull(),
+  isPreRegistered: boolean("is_pre_registered").default(false).notNull(),
 });
 
 export const accounts = pgTable("account", {
@@ -78,10 +79,14 @@ export const projects = pgTable("projects", {
   type: text("type").notNull(), // Disciplina, IC, TCC, Mestrado, Doutorado
   categoryId: text("category_id")
     .references(() => projectCategories.id, { onDelete: "set null" }),
-  videoUrl: text("video_url"),
+  contactEmail: text("contact_email").notNull(),
+  contactPhone: text("contact_phone").notNull(),
+  advisor: text("advisor").notNull(),
+  videoUrl: text("video_url").notNull(),
   repositoryUrl: text("repository_url"),
   developmentYear: text("development_year"),
   authors: text("authors"),
+  workCategory: text("work_category"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -110,6 +115,7 @@ export const demodays = pgTable("demodays", {
     .references(() => users.id, { onDelete: "cascade" }),
   active: boolean("active").default(false).notNull(),
   status: demodayStatusEnum("status").default("active").notNull(),
+  maxFinalists: integer("max_finalists").default(10).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -352,7 +358,7 @@ export const evaluationScoresRelations = relations(evaluationScores, ({ one }) =
     fields: [evaluationScores.criteriaId],
     references: [evaluationCriteria.id],
   }),
-})); 
+}));
 
 export type Invite = {
   id: string;

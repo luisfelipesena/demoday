@@ -1,102 +1,80 @@
 import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
 import { demoDayPhases, demodays, projectSubmissions, projects } from "@/server/db/schema";
-import { projectSubmissionStatusSchema } from "@/server/db/validators";
+import { projectSubmissionSchema, projectSubmissionStatusSchema } from "@/server/db/validators";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-// GET - Obter detalhes de uma submissão específica
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+// GET - Get specific submission by ID
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    // Desembrulhar (unwrap) o objeto params antes de acessar suas propriedades
-    const params = await context.params;
-    const submissionId = params.id;
-
-    // Obter a sessão para verificar se o usuário está autenticado
     const session = await getSessionWithRole();
-
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const resolvedParams = await params;
+    const submissionId = resolvedParams.id;
 
-    if (!submissionId) {
-      return NextResponse.json(
-        { error: "ID da submissão é obrigatório" },
-        { status: 400 }
-      );
+    // Buscar a submissão com dados do projeto e demoday
+    const submission = await db
+      .select({
+        id: projectSubmissions.id,
+        projectId: projectSubmissions.projectId,
+        demoday_id: projectSubmissions.demoday_id,
+        status: projectSubmissions.status,
+        createdAt: projectSubmissions.createdAt,
+        updatedAt: projectSubmissions.updatedAt,
+        project: {
+          id: projects.id,
+          title: projects.title,
+          description: projects.description,
+          userId: projects.userId,
+          type: projects.type,
+          contactEmail: projects.contactEmail,
+          contactPhone: projects.contactPhone,
+          advisor: projects.advisor,
+          videoUrl: projects.videoUrl,
+          repositoryUrl: projects.repositoryUrl,
+          developmentYear: projects.developmentYear,
+          authors: projects.authors,
+          workCategory: projects.workCategory,
+        },
+        demoday: {
+          id: demodays.id,
+          name: demodays.name,
+          active: demodays.active,
+          status: demodays.status,
+        }
+      })
+      .from(projectSubmissions)
+      .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
+      .innerJoin(demodays, eq(projectSubmissions.demoday_id, demodays.id))
+      .where(eq(projectSubmissions.id, submissionId))
+      .limit(1);
+
+    if (submission.length === 0) {
+      return NextResponse.json({ error: "Submissão não encontrada" }, { status: 404 });
     }
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "ID de usuário não encontrado" },
-        { status: 401 }
-      );
+    const submissionData = submission[0];
+    if (!submissionData) {
+      return NextResponse.json({ error: "Dados da submissão inválidos" }, { status: 400 });
     }
 
-    // Buscar a submissão pelo ID
-    const submission = await db.query.projectSubmissions.findFirst({
-      where: eq(projectSubmissions.id, submissionId),
-    });
-
-    if (!submission) {
-      return NextResponse.json(
-        { error: "Submissão não encontrada" },
-        { status: 404 }
-      );
+    // Verificar se o usuário é o dono da submissão
+    if (submissionData.project.userId !== session.user.id) {
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
-    // Buscar o projeto associado para verificar permissões
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, submission.projectId),
-    });
-
-    if (!project) {
-      return NextResponse.json(
-        { error: "Projeto não encontrado" },
-        { status: 404 }
-      );
-    }
-
-    // Verificar permissões:
-    // - Se o usuário é o dono do projeto, pode ver
-    // - Se o usuário é admin, pode ver
-    // - Se o usuário é professor, pode ver
-    const isAdmin = session.user.role === "admin";
-    const isProfessor = session.user.role === "professor";
-    const isOwner = project.userId === userId;
-
-    if (!isOwner && !isAdmin && !isProfessor) {
-      return NextResponse.json(
-        { error: "Você não tem permissão para ver esta submissão" },
-        { status: 403 }
-      );
-    }
-
-    // Buscar informações complementares
-    const demoday = await db.query.demodays.findFirst({
-      where: eq(demodays.id, submission.demoday_id),
-    });
-
-    // Retornar os dados completos
-    return NextResponse.json({
-      ...submission,
-      project,
-      demoday,
-    });
+    return NextResponse.json(submissionData);
   } catch (error) {
     console.error("Erro ao buscar submissão:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar submissão" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }
 
@@ -382,5 +360,129 @@ export async function DELETE(
       { error: "Erro ao remover submissão" },
       { status: 500 }
     );
+  }
+}
+
+// PATCH - Update specific submission
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await getSessionWithRole();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const resolvedParams = await params;
+    const submissionId = resolvedParams.id;
+
+    // Buscar a submissão existente
+    const existingSubmission = await db
+      .select({
+        id: projectSubmissions.id,
+        projectId: projectSubmissions.projectId,
+        demoday_id: projectSubmissions.demoday_id,
+        status: projectSubmissions.status,
+        project: {
+          userId: projects.userId,
+        },
+        demoday: {
+          active: demodays.active,
+        }
+      })
+      .from(projectSubmissions)
+      .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
+      .innerJoin(demodays, eq(projectSubmissions.demoday_id, demodays.id))
+      .where(eq(projectSubmissions.id, submissionId))
+      .limit(1);
+
+    if (existingSubmission.length === 0) {
+      return NextResponse.json({ error: "Submissão não encontrada" }, { status: 404 });
+    }
+
+    const submissionData = existingSubmission[0];
+    if (!submissionData) {
+      return NextResponse.json({ error: "Dados da submissão inválidos" }, { status: 400 });
+    }
+
+    // Verificar se o usuário é o dono da submissão
+    if (submissionData.project.userId !== session.user.id) {
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    }
+
+    // Verificar se ainda pode editar (status submitted e demoday ativo)
+    if (submissionData.status !== "submitted") {
+      return NextResponse.json({
+        error: "Só é possível editar submissões com status 'submitted'"
+      }, { status: 400 });
+    }
+
+    if (!submissionData.demoday.active) {
+      return NextResponse.json({
+        error: "Não é possível editar submissões de demodays inativos"
+      }, { status: 400 });
+    }
+
+    // Validar os dados enviados
+    const body = await req.json();
+    const result = projectSubmissionSchema.safeParse({
+      ...body,
+      demodayId: submissionData.demoday_id
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: result.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const {
+      title,
+      description,
+      type,
+      contactEmail,
+      contactPhone,
+      advisor,
+      authors,
+      developmentYear,
+      videoUrl,
+      repositoryUrl,
+      workCategory
+    } = result.data;
+
+    // Atualizar o projeto
+    await db
+      .update(projects)
+      .set({
+        title,
+        description,
+        type,
+        contactEmail,
+        contactPhone,
+        advisor,
+        authors,
+        developmentYear,
+        videoUrl,
+        repositoryUrl,
+        workCategory,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, submissionData.projectId));
+
+    // Atualizar a submissão
+    await db
+      .update(projectSubmissions)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(projectSubmissions.id, submissionId));
+
+    return NextResponse.json({
+      message: "Submissão atualizada com sucesso",
+      submissionId: submissionId
+    });
+
+  } catch (error) {
+    console.error("Erro ao atualizar submissão:", error);
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 } 
