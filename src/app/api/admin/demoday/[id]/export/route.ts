@@ -2,12 +2,11 @@ import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { 
   demodays, 
-  projectCategories, 
+ 
   projects, 
   projectSubmissions, 
   votes, 
   professorEvaluations,
-  evaluationScores,
   users
 } from "@/server/db/schema";
 import { and, eq, count } from "drizzle-orm";
@@ -46,13 +45,11 @@ export async function GET(
         status: projectSubmissions.status,
         createdAt: projectSubmissions.createdAt,
         project: projects,
-        category: projectCategories,
         author: users,
       })
       .from(projectSubmissions)
       .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
       .innerJoin(users, eq(projects.userId, users.id))
-      .leftJoin(projectCategories, eq(projects.categoryId, projectCategories.id))
       .where(eq(projectSubmissions.demoday_id, demodayId));
 
     // Preparar dados para CSV
@@ -64,7 +61,6 @@ export async function GET(
       "Título",
       "Descrição", 
       "Tipo",
-      "Categoria",
       "Autores",
       "Autor Principal",
       "Email Autor",
@@ -146,7 +142,6 @@ export async function GET(
         submission.project.title,
         submission.project.description?.replace(/"/g, '""') || "", // Escape quotes
         submission.project.type,
-        submission.category?.name || "Sem categoria",
         submission.project.authors || "",
         submission.author?.name || "",
         submission.author?.email || "",

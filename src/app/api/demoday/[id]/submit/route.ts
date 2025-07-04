@@ -92,7 +92,7 @@ export async function POST(
       );
     }
     
-    const { title, description, type, authors, developmentYear, videoUrl, repositoryUrl } = result.data;
+    const { title, description, type, authors, developmentYear, videoUrl, repositoryUrl, contactEmail, contactPhone, advisorName } = result.data;
     
     // Criar um novo projeto
     let projectId: string = '';
@@ -110,6 +110,9 @@ export async function POST(
           developmentYear,
           videoUrl,
           repositoryUrl,
+          contactEmail,
+          contactPhone,
+          advisorName,
         })
         .returning({ id: projects.id });
       

@@ -199,7 +199,7 @@ export default function PublicDemodayDetailsPage() {
               <div>
                 <h3 className="text-xl font-semibold text-green-800">Demoday Finalizado!</h3>
                 <p className="text-green-700">
-                  Este evento foi concluído com sucesso. Confira os resultados finais!
+                  Este evento foi concluído com sucesso. Confira a apresentação final!
                 </p>
               </div>
             </div>
@@ -449,17 +449,17 @@ export default function PublicDemodayDetailsPage() {
 
               {(demodayFinished || demoday.active) && (
                 <div className="p-4 border rounded-lg">
-                  <h4 className="font-semibold mb-2">Ver Resultados</h4>
+                  <h4 className="font-semibold mb-2">Ver Apresentação</h4>
                   <p className="text-muted-foreground text-sm mb-3">
                     {demodayFinished 
-                      ? "Confira os resultados finais e os projetos vencedores."
-                      : "Acompanhe os resultados parciais e estatísticas do evento."
+                      ? "Confira a apresentação final e os projetos vencedores."
+                      : "Acompanhe os dados parciais e estatísticas do evento."
                     }
                   </p>
                   <Link href={`/demoday/${demoday.id}/results`}>
                     <Button variant="outline">
                       <Trophy className="mr-2 h-4 w-4" />
-                      Ver Resultados
+                      Ver Apresentação
                     </Button>
                   </Link>
                 </div>

@@ -1,5 +1,5 @@
 import { db } from "../src/server/db";
-import { projectSubmissions, projects, projectCategories } from "../src/server/db/schema";
+import { projectSubmissions, projects } from "../src/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
 async function checkFinalists() {
@@ -16,18 +16,8 @@ async function checkFinalists() {
       return;
     }
 
-    console.log(`📅 Demoday ativo: ${activeDemoday.name} (ID: ${activeDemoday.id})\n`);
-
-    // Check categories
-    const categories = await db.query.projectCategories.findMany({
-      where: eq(projectCategories.demodayId, activeDemoday.id),
-    });
-
-    console.log(`📂 Categorias configuradas: ${categories.length}`);
-    categories.forEach(cat => {
-      console.log(`   - ${cat.name} (máx. ${cat.maxFinalists} finalistas)`);
-    });
-    console.log();
+    console.log(`📅 Demoday ativo: ${activeDemoday.name} (ID: ${activeDemoday.id})`);
+    console.log(`🏆 Máximo de finalistas: ${activeDemoday.maxFinalists}\n`);
 
     // Check project submissions by status
     const submissions = await db.query.projectSubmissions.findMany({
@@ -69,8 +59,7 @@ async function checkFinalists() {
     } else {
       console.log("⚠️  Nenhum projeto finalista encontrado!");
       console.log("💡 Para que projetos apareçam na Fase 4, você precisa:");
-      console.log("   1. Ter categorias configuradas");
-      console.log("   2. Executar 'Selecionar Finalistas Automaticamente' no painel admin");
+      console.log("   1. Executar 'Selecionar Finalistas Automaticamente' no painel admin");
     }
 
     console.log();

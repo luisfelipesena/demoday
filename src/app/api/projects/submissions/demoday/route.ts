@@ -52,10 +52,7 @@ export async function GET(req: NextRequest) {
       conditions.push(eq(projectSubmissions.status, status));
     }
 
-    // Add categoryId filter if provided
-    if (categoryId) {
-      conditions.push(eq(projects.categoryId, categoryId));
-    }
+    // Note: categoryId filter removed as categories are no longer supported
 
     // Se não for admin ou professor, apenas projetos aprovados/finalistas/vencedores
     // são visíveis para usuários comuns (a menos que o status seja explicitamente definido)
@@ -83,6 +80,13 @@ export async function GET(req: NextRequest) {
           description: projects.description,
           userId: projects.userId,
           type: projects.type,
+          videoUrl: projects.videoUrl,
+          repositoryUrl: projects.repositoryUrl,
+          developmentYear: projects.developmentYear,
+          authors: projects.authors,
+          contactEmail: projects.contactEmail,
+          contactPhone: projects.contactPhone,
+          advisorName: projects.advisorName,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
         }

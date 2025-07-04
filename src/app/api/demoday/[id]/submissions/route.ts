@@ -56,6 +56,13 @@ export async function GET(
           description: projects.description,
           userId: projects.userId,
           type: projects.type,
+          videoUrl: projects.videoUrl,
+          repositoryUrl: projects.repositoryUrl,
+          developmentYear: projects.developmentYear,
+          authors: projects.authors,
+          contactEmail: projects.contactEmail,
+          contactPhone: projects.contactPhone,
+          advisorName: projects.advisorName,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
         }

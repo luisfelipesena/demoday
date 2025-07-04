@@ -44,7 +44,6 @@ export default function DashboardPage() {
   }
 
   const activeDemoday = demodays?.find((demoday) => demoday.active)
-  const pastDemodays = demodays?.filter((demoday) => !demoday.active && demoday.status === "finished") || []
 
   const submissionEnabled = activeDemoday && isInSubmissionPhase(activeDemoday)
   const demodayFinished = activeDemoday && isDemodayFinished(activeDemoday)
@@ -109,7 +108,7 @@ export default function DashboardPage() {
               <Sparkles className="h-6 w-6 text-yellow-600" />
             </CardTitle>
             <CardDescription className="text-yellow-700 text-lg font-medium">
-              O Demoday chegou ao fim! Confira os resultados finais e descubra os projetos vencedores.
+              O Demoday chegou ao fim! Confira a apresentação final e descubra os projetos vencedores.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -122,7 +121,7 @@ export default function DashboardPage() {
               <Link href={`/demoday/${activeDemoday.id}/results`}>
                 <Button className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg px-6 py-3">
                   <Trophy className="mr-2 h-5 w-5" />
-                  Ver Resultados Finais
+                  Ver Apresentação Final
                   <Crown className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -204,12 +203,12 @@ export default function DashboardPage() {
             <CardContent>
               {demodayFinished ? (
                 <div>
-                  <p className="text-gray-600 mb-4">
-                    Este DemoDay foi concluído com sucesso! Todas as fases foram finalizadas e os resultados estão disponíveis.
-                  </p>
+                                  <p className="text-gray-600 mb-4">
+                  Este DemoDay foi concluído com sucesso! Todas as fases foram finalizadas e a apresentação está disponível.
+                </p>
                   <div className="rounded-md p-3 border bg-green-50 border-green-200 mb-4">
                     <p className="font-medium text-green-800">
-                      🎊 Parabéns a todos os participantes! Confira os resultados finais para ver os projetos vencedores.
+                      🎊 Parabéns a todos os participantes! Confira a apresentação final para ver os projetos vencedores.
                     </p>
                   </div>
                 </div>
@@ -280,45 +279,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div>
-        <h2 className="mb-4 text-2xl font-semibold">Histórico de DemoDays</h2>
 
-        {pastDemodays.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pastDemodays.map((demoday) => (
-              <Card key={demoday.id} className="bg-white">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg font-semibold">{demoday.name}</CardTitle>
-                    <Badge className="bg-blue-500 hover:bg-blue-600">Finalizado</Badge>
-                  </div>
-                  <CardDescription className="flex items-center gap-2 text-gray-500 mt-1">
-                    <ClockIcon className="h-4 w-4" />
-                    <span>Finalizado em {formatDate(demoday.updatedAt)}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="flex justify-end gap-2">
-                  <Link href={`/demoday/${demoday.id}/results`}>
-                    <Button variant="outline" size="sm">
-                      <Trophy className="mr-2 h-4 w-4" />
-                      Resultados
-                    </Button>
-                  </Link>
-                  <Link href={`/demoday/${demoday.id}`}>
-                    <Button variant="outline" size="sm">
-                      Ver Detalhes
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border p-8 text-center bg-gray-50">
-            <p className="text-lg text-gray-600">Nenhum DemoDay concluído no histórico.</p>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

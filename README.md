@@ -71,7 +71,7 @@ demoday/
 - ✅ Criar e gerenciar Demodays
 - ✅ Definir fases e critérios de avaliação
 - ✅ Aprovar/rejeitar projetos submetidos
-- ✅ Gerenciar usuários e convites
+- ✅ Gerenciar usuários
 - ✅ Visualizar relatórios completos
 - ✅ Alterar status dos projetos (finalista/vencedor)
 
@@ -203,7 +203,7 @@ http://localhost:3000
 - **project_submissions**: Submissões de projetos aos demodays
 - **professor_evaluations**: Avaliações dos professores
 - **votes**: Votos do público
-- **invites**: Convites para novos usuários
+
 
 ### Diagrama Simplificado
 
@@ -225,7 +225,7 @@ erDiagram
 - ✅ Proteção de rotas baseada em roles
 - ✅ Validação de dados com Zod
 - ✅ Sanitização de inputs
-- ✅ Tokens seguros para convites
+
 - ✅ Rate limiting nas APIs críticas
 
 ## 🛠️ Desenvolvimento

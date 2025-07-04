@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { use, useState, useEffect } from "react";
 import { useDemodayDetails } from "@/hooks/useDemoday";
-import { useCategories, Category } from "@/hooks/useCategories";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,11 +23,7 @@ interface ProjectResult {
   categoryName?: string; // Optional: if grouping by category client-side from a flat list
 }
 
-interface CategoryResult {
-  id: string;
-  name: string;
-  projects: ProjectResult[];
-}
+
 
 interface DemodayOverallStats {
   totalSubmittedProjects: number;
@@ -38,7 +34,7 @@ interface DemodayOverallStats {
 
 interface DemodayResultsData {
   demodayName: string;
-  categories: CategoryResult[];
+  projects: ProjectResult[];
   overallStats: DemodayOverallStats; 
 }
 
@@ -197,8 +193,8 @@ export default function DemodayResultsPage() {
     );
   }
 
-  // Find the overall winner (highest scoring project across all categories)
-  const allProjects = resultsData.categories.flatMap(cat => cat.projects);
+  // Find the overall winner (highest scoring project across all projects)
+  const allProjects = resultsData.projects || [];
   const overallWinner = allProjects.find(p => p.status === 'winner') || 
                        allProjects.sort((a, b) => b.finalWeightedScore - a.finalWeightedScore)[0];
 
@@ -291,43 +287,41 @@ export default function DemodayResultsPage() {
         </Card>
       )}
 
-      {/* Results by Category */}
+      {/* All Projects Results */}
       <div className="space-y-8">
         <h2 className="text-2xl font-semibold flex items-center gap-2">
           <ListOrdered className="h-6 w-6" />
-          Resultados por Categoria
+          Todos os Projetos
         </h2>
 
-        {resultsData.categories.map((category) => (
-          <Card key={category.id} className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Award className="h-5 w-5 text-blue-600" />
-                {category.name}
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Award className="h-5 w-5 text-blue-600" />
+              Ranking Geral
             </CardTitle>
-              <CardDescription>
-                {category.projects.length} projeto{category.projects.length !== 1 ? 's' : ''} nesta categoria
-              </CardDescription>
+            <CardDescription>
+              {allProjects.length} projeto{allProjects.length !== 1 ? 's' : ''} participante{allProjects.length !== 1 ? 's' : ''}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            {category.projects.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum projeto nesta categoria.
-                </p>
+            {allProjects.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum projeto encontrado.
+              </p>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {category.projects.map((project, index) => (
-                    <ProjectResultCard 
-                      key={project.id} 
-                      project={project} 
-                      position={index + 1}
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {allProjects.map((project, index) => (
+                  <ProjectResultCard 
+                    key={project.id} 
+                    project={project} 
+                    position={index + 1}
+                  />
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
-      ))}
       </div>
 
       {/* Footer */}

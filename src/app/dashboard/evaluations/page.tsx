@@ -254,7 +254,6 @@ export default function EvaluationsPage() {
     return (
       <div className="container mx-auto p-6">
               <EvaluationForm
-          submission={selectedSubmission}
                 criteria={evaluationsData.criteria}
                 onSubmit={handleSubmitEvaluation}
                 onCancel={handleCancelEvaluation}

@@ -10,10 +10,15 @@ export const projectSchema = z.object({
   type: z.enum(PROJECT_TYPES, {
     errorMap: () => ({ message: `Tipo de trabalho deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
   }),
-  videoUrl: z.string().url("URL de vídeo inválida").optional(),
-  repositoryUrl: z.string().url("URL do repositório inválida").optional(),
+  videoUrl: z.string().url("URL de vídeo inválida").min(1, "Link para apresentação do vídeo é obrigatório"),
+  repositoryUrl: z.string().optional().refine((val) => !val || val.trim() === "" || z.string().url().safeParse(val).success, {
+    message: "URL do repositório inválida"
+  }),
   developmentYear: z.string().regex(/^\d{4}$/, "Ano deve estar no formato YYYY"),
   authors: z.string().min(2, "Autores deve ter pelo menos 2 caracteres"),
+  contactEmail: z.string().email("Email do contato principal inválido"),
+  contactPhone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").max(20, "Telefone deve ter no máximo 20 dígitos"),
+  advisorName: z.string().min(2, "Nome do orientador/professor deve ter pelo menos 2 caracteres"),
 })
 
 /**
@@ -25,10 +30,15 @@ export const projectSubmissionSchema = z.object({
   type: z.enum(PROJECT_TYPES, {
     errorMap: () => ({ message: `Tipo de trabalho deve ser um dos seguintes: ${PROJECT_TYPES.join(", ")}` })
   }),
-  videoUrl: z.string().url("URL de vídeo inválida").optional(),
-  repositoryUrl: z.string().url("URL do repositório inválida").optional(),
+  videoUrl: z.string().url("URL de vídeo inválida").min(1, "Link para apresentação do vídeo é obrigatório"),
+  repositoryUrl: z.string().optional().refine((val) => !val || val.trim() === "" || z.string().url().safeParse(val).success, {
+    message: "URL do repositório inválida"
+  }),
   developmentYear: z.string().regex(/^\d{4}$/, "Ano deve estar no formato YYYY"),
   authors: z.string().min(2, "Autores deve ter pelo menos 2 caracteres"),
+  contactEmail: z.string().email("Email do contato principal inválido"),
+  contactPhone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").max(20, "Telefone deve ter no máximo 20 dígitos"),
+  advisorName: z.string().min(2, "Nome do orientador/professor deve ter pelo menos 2 caracteres"),
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
 })
 
@@ -75,6 +85,7 @@ export const voteSchema = z.object({
 // Schema for validating demoday data
 export const demodaySchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  maxFinalists: z.number().int().min(1, "Número de finalistas deve ser pelo menos 1").optional(),
   phases: z.array(
     z.object({
       name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -131,8 +142,7 @@ export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
-  role: z.enum(["admin", "professor", "user"]),
-  inviteCode: z.string().min(1, "Código de convite obrigatório"),
+  role: z.enum(["student_ufba", "student_external"]),
 });
 
 // Schema para validação de login de usuário
@@ -142,12 +152,7 @@ export const loginSchema = z.object({
 });
 
 
-// Schema para validação de critérios de inscrição
-export const registrationCriteriaSchema = z.object({
-  demoday_id: z.string().min(1, "ID do demoday é obrigatório"),
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-});
+
 
 export const phaseSchema = z.object({
   phaseNumber: z.number(),
@@ -160,7 +165,7 @@ export const phaseSchema = z.object({
 export const demodayFormSchema = z.object({
   name: z.string().min(1, "Nome do demoday é obrigatório"),
   phases: z.array(phaseSchema).min(1, "Pelo menos uma fase é necessária"),
-  registrationCriteria: z.array(criteriaSchema).min(1, "Pelo menos um critério de inscrição é obrigatório"),
+  maxFinalists: z.number().int().min(1, "Número de finalistas deve ser pelo menos 1").default(5),
   evaluationCriteria: z.array(criteriaSchema).default([]),
 })
 

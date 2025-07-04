@@ -8,18 +8,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Phase } from "@/hooks/useDemoday"
 import { demodayFormSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PlusCircle, X, Tags } from "lucide-react"
+import { 
+  PlusCircle, 
+  X, 
+  Calendar, 
+  Trophy, 
+  Users, 
+  Sparkles,
+  CheckCircle2,
+  Vote,
+  Presentation,
+  FileText,
+  Target
+} from "lucide-react"
 import { DateRange } from "react-day-picker"
 import { Controller, useForm } from "react-hook-form"
 import { useState, useEffect, useCallback } from "react"
 import { toast } from "sonner"
-
-interface Category {
-  id?: string;
-  name: string;
-  description: string | null;
-  maxFinalists: number;
-}
 
 export function DemodayForm({
   initialData,
@@ -30,53 +35,52 @@ export function DemodayForm({
   submitButtonText,
   loadingButtonText,
 }: DemodayFormProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newCategory, setNewCategory] = useState<Category>({ name: "", description: null, maxFinalists: 5 });
   const defaultPhases: Phase[] = [
     {
-      name: "Fase 1",
-      description: "A primeira fase é de submissão de projetos.",
+      name: "Submissão de projetos",
+      description: "Período para submissão de projetos pelos estudantes.",
       phaseNumber: 1,
       startDate: "",
       endDate: "",
     },
     {
-      name: "Fase 2",
-      description: "Na segunda fase a comissão avalia os projetos e pode aprová-los.",
+      name: "Triagem",
+      description: "Avaliação e seleção dos projetos pela comissão organizadora.",
       phaseNumber: 2,
       startDate: "",
       endDate: "",
     },
     {
-      name: "Fase 3",
-      description: "A terceira fase é de votação do público para escolha dos finalistas.",
+      name: "Votação para a final",
+      description: "Votação popular para escolher os projetos finalistas.",
       phaseNumber: 3,
       startDate: "",
       endDate: "",
     },
     {
-      name: "Fase 4",
-      description: "Na quarta fase há a votação do público para escolha dos vencedores.",
+      name: "Evento principal (final)",
+      description: "Apresentação dos finalistas e premiação no evento principal.",
       phaseNumber: 4,
       startDate: "",
       endDate: "",
     },
   ]
 
+  const phaseIcons = [FileText, CheckCircle2, Vote, Presentation]
+
   const createEmptyCriterion = (type: CriteriaType) => ({
     name: "",
     description: "",
     type,
-    demoday_id: demodayId || "", // This is now optional in the schema
+    demoday_id: demodayId || "",
   })
 
-  // Apply demoday_id to initialData criteria if provided
   const prepareInitialData = () => {
     if (!initialData) {
       return {
         name: "",
         phases: defaultPhases,
-        registrationCriteria: [],
+        maxFinalists: 5,
         evaluationCriteria: [],
       }
     }
@@ -84,12 +88,7 @@ export function DemodayForm({
     return {
       name: initialData.name || "",
       phases: initialData.phases || defaultPhases,
-      registrationCriteria:
-        initialData.registrationCriteria?.map((criteria) => ({
-          ...criteria,
-          type: "registration" as CriteriaType,
-          demoday_id: demodayId || criteria.demoday_id || "",
-        })) || [],
+      maxFinalists: initialData.maxFinalists || 5,
       evaluationCriteria:
         initialData.evaluationCriteria?.map((criteria) => ({
           ...criteria,
@@ -111,66 +110,31 @@ export function DemodayForm({
   })
 
   const phases = watch("phases")
-  const registrationCriteria = watch("registrationCriteria")
   const evaluationCriteria = watch("evaluationCriteria")
 
-  const fetchCategories = useCallback(async () => {
-    if (!demodayId) return;
+  // Validação em tempo real das datas das fases
+  const validatePhaseDates = useCallback((phaseIndex: number): string | null => {
+    const phase = phases[phaseIndex];
+    if (!phase?.startDate || !phase?.endDate) return null;
     
     try {
-      const response = await fetch(`/api/categories?demodayId=${demodayId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
+      const startDate = new Date(phase.startDate + 'T12:00:00.000Z');
+      const endDate = new Date(phase.endDate + 'T12:00:00.000Z');
+      
+      if (startDate > endDate) {
+        return "Data de início não pode ser posterior à data de fim";
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      return "Formato de data inválido";
     }
-  }, [demodayId]);
+    
+    return null;
+  }, [phases])
 
-  // Carregar categorias existentes se editando
-  useEffect(() => {
-    if (demodayId) {
-      fetchCategories();
-    }
-  }, [demodayId, fetchCategories]);
-
-  const addCategory = () => {
-    if (!newCategory.name.trim()) {
-      toast.error("Nome da categoria é obrigatório");
-      return;
-    }
-    // Ensure description is passed as null if empty, or string if it has value
-    const categoryToAdd: Category = {
-      ...newCategory,
-      description: newCategory.description?.trim() ? newCategory.description.trim() : null,
-    };
-    setCategories([...categories, categoryToAdd]);
-    setNewCategory({ name: "", description: null, maxFinalists: 5 });
-  };
-
-  const removeCategory = (index: number) => {
-    setCategories(categories.filter((_, i) => i !== index));
-  };
-
-  const updateCategory = (index: number, field: keyof Category, value: string | number | null) => {
-    setCategories(prevCategories =>
-      prevCategories.map((cat, i) => {
-        if (i === index) {
-          const updatedCat: Category = { ...cat }; // Ensure updatedCat is of type Category
-          if (field === "name") {
-            updatedCat.name = String(value);
-          } else if (field === "description") {
-            updatedCat.description = value ? String(value).trim() : null;
-          } else if (field === "maxFinalists") {
-            updatedCat.maxFinalists = parseInt(String(value), 10) || 0;
-          }
-          return updatedCat;
-        }
-        return cat;
-      })
-    );
-  };
+  // Verificar se há erros de validação em tempo real
+  const hasDateValidationErrors = useCallback(() => {
+    return phases.some((_, index) => validatePhaseDates(index) !== null);
+  }, [phases, validatePhaseDates])
 
   const updatePhaseDates = useCallback((index: number, dateRange: DateRange | undefined) => {
     if (!dateRange || !dateRange.from) {
@@ -179,47 +143,17 @@ export function DemodayForm({
       return
     }
 
-    // Formatar a data inicial para o formato ISO (YYYY-MM-DD)
-    const year = dateRange.from.getFullYear();
-    const month = dateRange.from.getMonth() + 1; // getMonth() retorna 0-11
-    const day = dateRange.from.getDate();
-    
-    // Formatar com zeros à esquerda
-    const monthStr = month < 10 ? `0${month}` : `${month}`;
-    const dayStr = day < 10 ? `0${day}` : `${day}`;
-    
-    const startDateString = `${year}-${monthStr}-${dayStr}`;
+    // Converter data para string no formato YYYY-MM-DD, garantindo timezone consistente
+    const startDateString = dateRange.from.toISOString().split('T')[0]!;
     setValue(`phases.${index}.startDate`, startDateString)
 
     if (dateRange.to) {
-      // Formatar a data final para o formato ISO (YYYY-MM-DD)
-      const year = dateRange.to.getFullYear();
-      const month = dateRange.to.getMonth() + 1; // getMonth() retorna 0-11
-      const day = dateRange.to.getDate();
-      
-      // Formatar com zeros à esquerda
-      const monthStr = month < 10 ? `0${month}` : `${month}`;
-      const dayStr = day < 10 ? `0${day}` : `${day}`;
-      
-      const endDateString = `${year}-${monthStr}-${dayStr}`;
+      const endDateString = dateRange.to.toISOString().split('T')[0]!;
       setValue(`phases.${index}.endDate`, endDateString)
     } else {
        setValue(`phases.${index}.endDate`, "")
     }
   }, [setValue])
-
-  const addRegistrationCriteria = () => {
-    setValue("registrationCriteria", [...registrationCriteria, createEmptyCriterion("registration")])
-  }
-
-  const removeRegistrationCriteria = (index: number) => {
-    if (registrationCriteria.length > 0) {
-      setValue(
-        "registrationCriteria",
-        registrationCriteria.filter((_, i) => i !== index)
-      )
-    }
-  }
 
   const addEvaluationCriteria = () => {
     setValue("evaluationCriteria", [...evaluationCriteria, createEmptyCriterion("evaluation")])
@@ -235,7 +169,6 @@ export function DemodayForm({
   }
 
   const onSubmitForm = (data: DemodayFormData) => {
-    // Verificar se todas as fases têm datas válidas
     const hasInvalidDates = data.phases.some(phase => 
       !phase.startDate || !phase.endDate || 
       phase.startDate.trim() === '' || 
@@ -246,8 +179,13 @@ export function DemodayForm({
       toast.error("Todas as fases devem ter datas de início e fim preenchidas.");
       return;
     }
+
+    // Verificar erros de validação de datas
+    if (hasDateValidationErrors()) {
+      toast.error("Corrija os erros de datas antes de continuar.");
+      return;
+    }
     
-    // Log para debug
     console.log('Dados das fases sendo enviados:', data.phases.map(p => ({
       name: p.name,
       phaseNumber: p.phaseNumber,
@@ -255,80 +193,31 @@ export function DemodayForm({
       endDate: p.endDate
     })));
     
-    // Enviar os dados do demoday (incluindo categorias se aplicável)
-    const submitData = {
-      name: data.name,
-      phases: data.phases,
-      registrationCriteria: data.registrationCriteria,
-      evaluationCriteria: data.evaluationCriteria,
-      ...(categories.length > 0 && { categories: categories }),
-    };
-    
-    onSubmit(submitData);
+    onSubmit(data);
   }
 
   const getPhaseRangeDates = useCallback((phase: Phase): DateRange | undefined => {
     if (!phase.startDate && !phase.endDate) return undefined
 
     try {
-      if (!phase.startDate) {
+      if (!phase.startDate || phase.startDate.trim() === '') {
         return undefined;
       }
       
-      // Extrair o ano, mês e dia diretamente da string yyyy-MM-dd para data inicial
-      const fromParts = phase.startDate.split('-');
+      // Criar data usando string ISO para garantir timezone consistente
+      const from = new Date((phase.startDate as string) + 'T12:00:00.000Z');
       
-      if (fromParts.length !== 3) {
-        console.warn("Formato de data inicial inválido:", phase.startDate);
-        return undefined;
-      }
-      
-      const fromYear = parseInt(fromParts[0]!, 10);
-      const fromMonth = parseInt(fromParts[1]!, 10);
-      const fromDay = parseInt(fromParts[2]!, 10);
-      
-      // Verificar se todos os valores são números válidos
-      if (isNaN(fromYear) || isNaN(fromMonth) || isNaN(fromDay)) {
-        console.warn("Componentes de data inicial não são números válidos:", phase.startDate);
-        return undefined;
-      }
-      
-      // Criar a data usando os componentes extraídos (mês - 1 porque getMonth é 0-11)
-      const from = new Date(fromYear, fromMonth - 1, fromDay, 12, 0, 0, 0);
-      
-      // Verificar se a data criada é válida
       if (isNaN(from.getTime())) {
         console.warn("Data inicial criada é inválida:", phase.startDate);
         return undefined;
       }
 
-      // Se não houver data final, retornar apenas a data inicial
-      if (!phase.endDate) {
+      if (!phase.endDate || phase.endDate.trim() === '') {
         return { from };
       }
       
-      // Processar a data final se existir
-      const toParts = phase.endDate.split('-');
+      const to = new Date((phase.endDate as string) + 'T12:00:00.000Z');
       
-      if (toParts.length !== 3) {
-        console.warn("Formato de data final inválido:", phase.endDate);
-        return { from };
-      }
-      
-      const toYear = parseInt(toParts[0]!, 10);
-      const toMonth = parseInt(toParts[1]!, 10);
-      const toDay = parseInt(toParts[2]!, 10);
-      
-      // Verificar se todos os valores são números válidos
-      if (isNaN(toYear) || isNaN(toMonth) || isNaN(toDay)) {
-        console.warn("Componentes de data final não são números válidos:", phase.endDate);
-        return { from };
-      }
-      
-      // Criar a data usando os componentes extraídos
-      const to = new Date(toYear, toMonth - 1, toDay, 12, 0, 0, 0);
-      
-      // Verificar se a data criada é válida
       if (isNaN(to.getTime())) {
         console.warn("Data final criada é inválida:", phase.endDate);
         return { from };
@@ -343,373 +232,316 @@ export function DemodayForm({
   }, [])
 
   return (
-    <form 
-      onSubmit={(e) => {
-        // Previne a submissão automática e usa o handleSubmit para controlar quando é apropriado submeter
-        e.preventDefault();
-        handleSubmit(onSubmitForm)(e);
-      }} 
-      className="space-y-10"
-    >
-      {error && <div className="mb-6 rounded-md bg-red-100 p-4 text-red-700">{error}</div>}
-
-      {/* Nome do Demoday */}
-      <div className="space-y-4 rounded-lg border p-6 shadow-sm">
-        <h2 className="text-xl font-semibold">Nome do Demoday</h2>
-        <Controller
-          name="name"
-          control={control}
-          render={({ field }) => (
-            <div>
-              <Input type="text" placeholder="Digite o nome da edição do demoday" {...field} className="w-full" />
-              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
-            </div>
-          )}
-        />
-      </div>
-
-      {/* Fases */}
-      <div className="space-y-6 rounded-lg border p-6 shadow-sm">
-        <h2 className="text-xl font-semibold">Prazos</h2>
-
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2">
-          {phases.map((phase, index) => (
-            <div key={`phase-${phase.phaseNumber}-${index}`} className="space-y-5 rounded-lg border p-5 shadow-sm">
-              <h3 className="text-lg font-medium">
-                Fase {phase.phaseNumber}: {phase.name}
-              </h3>
-              <p className="text-sm text-gray-600">{phase.description}</p>
-
-              <div className="w-full">
-                <label className="mb-2 block text-sm font-medium">Período da fase:</label>
-                    <div>
-                      <DatePickerWithRange
-                    id={`phase-dates-${phase.phaseNumber}-${index}`}
-                        value={getPhaseRangeDates(phase)}
-                        onChange={(dateRange) => updatePhaseDates(index, dateRange)}
-                        disabled={isSubmitting}
-                        disablePastDates={false}
-                        className="w-full"
-                      />
-                      {(errors.phases?.[index]?.startDate || errors.phases?.[index]?.endDate) && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.phases?.[index]?.startDate?.message || errors.phases?.[index]?.endDate?.message}
-                        </p>
-                      )}
-                    </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Critérios de Inscrição */}
-      <div className="space-y-6 rounded-lg border p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Critérios de Inscrição</h2>
-          <Button
-            type="button"
-            onClick={addRegistrationCriteria}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-            disabled={isSubmitting}
-          >
-            <PlusCircle size={16} />
-            Adicionar
-          </Button>
-        </div>
-        <p className="text-sm text-gray-600">Defina os critérios para inscrição de projetos no Demoday.</p>
-
-        {errors.registrationCriteria && <p className="text-sm text-red-500">{errors.registrationCriteria.message}</p>}
-
-        <div className="space-y-4">
-          {registrationCriteria.map((criteria, index) => (
-            <div key={index} className="rounded-lg border p-4 shadow-sm">
-              <div className="flex justify-between mb-2">
-                <h3 className="text-md font-medium">Critério {index + 1}</h3>
-                <Button
-                  type="button"
-                  onClick={() => removeRegistrationCriteria(index)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={isSubmitting || registrationCriteria.length <= 1}
-                >
-                  <X size={16} />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Nome</label>
-                  <Controller
-                    name={`registrationCriteria.${index}.name`}
-                    control={control}
-                    render={({ field }) => (
-                      <div>
-                        <Input
-                          type="text"
-                          placeholder="Ex: Originalidade"
-                          {...field}
-                          className="w-full"
-                          disabled={isSubmitting}
-                        />
-                        {errors.registrationCriteria?.[index]?.name && (
-                          <p className="mt-1 text-xs text-red-500">{errors.registrationCriteria[index].name.message}</p>
-                        )}
-                      </div>
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Descrição</label>
-                  <Controller
-                    name={`registrationCriteria.${index}.description`}
-                    control={control}
-                    render={({ field }) => (
-                      <div>
-                        <textarea
-                          placeholder="Ex: O projeto apresenta uma ideia original ou inovadora"
-                          {...field}
-                          className="h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={isSubmitting}
-                        />
-                        {errors.registrationCriteria?.[index]?.description && (
-                          <p className="mt-1 text-xs text-red-500">
-                            {errors.registrationCriteria[index].description.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Critérios de Avaliação */}
-      <div className="space-y-6 rounded-lg border p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Critérios de Avaliação</h2>
-          <Button
-            type="button"
-            onClick={addEvaluationCriteria}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-            disabled={isSubmitting}
-          >
-            <PlusCircle size={16} />
-            Adicionar
-          </Button>
-        </div>
-        <p className="text-sm text-gray-600">Defina os critérios para avaliação dos projetos submetidos.</p>
-
-        <div className="space-y-4">
-          {evaluationCriteria.map((criteria, index) => (
-            <div key={index} className="rounded-lg border p-4 shadow-sm">
-              <div className="flex justify-between mb-2">
-                <h3 className="text-md font-medium">Critério {index + 1}</h3>
-                <Button
-                  type="button"
-                  onClick={() => removeEvaluationCriteria(index)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={isSubmitting}
-                >
-                  <X size={16} />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Nome</label>
-                  <Controller
-                    name={`evaluationCriteria.${index}.name`}
-                    control={control}
-                    render={({ field }) => (
-                      <div>
-                        <Input
-                          type="text"
-                          placeholder="Ex: Qualidade técnica"
-                          {...field}
-                          className="w-full"
-                          disabled={isSubmitting}
-                        />
-                        {errors.evaluationCriteria?.[index]?.name && (
-                          <p className="mt-1 text-xs text-red-500">{errors.evaluationCriteria[index].name.message}</p>
-                        )}
-                      </div>
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Descrição</label>
-                  <Controller
-                    name={`evaluationCriteria.${index}.description`}
-                    control={control}
-                    render={({ field }) => (
-                      <div>
-                        <textarea
-                          placeholder="Ex: Avaliação da qualidade técnica da implementação"
-                          {...field}
-                          className="h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={isSubmitting}
-                        />
-                        {errors.evaluationCriteria?.[index]?.description && (
-                          <p className="mt-1 text-xs text-red-500">
-                            {errors.evaluationCriteria[index].description.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Categorias do Demoday */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Tags className="h-5 w-5" />
-                Categorias do Demoday
-              </CardTitle>
-              <CardDescription>
-                Defina as categorias para organizar e classificar os projetos. Cada categoria pode ter um número máximo de finalistas.
-              </CardDescription>
+    <div className="bg-white">
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit(onSubmitForm)(e);
+        }} 
+        className="space-y-8 max-w-6xl mx-auto p-8"
+      >
+        {error && (
+          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-red-800">
+            <div className="flex items-center gap-2">
+              <X className="h-4 w-4 text-red-500" />
+              <span className="text-sm font-medium">{error}</span>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Formulário Nova Categoria */}
-          <div className="rounded-lg border p-4 bg-gray-50">
-            <h3 className="text-md font-medium mb-4">Adicionar Nova Categoria</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nome da Categoria</label>
-                <Input
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  placeholder="Ex: Inovação Tecnológica"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Descrição</label>
-                <Input
-                  value={newCategory.description || ""}
-                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value || null })}
-                  placeholder="Ex: Inovação Tecnológica"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Máx. Finalistas</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="20"
-                    value={newCategory.maxFinalists}
-                    onChange={(e) => setNewCategory({ ...newCategory, maxFinalists: parseInt(e.target.value) || 5 })}
-                    disabled={isSubmitting}
-                    className="flex-1"
+        )}
+
+
+
+        {/* Nome do Demoday */}
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Target className="h-5 w-5 text-slate-600" />
+              Nome do Evento
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              Defina um nome marcante para seu Demoday
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <div>
+                  <Input 
+                    type="text" 
+                    placeholder="Ex: Demoday 2024 - Inovação Tecnológica" 
+                    {...field} 
+                    className="h-12 border-slate-300 focus:border-slate-400 focus:ring-slate-400" 
                   />
-                  <Button
-                    type="button"
-                    onClick={addCategory}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1"
-                    disabled={isSubmitting}
+                  {errors.name && (
+                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                      <X className="h-3 w-3" />
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Quantidade de Finalistas */}
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Trophy className="h-5 w-5 text-slate-600" />
+              Finalistas
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              Quantos projetos serão selecionados para a final?
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Controller
+              name="maxFinalists"
+              control={control}
+              render={({ field }) => (
+                <div>
+                  <Input 
+                    type="number" 
+                    placeholder="5" 
+                    {...field} 
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 5)}
+                    className="h-12 border-slate-300 focus:border-slate-400 focus:ring-slate-400" 
+                  />
+                  {errors.maxFinalists && (
+                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                      <X className="h-3 w-3" />
+                      {errors.maxFinalists.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Cronograma das Fases */}
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Calendar className="h-5 w-5 text-slate-600" />
+              Cronograma do Evento
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              Defina as datas para cada fase do seu Demoday
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {phases.map((phase, index) => {
+                const Icon = phaseIcons[index] || FileText
+                
+                return (
+                  <div 
+                    key={`phase-${phase.phaseNumber}-${index}`} 
+                    className="border border-slate-200 rounded-lg p-5 hover:border-slate-300 transition-colors"
                   >
-                    <PlusCircle size={16} />
-                    Adicionar
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-slate-100 rounded-lg">
+                        <Icon className="h-4 w-4 text-slate-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-slate-800">
+                          Fase {phase.phaseNumber}
+                        </h3>
+                        <p className="text-sm text-slate-600">{phase.name}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="space-y-4">
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        {phase.description}
+                      </p>
 
-          {/* Lista de Categorias */}
-          <div className="space-y-4">
-            <h3 className="text-md font-medium">Categorias Configuradas ({categories.length})</h3>
-            {categories.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Tags className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Nenhuma categoria configurada ainda.</p>
-                <p className="text-sm">Adicione categorias para organizar melhor os projetos.</p>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-slate-700">
+                          Período da fase:
+                        </label>
+                        <div>
+                          <DatePickerWithRange
+                            id={`phase-dates-${phase.phaseNumber}-${index}`}
+                            value={getPhaseRangeDates(phase)}
+                            onChange={(dateRange) => updatePhaseDates(index, dateRange)}
+                            disabled={isSubmitting}
+                            disablePastDates={false}
+                            className={`w-full ${validatePhaseDates(index) ? 'border-red-300 focus:border-red-500' : ''}`}
+                          />
+                          {/* Erro de validação do formulário */}
+                          {(errors.phases?.[index]?.startDate || errors.phases?.[index]?.endDate) && (
+                            <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                              <X className="h-3 w-3" />
+                              {errors.phases?.[index]?.startDate?.message || errors.phases?.[index]?.endDate?.message}
+                            </p>
+                          )}
+                          {/* Erro de validação em tempo real */}
+                          {validatePhaseDates(index) && (
+                            <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                              <X className="h-3 w-3" />
+                              {validatePhaseDates(index)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Critérios de Avaliação */}
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                  <Users className="h-5 w-5 text-slate-600" />
+                  Critérios de Avaliação
+                </CardTitle>
+                <CardDescription className="text-slate-600 mt-1">
+                  Configure os critérios para avaliação dos projetos (opcional)
+                </CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addEvaluationCriteria}
+                disabled={isSubmitting}
+                className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Adicionar
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {errors.evaluationCriteria && (
+              <p className="mb-4 text-sm text-red-500 flex items-center gap-1">
+                <X className="h-3 w-3" />
+                {errors.evaluationCriteria.message}
+              </p>
+            )}
+
+            {evaluationCriteria.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">
+                <Target className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Nenhum critério configurado</p>
+                <p className="text-sm mt-1">Adicione critérios para uma avaliação mais estruturada</p>
               </div>
             ) : (
-              categories.map((category, index) => (
-                <div key={index} className="rounded-lg border p-4 shadow-sm">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="text-md font-medium">Categoria {index + 1}</h4>
-                    <Button
-                      type="button"
-                      onClick={() => removeCategory(index)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      disabled={isSubmitting}
-                    >
-                      <X size={16} />
-                    </Button>
+              <div className="space-y-4">
+                {evaluationCriteria.map((criteria, index) => (
+                  <div 
+                    key={index} 
+                    className="border border-slate-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-slate-800 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-slate-100 text-slate-600 rounded flex items-center justify-center text-xs font-medium">
+                          {index + 1}
+                        </div>
+                        Critério {index + 1}
+                      </h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeEvaluationCriteria(index)}
+                        disabled={isSubmitting}
+                        className="text-slate-400 hover:text-red-500 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Controller
+                        name={`evaluationCriteria.${index}.name`}
+                        control={control}
+                        render={({ field }) => (
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                              Nome do critério
+                            </label>
+                            <Input 
+                              {...field} 
+                              placeholder="Ex: Inovação" 
+                              disabled={isSubmitting}
+                              className="border-slate-300 focus:border-slate-400"
+                            />
+                            {errors.evaluationCriteria?.[index]?.name && (
+                              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.evaluationCriteria[index].name.message}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      />
+                      
+                      <Controller
+                        name={`evaluationCriteria.${index}.description`}
+                        control={control}
+                        render={({ field }) => (
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                              Descrição
+                            </label>
+                            <Input 
+                              {...field} 
+                              placeholder="Ex: Originalidade e criatividade da solução" 
+                              disabled={isSubmitting}
+                              className="border-slate-300 focus:border-slate-400"
+                            />
+                            {errors.evaluationCriteria?.[index]?.description && (
+                              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.evaluationCriteria[index].description.message}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Nome</label>
-                      <Input
-                        value={category.name}
-                        onChange={(e) => updateCategory(index, "name", e.target.value)}
-                        placeholder="Nome da categoria"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Descrição</label>
-                      <Input
-                        value={category.description || ""}
-                        onChange={(e) => updateCategory(index, "description", e.target.value || null)}
-                        placeholder="Descrição"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Máx. Finalistas</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={category.maxFinalists}
-                        onChange={(e) => updateCategory(index, "maxFinalists", parseInt(e.target.value) || 5)}
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Submit Button */}
-      <Button 
-        type="submit" 
-        className="w-full bg-blue-600 text-white hover:bg-blue-700" 
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? loadingButtonText : submitButtonText}
-      </Button>
-    </form>
+        {/* Submit Button */}
+        <div className="flex justify-end pt-4">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || hasDateValidationErrors()} 
+            className="px-8 py-3 bg-slate-800 hover:bg-slate-900 text-white transition-colors disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                {loadingButtonText}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                {submitButtonText}
+              </div>
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }

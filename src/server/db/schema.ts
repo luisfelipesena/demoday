@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, integer, boolean, pgEnum } from "drizzle-orm/
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
 
-export const roleEnum = pgEnum("role", ["admin", "user", "professor"]);
+export const roleEnum = pgEnum("role", ["admin", "student_ufba", "student_external", "professor"]);
 export const demodayStatusEnum = pgEnum("demoday_status", ["active", "finished", "canceled"]);
 
 export const users = pgTable("user", {
@@ -13,7 +13,7 @@ export const users = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  role: roleEnum("role").default("user").notNull(),
+  role: roleEnum("role").default("student_ufba").notNull(),
 });
 
 export const accounts = pgTable("account", {
@@ -56,17 +56,7 @@ export const verifications = pgTable("verification", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const projectCategories = pgTable("project_categories", {
-  id: text("id").primaryKey().$defaultFn(() => createId()),
-  name: text("name").notNull(),
-  description: text("description"),
-  maxFinalists: integer("max_finalists").default(5).notNull(),
-  demodayId: text("demoday_id")
-    .notNull()
-    .references(() => demodays.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+
 
 export const projects = pgTable("projects", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -76,12 +66,13 @@ export const projects = pgTable("projects", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // Disciplina, IC, TCC, Mestrado, Doutorado
-  categoryId: text("category_id")
-    .references(() => projectCategories.id, { onDelete: "set null" }),
   videoUrl: text("video_url"),
   repositoryUrl: text("repository_url"),
   developmentYear: text("development_year"),
-  authors: text("authors"),
+  authors: text("authors").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  contactPhone: text("contact_phone").notNull(),
+  advisorName: text("advisor_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -110,6 +101,7 @@ export const demodays = pgTable("demodays", {
     .references(() => users.id, { onDelete: "cascade" }),
   active: boolean("active").default(false).notNull(),
   status: demodayStatusEnum("status").default("active").notNull(),
+  maxFinalists: integer("max_finalists").default(5).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -128,16 +120,7 @@ export const demoDayPhases = pgTable("demoday_phases", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const registrationCriteria = pgTable("registration_criteria", {
-  id: text("id").primaryKey().$defaultFn(() => createId()),
-  demoday_id: text("demoday_id")
-    .notNull()
-    .references(() => demodays.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+
 
 export const evaluationCriteria = pgTable("evaluation_criteria", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -192,18 +175,7 @@ export const evaluationScores = pgTable("evaluation_scores", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const invites = pgTable("invites", {
-  id: text("id").primaryKey().$defaultFn(() => createId()),
-  email: text("email"),
-  token: text("token").notNull().unique(),
-  type: text("type").notNull().default("individual"), // 'global' or 'individual'
-  role: roleEnum("role").default("user").notNull(),
-  accepted: boolean("accepted").default(false).notNull(),
-  usedAt: timestamp("used_at"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+// Tabela invites removida - cadastro simplificado sem convites
 
 export const certificates = pgTable("certificates", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -261,8 +233,7 @@ export type NewDemoday = typeof demodays.$inferInsert;
 export type DemoDayPhase = typeof demoDayPhases.$inferSelect;
 export type NewDemoDayPhase = typeof demoDayPhases.$inferInsert;
 
-export type RegistrationCriteria = typeof registrationCriteria.$inferSelect;
-export type NewRegistrationCriteria = typeof registrationCriteria.$inferInsert;
+
 
 export type EvaluationCriteria = typeof evaluationCriteria.$inferSelect;
 export type NewEvaluationCriteria = typeof evaluationCriteria.$inferInsert;
@@ -276,8 +247,7 @@ export type NewProfessorEvaluation = typeof professorEvaluations.$inferInsert;
 export type EvaluationScore = typeof evaluationScores.$inferSelect;
 export type NewEvaluationScore = typeof evaluationScores.$inferInsert;
 
-export type ProjectCategory = typeof projectCategories.$inferSelect;
-export type NewProjectCategory = typeof projectCategories.$inferInsert;
+
 
 export type Certificate = typeof certificates.$inferSelect;
 export type NewCertificate = typeof certificates.$inferInsert;
@@ -288,25 +258,12 @@ export type NewUserFeedback = typeof userFeedback.$inferInsert;
 // Relações
 export const demodaysRelations = relations(demodays, ({ many }) => ({
   phases: many(demoDayPhases),
-  categories: many(projectCategories),
-}));
-
-export const projectCategoriesRelations = relations(projectCategories, ({ one, many }) => ({
-  demoday: one(demodays, {
-    fields: [projectCategories.demodayId],
-    references: [demodays.id],
-  }),
-  projects: many(projects),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   user: one(users, {
     fields: [projects.userId],
     references: [users.id],
-  }),
-  category: one(projectCategories, {
-    fields: [projects.categoryId],
-    references: [projectCategories.id],
   }),
   submissions: many(projectSubmissions),
   votes: many(votes),
@@ -354,16 +311,4 @@ export const evaluationScoresRelations = relations(evaluationScores, ({ one }) =
   }),
 })); 
 
-export type Invite = {
-  id: string;
-  email: string;
-  token: string;
-  type: string;
-  role: string;
-  accepted: boolean;
-  usedAt: Date | null;
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-};
-export type NewInvite = Omit<Invite, 'id' | 'usedAt' | 'createdAt' | 'updatedAt'>; 
+// Tipos Invite removidos - sistema de convites descontinuado 

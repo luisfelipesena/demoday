@@ -1,6 +1,6 @@
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { projectCategories, projects, projectSubmissions, votes } from "@/server/db/schema";
+import { demodays, projects, projectSubmissions, votes } from "@/server/db/schema";
 import { and, count, eq, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -21,82 +21,69 @@ export async function POST(
     const params = await context.params;
     const demodayId = params.id;
 
-    // Buscar todas as categorias do demoday
-    const categories = await db
-      .select()
-      .from(projectCategories)
-      .where(eq(projectCategories.demodayId, demodayId));
+    // Buscar o demoday para pegar o maxFinalists
+    const demoday = await db.query.demodays.findFirst({
+      where: eq(demodays.id, demodayId),
+    });
 
-    if (categories.length === 0) {
+    if (!demoday) {
       return NextResponse.json(
-        { error: "Nenhuma categoria encontrada para este demoday" },
-        { status: 400 }
+        { error: "Demoday não encontrado" },
+        { status: 404 }
       );
     }
 
-    const results = [];
-
-    // Para cada categoria, selecionar os finalistas
-    for (const category of categories) {
-      // Buscar projetos aprovados da categoria com contagem de votos populares
-      const projectsWithVotes = await db
-        .select({
-          submissionId: projectSubmissions.id,
-          projectId: projects.id,
-          projectTitle: projects.title,
-          voteCount: count(votes.id),
-        })
-        .from(projectSubmissions)
-        .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
-        .leftJoin(
-          votes,
-          and(
-            eq(votes.projectId, projects.id),
-            eq(votes.votePhase, "popular")
-          )
+    // Buscar projetos aprovados com contagem de votos populares
+    const projectsWithVotes = await db
+      .select({
+        submissionId: projectSubmissions.id,
+        projectId: projects.id,
+        projectTitle: projects.title,
+        voteCount: count(votes.id),
+      })
+      .from(projectSubmissions)
+      .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
+      .leftJoin(
+        votes,
+        and(
+          eq(votes.projectId, projects.id),
+          eq(votes.votePhase, "popular")
         )
+      )
+      .where(
+        and(
+          eq(projectSubmissions.demoday_id, demodayId),
+          eq(projectSubmissions.status, "approved")
+        )
+      )
+      .groupBy(
+        projectSubmissions.id,
+        projects.id,
+        projects.title
+      )
+      .orderBy(sql`count(${votes.id}) DESC`)
+      .limit(demoday.maxFinalists);
+
+    // Marcar os projetos selecionados como finalistas
+    const finalistIds = projectsWithVotes.map((p: { submissionId: string }) => p.submissionId);
+
+    if (finalistIds.length > 0) {
+      await db
+        .update(projectSubmissions)
+        .set({ status: "finalist", updatedAt: new Date() })
         .where(
           and(
             eq(projectSubmissions.demoday_id, demodayId),
-            eq(projectSubmissions.status, "approved"),
-            eq(projects.categoryId, category.id)
+            sql`${projectSubmissions.id} IN (${sql.join(finalistIds.map((id: string) => sql`${id}`), sql`,`)})`
           )
-        )
-        .groupBy(
-          projectSubmissions.id,
-          projects.id,
-          projects.title
-        )
-        .orderBy(sql`count(${votes.id}) DESC`)
-        .limit(category.maxFinalists);
-
-      // Marcar os projetos selecionados como finalistas
-      const finalistIds = projectsWithVotes.map((p: { submissionId: string }) => p.submissionId);
-
-      if (finalistIds.length > 0) {
-        await db
-          .update(projectSubmissions)
-          .set({ status: "finalist", updatedAt: new Date() })
-          .where(
-            and(
-              eq(projectSubmissions.demoday_id, demodayId),
-              sql`${projectSubmissions.id} IN (${sql.join(finalistIds.map((id: string) => sql`${id}`), sql`,`)})`
-            )
-          );
-      }
-
-      results.push({
-        categoryId: category.id,
-        categoryName: category.name,
-        maxFinalists: category.maxFinalists,
-        selectedFinalists: projectsWithVotes.length,
-        finalists: projectsWithVotes,
-      });
+        );
     }
 
     return NextResponse.json({
       message: "Finalistas selecionados automaticamente com sucesso",
-      results: results,
+      maxFinalists: demoday.maxFinalists,
+      selectedFinalists: projectsWithVotes.length,
+      finalists: projectsWithVotes,
     });
   } catch (error) {
     console.error("Error selecting finalists:", error);
@@ -115,28 +102,17 @@ export async function GET(
     const params = await context.params;
     const demodayId = params.id;
 
-    // Buscar finalistas por categoria
-    const finalistsByCategory = await db
+    // Buscar finalistas do demoday
+    const finalists = await db
       .select({
-        categoryId: projectCategories.id,
-        categoryName: projectCategories.name,
-        maxFinalists: projectCategories.maxFinalists,
         projectId: projects.id,
         projectTitle: projects.title,
         projectDescription: projects.description,
         submissionId: projectSubmissions.id,
         voteCount: count(votes.id),
       })
-      .from(projectCategories)
-      .leftJoin(projects, eq(projects.categoryId, projectCategories.id))
-      .leftJoin(
-        projectSubmissions,
-        and(
-          eq(projectSubmissions.projectId, projects.id),
-          eq(projectSubmissions.demoday_id, demodayId),
-          eq(projectSubmissions.status, "finalist")
-        )
-      )
+      .from(projectSubmissions)
+      .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
       .leftJoin(
         votes,
         and(
@@ -144,55 +120,22 @@ export async function GET(
           eq(votes.votePhase, "popular")
         )
       )
-      .where(eq(projectCategories.demodayId, demodayId))
+      .where(
+        and(
+          eq(projectSubmissions.demoday_id, demodayId),
+          eq(projectSubmissions.status, "finalist")
+        )
+      )
       .groupBy(
-        projectCategories.id,
-        projectCategories.name,
-        projectCategories.maxFinalists,
         projects.id,
         projects.title,
         projects.description,
         projectSubmissions.id
       )
-      .orderBy(projectCategories.name, sql`count(${votes.id}) DESC`);
-
-    // Organizar dados por categoria
-    const categorizedFinalists: any = {};
-
-    finalistsByCategory.forEach((row: {
-      categoryId: string;
-      categoryName: string;
-      maxFinalists: number;
-      projectId: string | null;
-      projectTitle: string | null;
-      projectDescription: string | null;
-      submissionId: string | null;
-      voteCount: number | null;
-    }) => {
-      if (!row.categoryId) return;
-
-      if (!categorizedFinalists[row.categoryId]) {
-        categorizedFinalists[row.categoryId] = {
-          categoryId: row.categoryId,
-          categoryName: row.categoryName,
-          maxFinalists: row.maxFinalists,
-          finalists: [],
-        };
-      }
-
-      if (row.submissionId && row.projectId) {
-        categorizedFinalists[row.categoryId].finalists.push({
-          projectId: row.projectId,
-          projectTitle: row.projectTitle,
-          projectDescription: row.projectDescription,
-          submissionId: row.submissionId,
-          voteCount: row.voteCount || 0,
-        });
-      }
-    });
+      .orderBy(sql`count(${votes.id}) DESC`);
 
     return NextResponse.json({
-      categories: Object.values(categorizedFinalists),
+      finalists: finalists,
     });
   } catch (error) {
     console.error("Error fetching finalists:", error);

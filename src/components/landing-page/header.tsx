@@ -16,7 +16,7 @@ export function LandingPageHeader() {
             Sobre
           </Link>
           <Link href="#how-it-works" className="text-sm font-medium transition-colors hover:text-primary">
-            Como Funciona
+            Como funciona
           </Link>
           <Link href="#projects" className="text-sm font-medium transition-colors hover:text-primary">
             Projetos

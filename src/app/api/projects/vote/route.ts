@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
       .values({
         userId,
         projectId,
-        voterRole: session.user.role as "admin" | "user" | "professor",
+        voterRole: session.user.role as "admin" | "student_ufba" | "student_external" | "professor",
         votePhase: votePhase as "popular" | "final",
         weight: weight,
       })

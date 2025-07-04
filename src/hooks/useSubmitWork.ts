@@ -8,10 +8,13 @@ export type SubmitWorkInput = {
   title: string;
   description: string;
   type: string;
-  videoUrl?: string;
+  videoUrl: string;
   repositoryUrl?: string;
   developmentYear: string;
   authors: string;
+  contactEmail: string;
+  contactPhone: string;
+  advisorName: string;
   demodayId: string;
 };
 
@@ -22,8 +25,13 @@ export const projectSubmissionSchema = z.object({
   type: z.string().min(1, "Selecione um tipo de projeto"),
   authors: z.string().min(3, "Informe o(s) autor(es) do projeto"),
   developmentYear: z.string().min(4, "Informe o ano de desenvolvimento"),
-  videoUrl: z.string().url("Forneça uma URL válida").optional(),
-  repositoryUrl: z.string().url("Forneça uma URL válida").optional(),
+  videoUrl: z.string().url("Forneça uma URL válida").min(1, "Link para apresentação do vídeo é obrigatório"),
+  repositoryUrl: z.string().optional().refine((val) => !val || val.trim() === "" || z.string().url().safeParse(val).success, {
+    message: "Forneça uma URL válida"
+  }),
+  contactEmail: z.string().email("Email do contato principal inválido"),
+  contactPhone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").max(20, "Telefone deve ter no máximo 20 dígitos"),
+  advisorName: z.string().min(2, "Nome do orientador/professor deve ter pelo menos 2 caracteres"),
 });
 
 export type ProjectSubmissionFormData = z.infer<typeof projectSubmissionSchema>;

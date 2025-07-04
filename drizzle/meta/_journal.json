@@ -43,6 +43,27 @@
       "when": 1750007982554,
       "tag": "0007_large_whirlwind",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1751638019771,
+      "tag": "0008_simplify_registration_remove_invites",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1751638686941,
+      "tag": "0009_update_default_role_to_student_ufba",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1751640336490,
+      "tag": "0010_outstanding_bloodscream",
+      "breakpoints": true
     }
   ]
 }

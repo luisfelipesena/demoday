@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { use, useState, useEffect } from "react";
 import { useDemodayDetails } from "@/hooks/useDemoday";
-import { useCategories, Category } from "@/hooks/useCategories";
+
 import { useDemodayProjects } from "@/hooks/useDemodayProjects";
 import { useSubmitVote, useProjectVoteStatus } from "@/hooks/useVoting";
 import { Button } from "@/components/ui/button";
@@ -36,20 +36,16 @@ export default function PublicVotingPage() {
   const demodayId = params.id as string;
 
   const { data: session } = useSession();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
-
   const { data: demoday, isLoading: isLoadingDemoday, error: demodayError } = useDemodayDetails(demodayId);
-  const { data: categories, isLoading: isLoadingCategories } = useCategories(demodayId);
   
   // Fetch approved or finalist projects for voting
   const { data: projects = [], isLoading: isLoadingProjects, error: projectsError } = useDemodayProjects(demodayId, {
     status: demoday?.currentPhase?.phaseNumber === 4 ? "finalist" : "approved", // or finalist for final voting phase
-    categoryId: selectedCategoryId || undefined,
   });
 
   const { mutate: submitVote, isPending: isSubmittingVote } = useSubmitVote();
 
-  const isLoading = isLoadingDemoday || isLoadingCategories || isLoadingProjects;
+  const isLoading = isLoadingDemoday || isLoadingProjects;
   const pageError = demodayError?.message || projectsError?.message;
   const demodayFinished = demoday && isDemodayFinished(demoday);
 
@@ -171,23 +167,7 @@ export default function PublicVotingPage() {
         </Card>
       )}
 
-      {categories && categories.length > 0 && votingActive && !demodayFinished && (
-        <div className="max-w-sm mx-auto">
-          <Select value={selectedCategoryId || "all"} onValueChange={(value) => setSelectedCategoryId(value === "all" ? "" : value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Categorias</SelectItem>
-              {categories.map((category: Category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+
 
       {!votingActive && !demodayFinished && (
         <Card className="text-center py-8">
@@ -208,7 +188,7 @@ export default function PublicVotingPage() {
           <CardHeader>
             <CardTitle>Nenhum Projeto Disponível para Votação</CardTitle>
             <CardDescription>
-              Atualmente não há projetos nesta categoria/status disponíveis para votação.
+              Atualmente não há projetos disponíveis para votação.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -217,7 +197,7 @@ export default function PublicVotingPage() {
               <ul className="list-disc list-inside space-y-1 text-left max-w-md mx-auto">
                 <li>Ainda não há projetos submetidos</li>
                 <li>Os projetos ainda não foram aprovados pelos administradores</li>
-                <li>Todos os projetos estão em outras categorias</li>
+                <li>Aguardando liberação da votação</li>
               </ul>
               <div className="pt-4">
                 <Link href="/dashboard" className="inline-block">
@@ -275,7 +255,6 @@ function ProjectVotingCard({ projectSubmission, demodayId, onVote, currentVotePh
         <CardTitle className="text-xl">{project.title}</CardTitle>
         <div className="flex gap-2 flex-wrap mt-1">
           <Badge variant="secondary">{project.type}</Badge>
-          {project.category && project.category.name && <Badge variant="outline">{project.category.name}</Badge>} 
         </div>
         {project.authors && <CardDescription className="text-xs mt-1">Por: {project.authors}</CardDescription>}
       </CardHeader>

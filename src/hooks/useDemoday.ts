@@ -11,12 +11,14 @@ type ErrorResponse = {
 export type CreateDemodayInput = {
   name: string;
   phases: Phase[];
+  maxFinalists?: number;
 };
 
 export type UpdateDemodayInput = {
   id: string;
   name: string;
   phases: Phase[];
+  maxFinalists?: number;
 };
 
 export type UpdateDemodayStatusInput = {
@@ -151,13 +153,13 @@ export function useUpdateDemoday() {
   const queryClient = useQueryClient();
 
   return useMutation<Demoday, Error, UpdateDemodayInput>({
-    mutationFn: async ({ id, name, phases }: UpdateDemodayInput) => {
+    mutationFn: async ({ id, name, phases, maxFinalists }: UpdateDemodayInput) => {
       const response = await fetch(`/api/demoday/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, phases }),
+        body: JSON.stringify({ name, phases, maxFinalists }),
       });
 
       if (!response.ok) {
