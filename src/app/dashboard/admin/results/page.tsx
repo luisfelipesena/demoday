@@ -83,7 +83,7 @@ export default function AdminResultsListPage() {
       return <Badge className="bg-blue-100 text-blue-800">Finalizado</Badge>;
     }
     if (demoday.status === "canceled") {
-      return <Badge className="bg-red-100 text-red-800">Cancelado</Badge>;
+      return <Badge className="bg-red-100 text-red-800">Excluído</Badge>;
     }
     return <Badge className="bg-gray-100 text-gray-800">Inativo</Badge>;
   };

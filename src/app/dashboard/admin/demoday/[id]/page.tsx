@@ -164,7 +164,7 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
         </div>
         <div className="flex items-center gap-2">
           <Badge className={`${demoday.active ? "bg-green-500" : "bg-blue-500"}`}>
-            {demoday.active ? "Ativo" : demoday.status === "finished" ? "Finalizado" : "Cancelado"}
+            {demoday.active ? "Ativo" : demoday.status === "finished" ? "Finalizado" : "Excluído"}
           </Badge>
           <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>
             <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">

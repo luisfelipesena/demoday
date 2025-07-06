@@ -350,7 +350,7 @@ export async function PATCH(
     // Se estiver atualizando para "canceled", apenas delete o demoday
     if (status === "canceled") {
       await db.delete(demodays).where(eq(demodays.id, id));
-      return NextResponse.json({ message: "Demoday cancelado e excluído com sucesso" });
+      return NextResponse.json({ message: "Demoday excluído com sucesso" });
     }
 
     // Se estiver finalizando um demoday ativo

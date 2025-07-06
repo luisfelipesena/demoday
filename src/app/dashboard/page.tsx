@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDemodays, useActiveDemodayPhase } from "@/hooks/useDemoday"
+import { useUserSubmissions, useAllSubmissions } from "@/hooks/useSubmitWork"
 import { isInSubmissionPhase, formatDate, isDemodayFinished } from "@/utils/date-utils"
-import { CalendarIcon, ClockIcon, Loader, Vote, ExternalLink, Trophy, Crown, Sparkles } from "lucide-react"
+import { CalendarIcon, ClockIcon, Loader, Vote, ExternalLink, Trophy, Crown, Sparkles, FileText } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -17,6 +18,14 @@ export default function DashboardPage() {
   const { data: session, isPending: sessionLoading } = useSession()
   const { data: demodays, isLoading } = useDemodays()
   const { data: phaseInfo, isLoading: phaseLoading } = useActiveDemodayPhase()
+  
+  const activeDemoday = demodays?.find((demoday) => demoday.active)
+  const { data: userSubmissions = [], isLoading: isLoadingUserSubmissions } = useUserSubmissions(
+    activeDemoday?.id || null
+  )
+  const { data: allSubmissions = [], isLoading: isLoadingAllSubmissions } = useAllSubmissions(
+    activeDemoday?.id || null
+  )
   
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -43,10 +52,18 @@ export default function DashboardPage() {
     )
   }
 
-  const activeDemoday = demodays?.find((demoday) => demoday.active)
-
   const submissionEnabled = activeDemoday && isInSubmissionPhase(activeDemoday)
   const demodayFinished = activeDemoday && isDemodayFinished(activeDemoday)
+  
+  // Lógica para mostrar botão de submissões
+  const isAdminOrProfessor = session?.user?.role === "admin" || session?.user?.role === "professor"
+  const hasUserSubmissions = !isLoadingUserSubmissions && userSubmissions.length > 0
+  const hasAnySubmissions = !isLoadingAllSubmissions && allSubmissions.length > 0
+  const isInValidPhaseForViewingSubmissions = (phaseInfo?.currentPhase?.phaseNumber ?? 0) >= 2 || demodayFinished
+  
+  const shouldShowSubmissionsButton = isAdminOrProfessor 
+    ? hasAnySubmissions && isInValidPhaseForViewingSubmissions
+    : hasUserSubmissions
   
   const getPhaseDisplayInfo = () => {
     if (!phaseInfo?.currentPhase) return null;
@@ -245,22 +262,37 @@ export default function DashboardPage() {
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               {demodayFinished ? (
-                <Link href={`/demoday/${activeDemoday.id}/results`}>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <Trophy className="mr-2 h-4 w-4" />
-                    Ver Resultados Finais
-                  </Button>
-                </Link>
+                <>
+                  {shouldShowSubmissionsButton && (
+                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
+                      <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {isAdminOrProfessor ? "Ver Submissões" : "Ver Minhas Submissões"}
+                      </Button>
+                    </Link>
+                  )}
+                  <Link href={`/demoday/${activeDemoday.id}/results`}>
+                    <Button className="bg-green-600 hover:bg-green-700">
+                      <Trophy className="mr-2 h-4 w-4" />
+                      Ver Resultados Finais
+                    </Button>
+                  </Link>
+                </>
               ) : (
                 <>
-              {submissionEnabled && (
-                <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
-                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter Trabalho</Button>
-                </Link>
-              )}
-              <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
-                <Button variant="outline">Ver Submissões</Button>
-              </Link>
+                  {submissionEnabled && (
+                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
+                      <Button className="bg-blue-600 hover:bg-blue-700">Submeter Trabalho</Button>
+                    </Link>
+                  )}
+                  {shouldShowSubmissionsButton && (
+                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
+                      <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {isAdminOrProfessor ? "Ver Submissões" : "Ver Minhas Submissões"}
+                      </Button>
+                    </Link>
+                  )}
                 </>
               )}
             </CardFooter>
