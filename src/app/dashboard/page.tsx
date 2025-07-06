@@ -59,10 +59,11 @@ export default function DashboardPage() {
   const isAdminOrProfessor = session?.user?.role === "admin" || session?.user?.role === "professor"
   const hasUserSubmissions = !isLoadingUserSubmissions && userSubmissions.length > 0
   const hasAnySubmissions = !isLoadingAllSubmissions && allSubmissions.length > 0
-  const isInValidPhaseForViewingSubmissions = (phaseInfo?.currentPhase?.phaseNumber ?? 0) >= 2 || demodayFinished
   
+  // Admin/Professor podem ver submissões desde a fase 1 (quando há submissões)
+  // Alunos só veem suas próprias submissões quando tiverem alguma
   const shouldShowSubmissionsButton = isAdminOrProfessor 
-    ? hasAnySubmissions && isInValidPhaseForViewingSubmissions
+    ? hasAnySubmissions 
     : hasUserSubmissions
   
   const getPhaseDisplayInfo = () => {
