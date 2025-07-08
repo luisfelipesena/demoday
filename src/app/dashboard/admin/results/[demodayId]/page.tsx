@@ -21,7 +21,7 @@ interface ProjectEvaluation {
   id: string;
   evaluatorName: string;
   evaluatorRole: string;
-  totalScore: number;
+  approvalPercentage: number;
   scores: Array<{
     criterionId: string;
     criterionName: string;
@@ -218,8 +218,15 @@ function ProjectDetailsModal({ project, onClose }: {
                           <p className="text-sm text-gray-500 capitalize">{evaluation.evaluatorRole}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">{evaluation.totalScore}</p>
-                          <p className="text-xs text-gray-500">Pontuação Total</p>
+                          <Badge 
+                            className={evaluation.approvalPercentage >= 50
+                              ? "bg-green-100 text-green-800 hover:bg-green-200" 
+                              : "bg-red-100 text-red-800 hover:bg-red-200"
+                            }
+                          >
+                            {evaluation.approvalPercentage >= 50 ? "Aprovado" : "Rejeitado"}
+                          </Badge>
+                          <p className="text-xs text-gray-500 mt-1">Status da Triagem</p>
                         </div>
                       </div>
                       
@@ -228,7 +235,14 @@ function ProjectDetailsModal({ project, onClose }: {
                           {evaluation.scores.map((score) => (
                             <div key={score.criterionId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                               <span className="text-sm font-medium">{score.criterionName}</span>
-                              <span className="text-sm font-bold">{score.score}/{score.maxScore}</span>
+                              <Badge 
+                                className={score.score >= (score.maxScore / 2)
+                                  ? "bg-green-100 text-green-800" 
+                                  : "bg-red-100 text-red-800"
+                                }
+                              >
+                                {score.score >= (score.maxScore / 2) ? "Aprovado" : "Rejeitado"}
+                              </Badge>
                             </div>
                           ))}
                         </div>

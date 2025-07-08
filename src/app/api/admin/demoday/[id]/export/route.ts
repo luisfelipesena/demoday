@@ -127,15 +127,15 @@ export async function GET(
       // Buscar avaliações
       const evaluationsData = await db
         .select({
-          totalScore: professorEvaluations.totalScore,
+                      approvalPercentage: professorEvaluations.approvalPercentage,
         })
         .from(professorEvaluations)
         .where(eq(professorEvaluations.submissionId, submission.submissionId));
 
       const totalEvaluations = evaluationsData.length;
-      const averageScore = totalEvaluations > 0
-        ? evaluationsData.reduce((sum, evaluation) => sum + (evaluation.totalScore || 0), 0) / totalEvaluations
-        : 0;
+              const averageScore = totalEvaluations > 0
+          ? evaluationsData.reduce((sum, evaluation) => sum + (evaluation.approvalPercentage || 0), 0) / totalEvaluations
+          : 0;
 
       csvData.push([
         submission.project.id,

@@ -155,7 +155,7 @@ export const professorEvaluations = pgTable("professor_evaluations", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  totalScore: integer("total_score").notNull(),
+  approvalPercentage: integer("approval_percentage").notNull(), // Percentual de critérios aprovados (0-100)
   completedAt: timestamp("completed_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -169,7 +169,7 @@ export const evaluationScores = pgTable("evaluation_scores", {
   criteriaId: text("criteria_id")
     .notNull()
     .references(() => evaluationCriteria.id, { onDelete: "cascade" }),
-  score: integer("score").notNull(),
+  approved: boolean("approved").notNull(), // SIM ou NÃO para o critério
   comment: text("comment"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -2,7 +2,7 @@
 
 import { DemodayForm } from "@/components/dashboard/DemodayForm"
 import { DemodayFormData } from "@/components/dashboard/types"
-import { useSubmitCriteriaBatch } from "@/hooks/useCriteria"
+import { useCreateCriteria } from "@/hooks/useCriteria"
 import { useCreateDemoday } from "@/hooks/useDemoday"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -11,18 +11,13 @@ import { useState } from "react"
 export default function NewDemodayPage() {
   const router = useRouter()
   const { mutate: createDemoday, isPending: isCreatingDemoday } = useCreateDemoday()
-  const { mutate: submitCriteria, isPending: isSubmittingCriteria } = useSubmitCriteriaBatch()
+  const { mutateAsync: createCriteria, isPending: isSubmittingCriteria } = useCreateCriteria()
 
   // Form validation error
   const [error, setError] = useState<string | null>(null)
 
-
-
   const onSubmit = (data: DemodayFormData) => {
     setError(null)
-
-    // Filter out empty criteria
-    const validEvaluationCriteria = data.evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
 
     // Create the demoday with maxFinalists
     createDemoday(
@@ -34,35 +29,28 @@ export default function NewDemodayPage() {
       {
         onSuccess: async (createdDemoday) => {
           try {
-            // Se houver critérios de avaliação para submeter
-            if (validEvaluationCriteria.length > 0) {
-              const evaluationForAPI = validEvaluationCriteria.map(({ name, description }) => ({
-                name,
-                description,
-              }))
+            // Se houver critérios de triagem para submeter
+            if (data.evaluationCriteria && data.evaluationCriteria.length > 0) {
+              const validCriteria = data.evaluationCriteria
+                .filter((c) => c.name.trim() && c.description.trim())
+                .map(({ name, description }) => ({
+                  name: name.trim(),
+                  description: description.trim(),
+                }))
 
-              // Submit evaluation criteria
-              submitCriteria(
-                {
-                  demodayId: createdDemoday.id,
-                  registration: [], // Vazio agora
-                  evaluation: evaluationForAPI,
-                },
-                {
-                  onSuccess: () => {
-                    console.log("Critérios de avaliação adicionados com sucesso")
-                    router.push("/dashboard/admin/demoday")
-                  },
-                  onError: (error) => {
-                    console.error("Erro ao adicionar critérios:", error)
-                    setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
-                  },
+              if (validCriteria.length > 0) {
+                try {
+                  await createCriteria({
+                    demodayId: createdDemoday.id,
+                    criteria: validCriteria,
+                  })
+                  console.log("Critérios de triagem adicionados com sucesso")
+                } catch (error) {
+                  console.error("Erro ao adicionar critérios:", error)
                 }
-              )
-            } else {
-              // Ir direto para a dashboard se não houver critérios
-              router.push("/dashboard/admin/demoday")
+              }
             }
+            router.push("/dashboard/admin/demoday")
           } catch (error) {
             console.error("Erro no processo de criação:", error);
             setError("Erro durante a criação do demoday");

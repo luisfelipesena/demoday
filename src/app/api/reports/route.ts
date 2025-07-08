@@ -92,22 +92,22 @@ export async function GET(request: Request) {
       },
     });
 
-    // Calculate average scores per project and criteria
+    // Calculate average approval percentage per project and criteria
     const evaluationSummary = submissions.map((submission: any) => {
       const projectEvaluations = evaluations.filter(
         (evaluation: any) => evaluation.submissionId === submission.id
       );
       const totalEvaluations = projectEvaluations.length;
 
-      // Calculate average total score
-      const avgTotalScore = totalEvaluations > 0
+      // Calculate average approval percentage
+      const avgApprovalPercentage = totalEvaluations > 0
         ? projectEvaluations.reduce(
-          (sum: number, evaluation: any) => sum + evaluation.totalScore,
+          (sum: number, evaluation: any) => sum + (evaluation.approvalPercentage || 0),
           0
         ) / totalEvaluations
         : 0;
 
-      // Calculate average score per criteria
+      // Calculate approval percentage per criteria
       const criteriaScores = criteria.map((criterion: any) => {
         const scores = projectEvaluations.flatMap(
           (evaluation: any) => evaluation.scores.filter(
@@ -115,14 +115,15 @@ export async function GET(request: Request) {
           )
         );
 
-        const avgScore = scores.length > 0
-          ? scores.reduce((sum: number, score: any) => sum + score.score, 0) / scores.length
+        // Calculate percentage of approvals for this criterion
+        const approvalPercentage = scores.length > 0
+          ? (scores.filter((score: any) => score.approved === true).length / scores.length) * 100
           : 0;
 
         return {
           criteriaId: criterion.id,
           criteriaName: criterion.name,
-          averageScore: avgScore,
+          approvalPercentage: Math.round(approvalPercentage),
         };
       });
 
@@ -131,7 +132,7 @@ export async function GET(request: Request) {
         projectId: submission.projectId,
         projectTitle: submission.project.title,
         totalEvaluations,
-        averageTotalScore: avgTotalScore,
+        averageTotalScore: Math.round(avgApprovalPercentage), // Mantém o nome para compatibilidade
         criteriaScores,
       };
     });

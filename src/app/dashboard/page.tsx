@@ -272,27 +272,27 @@ export default function DashboardPage() {
                       </Button>
                     </Link>
                   )}
-                  <Link href={`/demoday/${activeDemoday.id}/results`}>
-                    <Button className="bg-green-600 hover:bg-green-700">
-                      <Trophy className="mr-2 h-4 w-4" />
-                      Ver Resultados Finais
-                    </Button>
-                  </Link>
+                <Link href={`/demoday/${activeDemoday.id}/results`}>
+                  <Button className="bg-green-600 hover:bg-green-700">
+                    <Trophy className="mr-2 h-4 w-4" />
+                    Ver Resultados Finais
+                  </Button>
+                </Link>
                 </>
               ) : (
                 <>
-                  {submissionEnabled && (
-                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
-                      <Button className="bg-blue-600 hover:bg-blue-700">Submeter Trabalho</Button>
-                    </Link>
-                  )}
+              {submissionEnabled && (
+                <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
+                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter Trabalho</Button>
+                </Link>
+              )}
                   {shouldShowSubmissionsButton && (
-                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
+              <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
                       <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
                         <FileText className="mr-2 h-4 w-4" />
                         {isAdminOrProfessor ? "Ver Submissões" : "Ver Minhas Submissões"}
                       </Button>
-                    </Link>
+              </Link>
                   )}
                 </>
               )}

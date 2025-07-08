@@ -101,40 +101,32 @@ export const demodaySchema = z.object({
   ).min(1, "Adicione pelo menos uma fase"),
 });
 
-// Schema for validating criteria
+// Schema for validating criteria - apenas para avaliação
 export const criteriaSchema = z.object({
   id: z.string().optional(),
   demoday_id: z.string().optional(),
   name: z.string().min(1, "Nome é obrigatório"),
   description: z.string().min(1, "Descrição é obrigatória"),
-  type: z.enum(["registration", "evaluation"]).optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
 
-// Schema for criteria in forms where demoday_id might not exist yet
+// Schema para critérios em formulários
 export const formCriteriaSchema = z.object({
-  demoday_id: z.string().optional(), // Make demoday_id optional for forms
+  demoday_id: z.string().optional(),
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().min(5, "Descrição deve ter pelo menos 5 caracteres"),
-  type: z.enum(["registration", "evaluation"]),
 });
 
-// Schema para validar envio em lote de critérios
+// Schema para validar envio em lote de critérios de triagem
 export const batchCriteriaSchema = z.object({
   demodayId: z.string().min(1, "ID do demoday é obrigatório"),
-  registration: z.array(
+  criteria: z.array(
     z.object({
       name: z.string().min(1, "Nome é obrigatório"),
       description: z.string().min(1, "Descrição é obrigatória"),
     })
-  ).optional().default([]),
-  evaluation: z.array(
-    z.object({
-      name: z.string().min(1, "Nome é obrigatório"),
-      description: z.string().min(1, "Descrição é obrigatória"),
-    })
-  ).optional().default([]),
+  ).min(1, "Pelo menos um critério é obrigatório"),
 });
 
 // Schema para validação de registro de usuário

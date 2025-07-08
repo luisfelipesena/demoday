@@ -19,7 +19,8 @@ import {
   Vote,
   Presentation,
   FileText,
-  Target
+  Target,
+  Award
 } from "lucide-react"
 import { DateRange } from "react-day-picker"
 import { Controller, useForm } from "react-hook-form"
@@ -399,14 +400,14 @@ export function DemodayForm({
           </CardContent>
         </Card>
 
-        {/* Critérios de Avaliação */}
+        {/* Critérios de Triagem */}
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-slate-800">
                   <Users className="h-5 w-5 text-slate-600" />
-                  Critérios de Avaliação
+                  Critérios de Triagem
                 </CardTitle>
                 <CardDescription className="text-slate-600 mt-1">
                   Configure os critérios para avaliação dos projetos (opcional)

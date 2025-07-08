@@ -98,8 +98,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
             updateCriteria(
               {
                 demodayId: demoday.id,
-                registration: [], // Vazio agora
-                evaluation: validEvaluationCriteria,
+                criteria: validEvaluationCriteria,
               },
               {
                 onSuccess: () => {
@@ -111,7 +110,21 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
               }
             )
           } else {
-            router.push("/dashboard/admin/demoday")
+            // Se não há critérios, ainda precisamos limpar os existentes
+            updateCriteria(
+              {
+                demodayId: demoday.id,
+                criteria: [],
+              },
+              {
+                onSuccess: () => {
+                  router.push("/dashboard/admin/demoday")
+                },
+                onError: (error: ApiError) => {
+                  setError(`Demoday atualizado, mas houve um erro ao atualizar critérios: ${error.message}`)
+                },
+              }
+            )
           }
         },
         onError: (error: ApiError) => {
@@ -158,7 +171,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       endDate: formatDateForForm(phase.endDate),
     })),
     evaluationCriteria:
-      criteriaData?.evaluation?.map((c) => ({
+      criteriaData?.map((c) => ({
         name: c.name,
         description: c.description,
         demoday_id: demodayId,

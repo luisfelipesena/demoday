@@ -59,7 +59,7 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Menu de Avaliações - para todos os usuários */}
+        {/* Menu de Triagens - para todos os usuários */}
         <SidebarGroup>
           <SidebarGroupLabel>Participação</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -68,7 +68,7 @@ export function DashboardSidebar() {
                 <SidebarMenuButton asChild isActive={isActive("/dashboard/evaluations")}>
                   <Link href="/dashboard/evaluations">
                     <Award className="mr-2 h-4 w-4" />
-                    <span>Avaliações</span>
+                    <span>Triagens</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

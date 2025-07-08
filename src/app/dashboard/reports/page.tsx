@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { BarChart as BarChartIcon, Download, FileText, Star } from "lucide-react"
+import { BarChart as BarChartIcon, Download, FileText } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
-import { Progress } from "@/components/ui/progress"
+
 
 export default function ReportsPage() {
   const router = useRouter()
@@ -139,7 +139,7 @@ export default function ReportsPage() {
                   onClick={() => router.push("/dashboard/evaluations")}
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  Ir para Avaliações
+                  Ir para Triagens
                 </Button>
                 <br />
                 <Button 
@@ -161,7 +161,7 @@ export default function ReportsPage() {
   if (reportData?.demoday && !reportData?.hasEvaluations) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="mb-6 text-2xl font-bold">Relatórios de Avaliação</h1>
+        <h1 className="mb-6 text-2xl font-bold">Relatórios de Triagem</h1>
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>{reportData.demoday.name} - Relatórios</CardTitle>
@@ -173,19 +173,19 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="flex items-center justify-center p-6">
             <div className="text-center">
-              <Star className="mx-auto mb-2 h-8 w-8 text-yellow-400" />
-              <p className="text-lg font-medium">Aguardando Avaliações</p>
+              <FileText className="mx-auto mb-2 h-8 w-8 text-yellow-400" />
+              <p className="text-lg font-medium">Aguardando Triagens</p>
               <p className="text-sm text-gray-500 mb-4">
-                Há {reportData.submissions?.length || 0} projetos submetidos, mas nenhuma avaliação foi feita ainda.
+                Há {reportData.submissions?.length || 0} projetos submetidos, mas nenhuma triagem foi feita ainda.
               </p>
               <div className="space-y-2">
-                <Button 
-                  variant="default" 
-                  onClick={() => router.push("/dashboard/evaluations")}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Fazer Avaliações
-                </Button>
+                                  <Button 
+                    variant="default" 
+                    onClick={() => router.push("/dashboard/evaluations")}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Fazer Triagens
+                  </Button>
                 <br />
                 <Button 
                   variant="outline" 
@@ -209,7 +209,7 @@ export default function ReportsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Relatórios de Avaliação</h1>
+        <h1 className="text-2xl font-bold">Relatórios de Triagem</h1>
         <Button variant="outline" onClick={downloadCSV}>
           <Download className="mr-2 h-4 w-4" />
           Baixar CSV
@@ -220,7 +220,7 @@ export default function ReportsPage() {
         <CardHeader>
           <CardTitle>{reportData.demoday.name} - Relatórios</CardTitle>
           <CardDescription>
-            {reportData.evaluationSummary.length} avaliações de projetos | {reportData.criteria.length} critérios de avaliação
+            {reportData.evaluationSummary.length} triagens de projetos | {reportData.criteria.length} critérios de triagem
           </CardDescription>
         </CardHeader>
       </Card>
@@ -235,7 +235,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Classificação Geral</CardTitle>
-              <CardDescription>Projetos classificados por pontuação média de avaliação</CardDescription>
+              <CardDescription>Projetos classificados por taxa média de aprovação</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -244,8 +244,8 @@ export default function ReportsPage() {
                     <TableHead>Posição</TableHead>
                     <TableHead>Projeto</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Pontuação</TableHead>
-                    <TableHead>Avaliações</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Triagens</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -259,12 +259,14 @@ export default function ReportsPage() {
                           <Badge variant="outline">{project?.type || "Desconhecido"}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="w-20">
-                              <Progress value={summary.averageTotalScore} />
-                            </div>
-                            <span className="font-semibold">{summary.averageTotalScore.toFixed(0)}%</span>
-                          </div>
+                          <Badge 
+                            className={(summary.averageTotalScore || 0) >= 50
+                              ? "bg-green-100 text-green-800 hover:bg-green-200" 
+                              : "bg-red-100 text-red-800 hover:bg-red-200"
+                            }
+                          >
+                            {(summary.averageTotalScore || 0) >= 50 ? "Aprovado" : "Rejeitado"}
+                          </Badge>
                         </TableCell>
                         <TableCell>{summary.totalEvaluations}</TableCell>
                       </TableRow>
@@ -285,19 +287,23 @@ export default function ReportsPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>{project?.title || "Projeto Desconhecido"}</CardTitle>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                        <Star className="mr-1 h-3 w-3" />
-                        {summary.averageTotalScore.toFixed(0)}%
+                      <Badge 
+                        className={(summary.averageTotalScore || 0) >= 50
+                          ? "bg-green-100 text-green-800 hover:bg-green-200" 
+                          : "bg-red-100 text-red-800 hover:bg-red-200"
+                        }
+                      >
+                        {(summary.averageTotalScore || 0) >= 50 ? "Aprovado" : "Rejeitado"}
                       </Badge>
                     </div>
                     <CardDescription className="flex items-center gap-4">
                       <span>{project?.type || "Tipo Desconhecido"}</span>
                       <span>•</span>
-                      <span>{summary.totalEvaluations} avaliações</span>
+                      <span>{summary.totalEvaluations} triagens</span>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <h3 className="mb-4 text-sm font-semibold">Pontuações por Critério</h3>
+                    <h3 className="mb-4 text-sm font-semibold">Status por Critério</h3>
                     <div className="space-y-3">
                       {summary.criteriaScores.map((criteriaScore: any) => {
                         const criterion = reportData.criteria.find((c: any) => c.id === criteriaScore.criteriaId)
@@ -307,12 +313,14 @@ export default function ReportsPage() {
                               <div className="text-sm font-medium">{criterion?.name || "Critério Desconhecido"}</div>
                               <div className="text-xs text-gray-500">{criterion?.description || ""}</div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-24">
-                                <Progress value={(criteriaScore.averageScore / 10) * 100} className="h-2" />
-                              </div>
-                              <span className="text-sm font-medium">{criteriaScore.averageScore.toFixed(1)}/10</span>
-                            </div>
+                            <Badge 
+                              className={(criteriaScore.approvalPercentage || 0) >= 50
+                                ? "bg-green-100 text-green-800 hover:bg-green-200" 
+                                : "bg-red-100 text-red-800 hover:bg-red-200"
+                              }
+                            >
+                              {(criteriaScore.approvalPercentage || 0) >= 50 ? "Aprovado" : "Rejeitado"}
+                            </Badge>
                           </div>
                         )
                       })}

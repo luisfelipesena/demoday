@@ -106,9 +106,9 @@ export async function GET(
         .where(eq(professorEvaluations.submissionId, submission.submissionId));
       const professorEvaluationsCount = evaluationsResult[0]?.count || 0;
 
-      // Calcular média das avaliações
+      // Calcular média das avaliações (taxa de aprovação)
       const avgScoreResult = await db
-        .select({ avg: avg(professorEvaluations.totalScore) })
+        .select({ avg: avg(professorEvaluations.approvalPercentage) })
         .from(professorEvaluations)
         .where(eq(professorEvaluations.submissionId, submission.submissionId));
       const averageEvaluationScore = Number(avgScoreResult[0]?.avg) || 0;

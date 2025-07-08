@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/use-toast"
 import { useSession } from "@/lib/auth-client"
 import { AlertCircle, CalendarDays, Check, Clock, FileText, Info, Vote, ExternalLink } from "lucide-react"
@@ -27,6 +28,14 @@ interface Submission {
   projectId: string
   project: Project
   evaluated: boolean
+  evaluation?: {
+    id: string
+    submissionId: string
+    professorId: string
+    approvalPercentage: number
+    createdAt: string
+    updatedAt: string
+  } | null
 }
 
 interface Criterion {
@@ -91,7 +100,7 @@ export default function EvaluationsPage() {
       console.error("Failed to fetch evaluations:", error)
       toast({
         title: "Erro",
-        description: "Falha ao carregar dados de avaliação. Por favor, tente novamente mais tarde.",
+        description: "Falha ao carregar dados de triagem. Por favor, tente novamente mais tarde.",
         variant: "destructive",
       })
     } finally {
@@ -102,8 +111,8 @@ export default function EvaluationsPage() {
   const handleStartEvaluation = (submission: Submission) => {
     if (!evaluationsData?.isEvaluationPeriod) {
       toast({
-        title: "Fora do período de avaliação",
-        description: "As avaliações só podem ser feitas durante a fase de avaliação.",
+        title: "Fora do período de triagem",
+        description: "As triagens só podem ser feitas durante a fase de triagem.",
         variant: "destructive",
       })
       return
@@ -119,8 +128,8 @@ export default function EvaluationsPage() {
   }
 
   const handleSubmitEvaluation = async (evaluationData: {
-    scores: Array<{ criteriaId: string; score: number; comment?: string }>
-    totalScore: number
+    scores: Array<{ criteriaId: string; approved: boolean; comment?: string }>
+    approvalPercentage: number
   }) => {
     try {
       if (!selectedSubmission) {
@@ -140,21 +149,21 @@ export default function EvaluationsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        if (errorData.error === "Outside evaluation period") {
+        if (errorData.error === "Outside triagem period") {
           toast({
-            title: "Período de avaliação encerrado",
-            description: "O período de avaliação já foi encerrado. Não é mais possível enviar avaliações.",
+            title: "Período de triagem encerrado",
+            description: "O período de triagem já foi encerrado. Não é mais possível enviar triagens.",
             variant: "destructive",
           })
         } else {
-          throw new Error(errorData.error || "Falha ao enviar avaliação")
+          throw new Error(errorData.error || "Falha ao enviar triagem")
         }
         return
       }
 
       toast({
         title: "Sucesso",
-        description: "Avaliação enviada com sucesso",
+        description: "Triagem enviada com sucesso",
       })
 
       setIsEvaluating(false)
@@ -164,7 +173,7 @@ export default function EvaluationsPage() {
       console.error("Error submitting evaluation:", error)
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Falha ao enviar avaliação. Por favor, tente novamente.",
+        description: error instanceof Error ? error.message : "Falha ao enviar triagem. Por favor, tente novamente.",
         variant: "destructive",
       })
     }
@@ -180,16 +189,51 @@ export default function EvaluationsPage() {
     })
   }
 
+  const formatEvaluationDate = (evaluation: any) => {
+    if (!evaluation?.createdAt) return "Data não disponível"
+    return new Date(evaluation.createdAt).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  const getApprovalStatus = (evaluation: any) => {
+    if (!evaluation?.approvalPercentage && evaluation?.approvalPercentage !== 0) return "N/A"
+    return evaluation.approvalPercentage >= 50 ? "Aprovado" : "Rejeitado"
+  }
+
+  const getApprovalBadge = (evaluation: any) => {
+    const percentage = evaluation?.approvalPercentage
+    if (percentage === null || percentage === undefined) {
+      return <Badge variant="secondary">N/A</Badge>
+    }
+    
+    const isApproved = percentage >= 50
+    return (
+      <Badge 
+        className={isApproved 
+          ? "bg-green-100 text-green-800 hover:bg-green-200" 
+          : "bg-red-100 text-red-800 hover:bg-red-200"
+        }
+      >
+        {isApproved ? "Aprovado" : "Rejeitado"}
+      </Badge>
+    )
+  }
+
   const getPhaseStatusBadge = () => {
     if (!evaluationsData?.currentPhase) {
       return <Badge variant="secondary">Nenhuma fase ativa</Badge>
     }
 
     if (evaluationsData.currentPhase.phaseNumber === 2) {
-      return <Badge className="bg-blue-100 text-blue-800">Fase de Avaliação</Badge>
+      return <Badge className="bg-blue-100 text-blue-800">Fase de Triagem</Badge>
     }
 
-    const phaseNames = ["Submissão", "Avaliação", "Votação", "Resultados"]
+    const phaseNames = ["Submissão", "Triagem", "Votação", "Resultados"]
     const phaseName =
       phaseNames[evaluationsData.currentPhase.phaseNumber - 1] || `Fase ${evaluationsData.currentPhase.phaseNumber}`
 
@@ -270,7 +314,7 @@ export default function EvaluationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Avaliação de Projetos</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Triagem de Projetos</h1>
           <p className="text-gray-600">
             {evaluationsData.demoday.name} • {evaluationsData.submissions.length} projetos para avaliar
           </p>
@@ -328,7 +372,7 @@ export default function EvaluationsPage() {
             <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5" />
-            Período de Avaliação
+            Período de Triagem
           </CardTitle>
           <CardDescription>
             De {formatDate(evaluationsData.evaluationPhase?.startDate || "")} até{" "}
@@ -357,10 +401,10 @@ export default function EvaluationsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800">
               <Info className="h-5 w-5" />
-              Fora do período de avaliação
+              Fora do período de triagem
             </CardTitle>
             <CardDescription className="text-orange-700">
-                    As avaliações só podem ser realizadas durante a fase de avaliação do Demoday.
+                    As triagens só podem ser realizadas durante a fase de triagem do Demoday.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -370,10 +414,10 @@ export default function EvaluationsPage() {
       <Tabs defaultValue="pending" className="space-y-6">
         <TabsList>
           <TabsTrigger value="pending">
-            Avaliações Pendentes ({pendingSubmissions.length})
+            Triagens Pendentes ({pendingSubmissions.length})
           </TabsTrigger>
           <TabsTrigger value="completed">
-            Avaliações Concluídas ({completedSubmissions.length})
+            Triagens Concluídas ({completedSubmissions.length})
           </TabsTrigger>
         </TabsList>
 
@@ -383,9 +427,9 @@ export default function EvaluationsPage() {
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <Check className="mx-auto h-12 w-12 text-green-500 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Todas as avaliações concluídas!</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Todas as triagens concluídas!</h3>
                   <p className="text-gray-600">
-                    Você já avaliou todos os projetos disponíveis. Obrigado pela sua participação!
+                    Você já fez a triagem de todos os projetos disponíveis. Obrigado pela sua participação!
                   </p>
                 </div>
               </CardContent>
@@ -413,7 +457,7 @@ export default function EvaluationsPage() {
                       disabled={!evaluationsData.isEvaluationPeriod}
                             className="w-full"
                           >
-                      {evaluationsData.isEvaluationPeriod ? "Iniciar Avaliação" : "Fora do período"}
+                      {evaluationsData.isEvaluationPeriod ? "Iniciar Triagem" : "Fora do período"}
                           </Button>
                         </CardContent>
                       </Card>
@@ -428,35 +472,71 @@ export default function EvaluationsPage() {
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma avaliação concluída</h3>
-                  <p className="text-gray-600">As avaliações concluídas aparecerão aqui.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma triagem concluída</h3>
+                  <p className="text-gray-600">As triagens concluídas aparecerão aqui.</p>
                 </div>
               </CardContent>
             </Card>
-              ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {completedSubmissions.map((submission) => (
-                <Card key={submission.id} className="border-green-200">
-                        <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{submission.project.title}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {submission.project.type}
-                          {submission.project.authors && ` • ${submission.project.authors}`}
-                        </CardDescription>
-                      </div>
-                      <Badge className="bg-green-500 hover:bg-green-600">Concluída</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                    <p className="text-gray-600 line-clamp-2">{submission.project.description}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Triagens Concluídas</CardTitle>
+                <CardDescription>
+                  Histórico detalhado das triagens realizadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Projeto</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead>Autores</TableHead>
+                        <TableHead>Resultado</TableHead>
+                        <TableHead>Data da Triagem</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {completedSubmissions.map((submission: any) => (
+                        <TableRow key={submission.id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium">
+                            <div className="max-w-xs">
+                              <div className="font-semibold text-gray-900 truncate">
+                                {submission.project.title}
+                              </div>
+                              <div className="text-sm text-gray-500 line-clamp-2 mt-1">
+                                {submission.project.description}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {submission.project.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-gray-600">
+                              {submission.project.authors || 'Não informado'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getApprovalBadge(submission.evaluation)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-gray-600">
+                              {formatEvaluationDate(submission.evaluation)}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
-            </TabsContent>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
           </Tabs>
     </div>
   )

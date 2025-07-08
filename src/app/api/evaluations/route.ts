@@ -1,5 +1,5 @@
 import { getSessionWithRole, isProfessorOrAdmin } from "@/lib/session-utils";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/server/db";
@@ -14,13 +14,18 @@ import {
   type ProfessorEvaluation
 } from "@/server/db/schema";
 
-// Get evaluations for any authenticated user
+// Get evaluations for admin only
 export async function GET() {
   try {
     const session = await getSessionWithRole();
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verificar se o usuário é administrador
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Access denied - Admin only" }, { status: 403 });
     }
 
     const activeDemoday = await db.query.demodays.findFirst({
@@ -58,32 +63,37 @@ export async function GET() {
       isEvaluationPeriod = now >= startDate && now <= endDate;
     }
 
+    // Buscar TODAS as submissões do demoday (independente do status)
+    // Para triagem, precisamos ver tanto as pendentes quanto as já avaliadas
     const submissions = await db.query.projectSubmissions.findMany({
-      where: and(
-        eq(projectSubmissions.demoday_id, activeDemoday.id),
-        eq(projectSubmissions.status, "submitted")
-      ),
+      where: eq(projectSubmissions.demoday_id, activeDemoday.id),
       with: {
         project: true,
       },
     });
 
-    const evaluations = await db.query.professorEvaluations.findMany({
-      where: eq(professorEvaluations.userId, session.user.id),
-    });
+    // Buscar todas as avaliações das submissões deste demoday
+    const submissionIds = submissions.map(s => s.id);
+    const evaluations = submissionIds.length > 0 
+      ? await db.query.professorEvaluations.findMany({
+          where: inArray(professorEvaluations.submissionId, submissionIds),
+        })
+      : [];
 
     const criteria = await db.query.evaluationCriteria.findMany({
       where: eq(evaluationCriteria.demoday_id, activeDemoday.id),
     });
 
     const submissionMap = submissions.map((submission: any) => {
-      const evaluated = evaluations.some(
+      const evaluation = evaluations.find(
         (evaluation: ProfessorEvaluation) => evaluation.submissionId === submission.id
       );
+      const evaluated = !!evaluation;
 
       return {
         ...submission,
         evaluated,
+        evaluation: evaluation || null, // Incluir dados da avaliação se existir
       };
     });
 
@@ -102,7 +112,7 @@ export async function GET() {
   }
 }
 
-// Submit evaluation for a project (any authenticated user during evaluation phase)
+// Submit evaluation for a project (admin only during evaluation phase)
 export async function POST(request: Request) {
   try {
     const session = await getSessionWithRole();
@@ -111,7 +121,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { submissionId, scores, totalScore } = await request.json();
+    // Verificar se o usuário é administrador
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Access denied - Admin only" }, { status: 403 });
+    }
+
+    const { submissionId, scores } = await request.json();
 
     if (!submissionId || !scores || !Array.isArray(scores) || scores.length === 0) {
       return NextResponse.json({ error: "Invalid evaluation data" }, { status: 400 });
@@ -142,7 +157,7 @@ export async function POST(request: Request) {
 
     if (!evaluationPhase) {
       return NextResponse.json({
-        error: "Evaluation phase not configured for this Demoday"
+        error: "Triagem phase not configured for this Demoday"
       }, { status: 400 });
     }
 
@@ -152,7 +167,7 @@ export async function POST(request: Request) {
 
     if (now < startDate || now > endDate) {
       return NextResponse.json({
-        error: "Outside evaluation period",
+        error: "Outside triagem period",
         period: {
           start: evaluationPhase.startDate,
           end: evaluationPhase.endDate,
@@ -171,12 +186,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Project already evaluated" }, { status: 409 });
     }
 
+    // Calcular o percentual de aprovação baseado nos critérios aprovados
+    const approvedCount = scores.filter((score: any) => score.approved === true).length;
+    const totalCount = scores.length;
+    const approvalPercentage = Math.round((approvedCount / totalCount) * 100);
+
     const [evaluation] = await db
       .insert(professorEvaluations)
       .values({
         submissionId,
         userId: session.user.id,
-        totalScore,
+        approvalPercentage,
       })
       .returning();
 
@@ -184,20 +204,31 @@ export async function POST(request: Request) {
       await db.insert(evaluationScores).values({
         evaluationId: evaluation?.id || "",
         criteriaId: scoreData.criteriaId,
-        score: scoreData.score,
+        approved: scoreData.approved,
         comment: scoreData.comment || null,
       });
     }
 
-    // Automatically approve the project after evaluation is completed
-    await db
-      .update(projectSubmissions)
-      .set({ status: "approved" })
-      .where(eq(projectSubmissions.id, submissionId));
+    // Automatically approve the project after evaluation is completed (only if percentage >= 50%)
+    if (approvalPercentage >= 50) {
+      await db
+        .update(projectSubmissions)
+        .set({ status: "approved" })
+        .where(eq(projectSubmissions.id, submissionId));
+    } else {
+      await db
+        .update(projectSubmissions)
+        .set({ status: "rejected" })
+        .where(eq(projectSubmissions.id, submissionId));
+    }
 
-    return NextResponse.json({ message: "Evaluation submitted", evaluationId: evaluation?.id || "" });
+    return NextResponse.json({ 
+      message: "Triagem submitted successfully", 
+      evaluationId: evaluation?.id || "",
+      approvalPercentage
+    });
   } catch (error) {
-    console.error("Error submitting evaluation:", error);
-    return NextResponse.json({ error: "Failed to submit evaluation" }, { status: 500 });
+    console.error("Error submitting triagem:", error);
+    return NextResponse.json({ error: "Failed to submit triagem" }, { status: 500 });
   }
 } 
