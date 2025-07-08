@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "@/lib/auth-client"
-import { Award, BarChart, GraduationCap, Home, LogOut, Settings, Users, TrendingUp } from "lucide-react"
+import { Award, GraduationCap, Home, LogOut, Settings, Users, TrendingUp } from "lucide-react"
 
 import {
   Sidebar,
@@ -72,16 +72,6 @@ export function DashboardSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {(userRole === "professor" || userRole === "admin") && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/dashboard/reports")}>
-                    <Link href="/dashboard/reports">
-                      <BarChart className="mr-2 h-4 w-4" />
-                      <span>Relatórios</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

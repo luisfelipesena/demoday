@@ -321,15 +321,6 @@ export default function EvaluationsPage() {
         </div>
         <div className="flex items-center gap-4">
           {getPhaseStatusBadge()}
-          {/* Botão "Ver Relatórios" só para professores/admin */}
-          {(session?.user?.role === 'professor' || session?.user?.role === 'admin') && (
-            <Link href="/dashboard/reports">
-              <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
-          <FileText className="mr-2 h-4 w-4" />
-          Ver Relatórios
-        </Button>
-            </Link>
-          )}
         </div>
       </div>
 
