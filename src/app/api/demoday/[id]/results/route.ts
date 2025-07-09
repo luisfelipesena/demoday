@@ -66,7 +66,7 @@ export async function GET(
         .where(and(eq(votes.projectId, sub.project.id), eq(votes.votePhase, "popular")));
       const popularVoteCount = Number(popularVotes[0]?.value) || 0;
 
-      // Calculate Final Weighted Score (Popular votes + Final votes with weights)
+      // Calculate Final Weighted Score (Popular votes + Final votes - todos com peso 1)
       const allPhaseVotes = await db
         .select({
           weight: votes.weight,
@@ -79,11 +79,11 @@ export async function GET(
       let finalWeightedScore = 0;
       allPhaseVotes.forEach((vote: { phase: "popular" | "final" | null, weight: number | null, role: string | null }) => {
         if (vote.phase === 'popular') {
-          finalWeightedScore += Number(vote.weight) || 1; // Default weight 1 for popular
+          // Todos os votos populares têm peso 1
+          finalWeightedScore += 1;
         } else if (vote.phase === 'final') {
-          // Assuming professor weight is 3 as per vote API logic, others 1
-          const weight = (vote.role === 'professor' || vote.role === 'admin') ? 3 : 1;
-          finalWeightedScore += weight;
+          // Todos os votos finais têm peso 1 (removido o peso diferenciado por role)
+          finalWeightedScore += 1;
         }
       });
 
@@ -109,13 +109,7 @@ export async function GET(
       return b.popularVoteCount - a.popularVoteCount;
     });
 
-    // Assign winner status to top finalist (simplified logic)
-    if (projectResults.length > 0) {
-      const topFinalist = projectResults.find(p => p.status === 'finalist');
-      if (topFinalist && !projectResults.some(p => p.status === 'winner')) {
-        topFinalist.status = 'winner';
-      }
-    }
+    // Results are now determined solely by vote counts, no manual winner assignment
 
     // Calculate Overall Demoday Statistics
     const allSubmissionsForDemoday = await db

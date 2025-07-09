@@ -108,9 +108,11 @@ export default function PublicVotingPage() {
 
   // Project filtering logic based on voting phase
   let displayProjects = projects;
-  if (demoday?.currentPhase?.phaseNumber === 3) { // Popular voting
-    displayProjects = projects.filter(p => p.status === 'approved' || p.status === 'finalist');
-  } else if (demoday?.currentPhase?.phaseNumber === 4) { // Final voting
+  if (demoday?.currentPhase?.phaseNumber === 3) {
+    // Phase 3: Popular voting - show all approved projects
+    displayProjects = projects.filter(p => p.status === 'approved');
+  } else if (demoday?.currentPhase?.phaseNumber === 4) {
+    // Phase 4: Final voting - show only finalist projects
     displayProjects = projects.filter(p => p.status === 'finalist');
   }
 

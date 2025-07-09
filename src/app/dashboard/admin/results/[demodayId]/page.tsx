@@ -81,34 +81,7 @@ function useAdminResults(demodayId: string) {
   });
 }
 
-// Hook para atualizar status de projeto
-function useUpdateProjectStatus() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ submissionId, status }: { submissionId: string; status: string }) => {
-      const response = await fetch(`/api/admin/project-submissions/${submissionId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update project status");
-      }
-      
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["adminResults"] });
-      toast.success(`Status do projeto atualizado para ${variables.status}`);
-    },
-    onError: (error) => {
-      toast.error(`Erro ao atualizar status: ${error.message}`);
-    },
-  });
-}
+
 
 // Componente para mostrar detalhes do projeto
 function ProjectDetailsModal({ project, onClose }: { 
@@ -271,9 +244,8 @@ function ProjectDetailsModal({ project, onClose }: {
 }
 
 // Componente para linha da tabela de projeto
-function ProjectRow({ project, onStatusChange, onViewDetails }: { 
+function ProjectRow({ project, onViewDetails }: { 
   project: DetailedProjectResult; 
-  onStatusChange: (submissionId: string, status: string) => void;
   onViewDetails: (project: DetailedProjectResult) => void;
 }) {
   const getStatusBadge = (status: string) => {
@@ -350,32 +322,10 @@ function ProjectRow({ project, onStatusChange, onViewDetails }: {
         </div>
       </TableCell>
              <TableCell>
-         <div className="flex gap-2">
-           <Button variant="outline" size="sm" onClick={() => onViewDetails(project)}>
-             <Eye className="h-4 w-4 mr-1" />
-             Ver
-           </Button>
-           {project.status !== "winner" && (
-             <Button 
-               variant="default" 
-               size="sm"
-               onClick={() => onStatusChange(project.submissionId, "winner")}
-               className="bg-yellow-600 hover:bg-yellow-700"
-             >
-               <Trophy className="h-4 w-4 mr-1" />
-               Marcar Vencedor
-             </Button>
-           )}
-           {project.status === "winner" && (
-             <Button 
-               variant="outline" 
-               size="sm"
-               onClick={() => onStatusChange(project.submissionId, "finalist")}
-             >
-               Remover Vencedor
-             </Button>
-           )}
-         </div>
+         <Button variant="outline" size="sm" onClick={() => onViewDetails(project)}>
+           <Eye className="h-4 w-4 mr-1" />
+           Ver
+         </Button>
        </TableCell>
     </TableRow>
   );
@@ -398,7 +348,6 @@ export default function AdminResultsPage() {
 
   const { data: demoday, isLoading: isLoadingDemoday } = useDemodayDetails(demodayId);
   const { data: resultsData, isLoading: isLoadingResults, error } = useAdminResults(demodayId);
-  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateProjectStatus();
 
   const isLoading = isLoadingDemoday || isLoadingResults;
 
@@ -496,7 +445,7 @@ export default function AdminResultsPage() {
             Voltar
           </Button>
           <h1 className="text-3xl font-bold">Gestão de Resultados</h1>
-          <p className="text-muted-foreground">{resultsData.demodayName}</p>
+          <p className="text-muted-foreground">{resultsData.demodayName || 'Demoday'}</p>
         </div>
         <Button onClick={handleExport} className="bg-green-600 hover:bg-green-700">
           <Download className="mr-2 h-4 w-4" />
@@ -511,7 +460,7 @@ export default function AdminResultsPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total de Projetos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{resultsData.overallStats.totalProjects}</div>
+            <div className="text-2xl font-bold">{resultsData.overallStats?.totalProjects || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -519,7 +468,7 @@ export default function AdminResultsPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total de Avaliações</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{resultsData.overallStats.totalEvaluations}</div>
+            <div className="text-2xl font-bold">{resultsData.overallStats?.totalEvaluations || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -527,7 +476,7 @@ export default function AdminResultsPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total de Votos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{resultsData.overallStats.totalVotes}</div>
+            <div className="text-2xl font-bold">{resultsData.overallStats?.totalVotes || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -535,7 +484,7 @@ export default function AdminResultsPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Nota Média</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{resultsData.overallStats.averageScore.toFixed(1)}</div>
+            <div className="text-2xl font-bold">{resultsData.overallStats?.averageScore?.toFixed(1) || '0.0'}</div>
           </CardContent>
         </Card>
       </div>
@@ -555,11 +504,11 @@ export default function AdminResultsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
-                  {resultsData.categories.map((category) => (
+                  {resultsData.categories?.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
-                  ))}
+                  )) || []}
                 </SelectContent>
               </Select>
             </div>
@@ -615,13 +564,10 @@ export default function AdminResultsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                                 {filteredProjects.map((project) => (
+                                 {filteredProjects.map((project, index) => (
                    <ProjectRow
-                     key={project.id}
+                     key={project.submissionId || `project-${index}`}
                      project={project}
-                     onStatusChange={(submissionId, status) => 
-                       updateStatus({ submissionId, status })
-                     }
                      onViewDetails={(project) => setSelectedProject(project)}
                    />
                  ))}

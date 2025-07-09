@@ -10,26 +10,51 @@ import {
 import { and, avg, count, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-interface ProjectDetailedResult {
-  projectId: string;
+interface DetailedProjectResult {
+  id: string;
   title: string;
+  description: string;
   type: string;
   authors: string | null;
   status: string;
-  popularVotes: number;
-  finalVotes: number;
-  professorEvaluations: number;
+  categoryId: string;
+  categoryName: string;
+  submissionId: string;
+  popularVoteCount: number;
+  finalVoteCount: number;
+  finalWeightedScore: number;
+  evaluations: Array<{
+    id: string;
+    evaluatorName: string;
+    evaluatorRole: string;
+    approvalPercentage: number;
+    scores: Array<{
+      criterionId: string;
+      criterionName: string;
+      score: number;
+      maxScore: number;
+    }>;
+    createdAt: string;
+  }>;
   averageEvaluationScore: number;
-  totalWeightedScore: number;
+  totalEvaluations: number;
+  createdAt: string;
 }
 
 interface DemodayDetailedResults {
   demodayName: string;
-  projects: ProjectDetailedResult[];
-  totalProjects: number;
-  totalParticipants: number;
-  totalVotes: number;
-  totalEvaluations: number;
+  projects: DetailedProjectResult[];
+  categories: Array<{
+    id: string;
+    name: string;
+    maxFinalists: number;
+  }>;
+  overallStats: {
+    totalProjects: number;
+    totalEvaluations: number;
+    totalVotes: number;
+    averageScore: number;
+  };
 }
 
 export async function GET(
@@ -72,7 +97,7 @@ export async function GET(
       .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
       .where(eq(projectSubmissions.demoday_id, demodayId));
 
-    const detailedResults: ProjectDetailedResult[] = [];
+    const detailedResults: DetailedProjectResult[] = [];
 
     for (const submission of allSubmissions) {
       if (!submission.project) continue;
@@ -87,7 +112,7 @@ export async function GET(
           eq(votes.projectId, projectId),
           eq(votes.votePhase, "popular")
         ));
-      const popularVotes = popularVotesResult[0]?.count || 0;
+      const popularVoteCount = popularVotesResult[0]?.count || 0;
 
       // Contar votos finais
       const finalVotesResult = await db
@@ -97,14 +122,14 @@ export async function GET(
           eq(votes.projectId, projectId),
           eq(votes.votePhase, "final")
         ));
-      const finalVotes = finalVotesResult[0]?.count || 0;
+      const finalVoteCount = finalVotesResult[0]?.count || 0;
 
       // Contar avaliações de professores
       const evaluationsResult = await db
         .select({ count: count() })
         .from(professorEvaluations)
         .where(eq(professorEvaluations.submissionId, submission.submissionId));
-      const professorEvaluationsCount = evaluationsResult[0]?.count || 0;
+      const totalEvaluations = evaluationsResult[0]?.count || 0;
 
       // Calcular média das avaliações (taxa de aprovação)
       const avgScoreResult = await db
@@ -114,29 +139,33 @@ export async function GET(
       const averageEvaluationScore = Number(avgScoreResult[0]?.avg) || 0;
 
       // Calcular pontuação total ponderada (popular + final*3 + avaliações)
-      const totalWeightedScore = popularVotes + (finalVotes * 3) + averageEvaluationScore;
+      const finalWeightedScore = popularVoteCount + (finalVoteCount * 3) + averageEvaluationScore;
 
       detailedResults.push({
-        projectId: projectId,
+        id: projectId,
         title: submission.project.title,
+        description: submission.project.description || "",
         type: submission.project.type,
         authors: submission.project.authors,
         status: submission.status,
-        popularVotes: popularVotes,
-        finalVotes: finalVotes,
-        professorEvaluations: professorEvaluationsCount,
+        categoryId: "default", // Placeholder for now since categories were removed
+        categoryName: "Geral", // Placeholder for now
+        submissionId: submission.submissionId,
+        popularVoteCount: popularVoteCount,
+        finalVoteCount: finalVoteCount,
+        finalWeightedScore: finalWeightedScore,
+        evaluations: [], // Will be populated with detailed evaluations if needed
         averageEvaluationScore: averageEvaluationScore,
-        totalWeightedScore: totalWeightedScore,
+        totalEvaluations: totalEvaluations,
+        createdAt: submission.project.createdAt.toISOString(),
       });
     }
 
     // Ordenar por pontuação total
-    detailedResults.sort((a, b) => b.totalWeightedScore - a.totalWeightedScore);
+    detailedResults.sort((a, b) => b.finalWeightedScore - a.finalWeightedScore);
 
     // Calcular estatísticas gerais
     const totalProjects = detailedResults.length;
-    const uniqueParticipants = new Set(allSubmissions.map(s => s.project?.userId));
-    const totalParticipants = uniqueParticipants.size;
 
     const allVotesResult = await db
       .select({ count: count() })
@@ -152,13 +181,27 @@ export async function GET(
       .where(eq(projectSubmissions.demoday_id, demodayId));
     const totalEvaluations = allEvaluationsResult[0]?.count || 0;
 
+    // Calcular média geral das avaliações
+    const averageScore = totalProjects > 0 
+      ? detailedResults.reduce((sum, project) => sum + project.averageEvaluationScore, 0) / totalProjects
+      : 0;
+
     const responseData: DemodayDetailedResults = {
       demodayName: demoday.name,
       projects: detailedResults,
-      totalProjects,
-      totalParticipants,
-      totalVotes,
-      totalEvaluations,
+      categories: [
+        {
+          id: "default",
+          name: "Geral",
+          maxFinalists: demoday.maxFinalists || 10
+        }
+      ],
+      overallStats: {
+        totalProjects,
+        totalEvaluations,
+        totalVotes,
+        averageScore,
+      },
     };
 
     return NextResponse.json(responseData);

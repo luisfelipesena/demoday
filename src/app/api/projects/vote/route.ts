@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar se o projeto está aprovado
+    // Verificar se o projeto está aprovado OU é finalista (dependendo da fase)
     if (submission.status !== "approved" && submission.status !== "finalist") {
       return NextResponse.json(
         { error: "Projeto não está disponível para votação" },
@@ -128,10 +128,9 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
     let isVotingPeriod = false;
-    // let currentPhase; // Removido pois não está sendo usado
     let allowedVotePhase = "popular";
 
-    // Verificar fase 3 (votação popular para finalistas)
+    // Verificar fase 3 (votação popular)
     const phase3 = phases.find((phase: any) => phase.phaseNumber === 3);
     if (phase3) {
       const startDate = new Date(phase3.startDate);
@@ -139,12 +138,18 @@ export async function POST(req: NextRequest) {
 
       if (now >= startDate && now <= endDate) {
         isVotingPeriod = true;
-        // currentPhase = phase3;
         allowedVotePhase = "popular";
+        // Na fase 3, apenas projetos aprovados podem receber votos
+        if (submission.status !== "approved") {
+          return NextResponse.json(
+            { error: "Projeto não está disponível para votação popular" },
+            { status: 400 }
+          );
+        }
       }
     }
 
-    // Verificar fase 4 (votação final - apenas professores)
+    // Verificar fase 4 (votação final)
     if (!isVotingPeriod) {
       const phase4 = phases.find((phase: any) => phase.phaseNumber === 4);
       if (phase4) {
@@ -153,21 +158,12 @@ export async function POST(req: NextRequest) {
 
         if (now >= startDate && now <= endDate) {
           isVotingPeriod = true;
-          // currentPhase = phase4;
           allowedVotePhase = "final";
-
-          // Na fase 4, apenas professores podem votar
-          if (session.user.role !== "professor" && session.user.role !== "admin") {
-            return NextResponse.json(
-              { error: "Apenas professores podem votar na fase final" },
-              { status: 403 }
-            );
-          }
-
+          
           // Na fase 4, apenas projetos finalistas podem receber votos
           if (submission.status !== "finalist") {
             return NextResponse.json(
-              { error: "Apenas projetos finalistas podem receber votos nesta fase" },
+              { error: "Projeto não está disponível para votação final - apenas finalistas podem receber votos" },
               { status: 400 }
             );
           }
@@ -206,11 +202,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determinar peso do voto baseado no role e fase
-    let weight = 1;
-    if (votePhase === "final" && session.user.role === "professor") {
-      weight = 3; // Professores têm peso maior na votação final
-    }
+    // Todos os votos têm peso 1 (removido o sistema de peso diferenciado)
+    const weight = 1;
 
     // Registrar o voto
     const [newVote] = await db
