@@ -50,9 +50,9 @@ function getCurrentPhaseInfo(demoday: any) {
   }
 }
 
-function getPhaseIcon(phaseNumber: number, isActive: boolean, isCompleted: boolean) {
+function getPhaseIcon(phaseNumber: number) {
   const iconProps = {
-    className: `h-4 w-4 ${isActive ? 'text-white' : isCompleted ? 'text-green-600' : 'text-gray-400'}`
+    className: `h-4 w-4 text-white`
   }
   
   switch (phaseNumber) {
@@ -202,7 +202,7 @@ export default function LandingPage() {
                                   shadow-lg transform transition-all duration-300
                                   ${isActive ? 'scale-110 shadow-xl' : ''}
                                 `}>
-                                  {getPhaseIcon(phase.phaseNumber, isActive, isCompleted)}
+                                  {getPhaseIcon(phase.phaseNumber)}
                                   
                                   {/* Active pulse effect */}
                                   {isActive && (
@@ -275,7 +275,7 @@ export default function LandingPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                   <BookOpen className="h-6 w-6" />
                 </div>
-                <h3 className="mt-4 text-xl font-bold">Projetos Acadêmicos</h3>
+                <h3 className="mt-4 text-xl font-bold">Projetos acadêmicos</h3>
                 <p className="mt-2 text-muted-foreground">
                   Submeta projetos de Disciplina, IC, TCC, Mestrado ou Doutorado.
                 </p>
@@ -340,40 +340,6 @@ export default function LandingPage() {
             <div className="mt-12 flex justify-center">
               <Link href="/register">
                 <Button size="lg">Participar agora</Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-        <section id="projects" className="w-full bg-muted/50 py-12 md:py-24 lg:py-32">
-          <div className="container mx-auto flex flex-col items-center justify-center px-4 md:px-6">
-            <div className="mx-auto flex max-w-[58rem] flex-col items-center justify-center gap-4 text-center">
-              <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-6xl">Projetos em Destaque</h2>
-              <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-                Conheça alguns dos projetos que já participaram do Demoday
-              </p>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mt-12">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="group relative overflow-hidden rounded-lg border bg-background">
-                  <div className="aspect-video w-full bg-muted"></div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold">Projeto Exemplo {i}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Descrição breve do projeto exemplo {i} que participou do Demoday.
-                    </p>
-                    <div className="mt-4 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Demoday 2023</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-12 flex justify-center">
-              <Link href="/login">
-                <Button variant="outline" size="lg">
-                  Ver todos os projetos
-                </Button>
               </Link>
             </div>
           </div>

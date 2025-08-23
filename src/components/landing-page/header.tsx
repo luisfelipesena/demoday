@@ -18,9 +18,6 @@ export function LandingPageHeader() {
           <Link href="#how-it-works" className="text-sm font-medium transition-colors hover:text-primary">
             Como funciona
           </Link>
-          <Link href="#projects" className="text-sm font-medium transition-colors hover:text-primary">
-            Projetos
-          </Link>
         </nav>
         <div className="flex items-center gap-4">
           <Link href="/login">

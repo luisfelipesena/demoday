@@ -139,13 +139,13 @@ export default function DashboardPage() {
               <Link href={`/demoday/${activeDemoday.id}/results`}>
                 <Button className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg px-6 py-3">
                   <Trophy className="mr-2 h-5 w-5" />
-                  Ver Apresentação Final
+                  Ver apresentação final
                   <Crown className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href={`/demoday/${activeDemoday.id}`}>
                 <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-50">
-                  Ver Detalhes do Evento
+                  Ver detalhes do evento
                 </Button>
               </Link>
             </div>
@@ -170,14 +170,14 @@ export default function DashboardPage() {
               <Link href={`/demoday/${activeDemoday.id}/voting`}>
                 <Button className="bg-purple-600 hover:bg-purple-700">
                   <Vote className="mr-2 h-4 w-4" />
-                  Ir para Votação
+                  Ir para votação
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link href={`/demoday/${activeDemoday.id}/results`}>
                 <Button variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50">
                   <Trophy className="mr-2 h-4 w-4" />
-                  Ver Resultados
+                  Ver resultados
                 </Button>
               </Link>
             </div>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
 
       <div>
         <h2 className="mb-4 text-2xl font-semibold">
-          {demodayFinished ? "DemoDay Finalizado" : "DemoDay Ativo"}
+          {demodayFinished ? "Demoday Finalizado" : "Demoday Ativo"}
         </h2>
 
         {activeDemoday ? (
@@ -222,7 +222,7 @@ export default function DashboardPage() {
               {demodayFinished ? (
                 <div>
                                   <p className="text-gray-600 mb-4">
-                  Este DemoDay foi concluído com sucesso! Todas as fases foram finalizadas e a apresentação está disponível.
+                  Este Demoday foi concluído com sucesso! Todas as fases foram finalizadas e a apresentação está disponível.
                 </p>
                   <div className="rounded-md p-3 border bg-green-50 border-green-200 mb-4">
                     <p className="font-medium text-green-800">
@@ -233,7 +233,7 @@ export default function DashboardPage() {
               ) : (
                 <div>
                   <p className="text-gray-600 mb-4">
-                O DemoDay é um concurso onde você pode submeter seus trabalhos práticos já desenvolvidos 
+                O Demoday é um concurso onde você pode submeter seus trabalhos práticos já desenvolvidos 
                 (ex: Iniciação Científica, TCC, projeto de disciplina) para avaliação.
               </p>
                   
@@ -268,7 +268,7 @@ export default function DashboardPage() {
                     <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
                       <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
                         <FileText className="mr-2 h-4 w-4" />
-                        {isAdminOrProfessor ? "Ver Submissões" : "Ver Minhas Submissões"}
+                        {isAdminOrProfessor ? "Ver submissões" : "Ver minhas submissões"}
                       </Button>
                     </Link>
                   )}
@@ -283,14 +283,14 @@ export default function DashboardPage() {
                 <>
               {submissionEnabled && (
                 <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
-                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter Trabalho</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter trabalho</Button>
                 </Link>
               )}
                   {shouldShowSubmissionsButton && (
               <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
                       <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
                         <FileText className="mr-2 h-4 w-4" />
-                        {isAdminOrProfessor ? "Ver Submissões" : "Ver Minhas Submissões"}
+                        {isAdminOrProfessor ? "Ver submissões" : "Ver minhas submissões"}
                       </Button>
               </Link>
                   )}
@@ -300,11 +300,11 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <div className="rounded-lg border p-8 text-center bg-gray-50">
-            <p className="text-lg text-gray-600">Nenhum DemoDay ativo no momento.</p>
+            <p className="text-lg text-gray-600">Nenhum Demoday ativo no momento.</p>
             {session?.user?.role === "admin" && (
               <div className="mt-4">
                 <Link href="/dashboard/admin/demoday/new">
-                  <Button className="bg-blue-600 hover:bg-blue-700">Criar Novo DemoDay</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700">Criar novo Demoday</Button>
                 </Link>
               </div>
             )}
