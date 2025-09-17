@@ -1,6 +1,6 @@
 import { getSessionWithRole } from "@/lib/session-utils";
 import { db } from "@/server/db";
-import { demodays, evaluationCriteria, registrationCriteria } from "@/server/db/schema";
+import { demodays, evaluationCriteria } from "@/server/db/schema";
 import { batchCriteriaSchema } from "@/server/db/validators";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -56,7 +56,7 @@ export async function POST(
       if (registration) {
         for (const criteria of registration) {
           if (criteria.name.trim() && criteria.description.trim()) {
-            await tx.insert(registrationCriteria).values({
+            await tx.insert(evaluationCriteria).values({
               demoday_id: demodayId,
               name: criteria.name,
               description: criteria.description,
@@ -136,8 +136,8 @@ export async function PUT(
     const { registration, evaluation } = result.data;
 
     await db.transaction(async (tx) => {
-      await tx.delete(registrationCriteria)
-        .where(eq(registrationCriteria.demoday_id, demodayId));
+      await tx.delete(evaluationCriteria)
+        .where(eq(evaluationCriteria.demoday_id, demodayId));
 
       await tx.delete(evaluationCriteria)
         .where(eq(evaluationCriteria.demoday_id, demodayId));
@@ -145,7 +145,7 @@ export async function PUT(
       if (registration && registration.length > 0) {
         for (const criteria of registration) {
           if (criteria.name.trim() && criteria.description.trim()) {
-            await tx.insert(registrationCriteria).values({
+            await tx.insert(evaluationCriteria).values({
               demoday_id: demodayId,
               name: criteria.name,
               description: criteria.description,
@@ -167,8 +167,8 @@ export async function PUT(
       }
     });
 
-    const updatedRegistrationCriteria = await db.query.registrationCriteria.findMany({
-      where: eq(registrationCriteria.demoday_id, demodayId),
+    const updatedRegistrationCriteria = await db.query.evaluationCriteria.findMany({
+      where: eq(evaluationCriteria.demoday_id, demodayId),
     });
 
     const updatedEvaluationCriteria = await db.query.evaluationCriteria.findMany({

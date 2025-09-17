@@ -7,6 +7,12 @@ export async function middleware(request: NextRequest) {
   
   // Check if the current path should be protected
   const path = request.nextUrl.pathname;
+  
+  // Allow admin-setup to be public (for initial system setup)
+  if (path.startsWith("/admin-setup")) {
+    return NextResponse.next();
+  }
+  
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   
   // Skip middleware for public routes and API routes

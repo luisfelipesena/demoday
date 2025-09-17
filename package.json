@@ -16,8 +16,7 @@
     "dev": "next dev",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "start": "next start",
-    "create-super-user": "npx tsx scripts/create-super-user.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^0.8.0",
@@ -32,6 +31,7 @@
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-popover": "^1.1.6",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-separator": "^1.1.2",

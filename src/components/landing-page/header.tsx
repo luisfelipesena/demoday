@@ -20,6 +20,9 @@ export function LandingPageHeader() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
+          <Link href="/admin-setup">
+            <Button variant="secondary" size="sm">Admin Setup</Button>
+          </Link>
           <Link href="/login">
             <Button variant="outline">Entrar</Button>
           </Link>
