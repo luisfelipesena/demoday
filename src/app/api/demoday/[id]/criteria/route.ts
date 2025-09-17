@@ -50,30 +50,16 @@ export async function POST(
       );
     }
 
-    const { registration, evaluation } = result.data;
+    const { criteria } = result.data;
 
     await db.transaction(async (tx) => {
-      if (registration) {
-        for (const criteria of registration) {
-          if (criteria.name.trim() && criteria.description.trim()) {
-            await tx.insert(evaluationCriteria).values({
-              demoday_id: demodayId,
-              name: criteria.name,
-              description: criteria.description,
-            });
-          }
-        }
-      }
-
-      if (evaluation) {
-        for (const criteria of evaluation) {
-          if (criteria.name.trim() && criteria.description.trim()) {
-            await tx.insert(evaluationCriteria).values({
-              demoday_id: demodayId,
-              name: criteria.name,
-              description: criteria.description,
-            });
-          }
+      for (const criteriaItem of criteria) {
+        if (criteriaItem.name.trim() && criteriaItem.description.trim()) {
+          await tx.insert(evaluationCriteria).values({
+            demoday_id: demodayId,
+            name: criteriaItem.name,
+            description: criteriaItem.description,
+          });
         }
       }
     });
@@ -133,53 +119,33 @@ export async function PUT(
       );
     }
 
-    const { registration, evaluation } = result.data;
+    const { criteria } = result.data;
 
     await db.transaction(async (tx) => {
       await tx.delete(evaluationCriteria)
         .where(eq(evaluationCriteria.demoday_id, demodayId));
 
-      await tx.delete(evaluationCriteria)
-        .where(eq(evaluationCriteria.demoday_id, demodayId));
-
-      if (registration && registration.length > 0) {
-        for (const criteria of registration) {
-          if (criteria.name.trim() && criteria.description.trim()) {
+      if (criteria && criteria.length > 0) {
+        for (const criteriaItem of criteria) {
+          if (criteriaItem.name.trim() && criteriaItem.description.trim()) {
             await tx.insert(evaluationCriteria).values({
               demoday_id: demodayId,
-              name: criteria.name,
-              description: criteria.description,
-            });
-          }
-        }
-      }
-
-      if (evaluation && evaluation.length > 0) {
-        for (const criteria of evaluation) {
-          if (criteria.name.trim() && criteria.description.trim()) {
-            await tx.insert(evaluationCriteria).values({
-              demoday_id: demodayId,
-              name: criteria.name,
-              description: criteria.description,
+              name: criteriaItem.name,
+              description: criteriaItem.description,
             });
           }
         }
       }
     });
 
-    const updatedRegistrationCriteria = await db.query.evaluationCriteria.findMany({
-      where: eq(evaluationCriteria.demoday_id, demodayId),
-    });
-
-    const updatedEvaluationCriteria = await db.query.evaluationCriteria.findMany({
+    const updatedCriteria = await db.query.evaluationCriteria.findMany({
       where: eq(evaluationCriteria.demoday_id, demodayId),
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        registration: updatedRegistrationCriteria,
-        evaluation: updatedEvaluationCriteria,
+        criteria: updatedCriteria,
       },
     });
   } catch (error) {
