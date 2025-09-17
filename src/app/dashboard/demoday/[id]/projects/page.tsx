@@ -12,15 +12,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use } from "react"
 import { formatDate } from "@/utils/date-utils"
-import { useCategories, Category } from "@/hooks/useCategories"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { useState } from "react"
+
+
 
 interface DemodayProjectsProps {
   params: Promise<{ id: string }>
@@ -32,13 +25,8 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
   const { data: session, isPending } = useSession()
   const demodayId = resolvedParams.id
   
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
-
   const { data: demoday, isLoading: isLoadingDemoday } = useDemodayDetails(demodayId)
-  const { data: categories, isLoading: isLoadingCategories } = useCategories(demodayId)
-  const { data: projects = [], isLoading: isLoadingProjects } = useDemodayProjects(demodayId, {
-    categoryId: selectedCategoryId === "all" ? undefined : selectedCategoryId,
-  })
+  const { data: projects = [], isLoading: isLoadingProjects } = useDemodayProjects(demodayId)
   
   // Redirecionar para login se não estiver autenticado
   if (!isPending && !session) {
@@ -47,7 +35,7 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
   }
 
   // Mostrar carregamento durante verificação da sessão
-  if (isPending || isLoadingDemoday || isLoadingCategories || isLoadingProjects) {
+  if (isPending || isLoadingDemoday || isLoadingProjects) {
     return (
       <div className="w-full space-y-6">
         <div className="flex items-center justify-between">
@@ -98,24 +86,7 @@ export default function DemodayProjectsPage({ params }: DemodayProjectsProps) {
         </Button>
       </div>
 
-      {/* Category Filter Dropdown */}
-      {categories && categories.length > 0 && (
-        <div className="mb-4 max-w-xs">
-          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Categorias</SelectItem>
-              {categories.map((category: Category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+
 
       {projects.length === 0 ? (
         <Card>

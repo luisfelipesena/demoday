@@ -34,6 +34,7 @@ export interface Demoday {
   phases: Phase[]
   active: boolean
   status: 'active' | 'finished' | 'canceled'
+  maxFinalists: number
   createdAt: string
   updatedAt: string
   stats?: {

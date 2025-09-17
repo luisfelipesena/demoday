@@ -47,6 +47,9 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
       repositoryUrl: "",
       developmentYear: new Date().getFullYear().toString(),
       authors: "",
+      contactEmail: "",
+      contactPhone: "",
+      advisorName: "",
       demodayId: demodayId,
     },
   })
@@ -280,7 +283,7 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
 
             <div className="space-y-2">
               <label htmlFor="authors" className="text-sm font-medium">
-                Autores*
+                Autores (nomes completos)*
               </label>
               <Controller
                 name="authors"
@@ -289,7 +292,72 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
                   <div>
                     <Input
                       id="authors"
-                      placeholder="Nome dos autores (separados por vírgula)"
+                      placeholder="Nome completo dos autores (separados por vírgula)"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="contactEmail" className="text-sm font-medium">
+                Email do contato principal*
+              </label>
+              <Controller
+                name="contactEmail"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="contactPhone" className="text-sm font-medium">
+                Celular do contato principal*
+              </label>
+              <Controller
+                name="contactPhone"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <Input
+                      id="contactPhone"
+                      type="tel"
+                      placeholder="(xx) xxxxx-xxxx"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                    {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="advisorName" className="text-sm font-medium">
+                Orientador/Professor da disciplina*
+              </label>
+              <Controller
+                name="advisorName"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <Input
+                      id="advisorName"
+                      placeholder="Nome completo do orientador/professor"
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -322,7 +390,7 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
 
             <div className="space-y-2">
               <label htmlFor="videoUrl" className="text-sm font-medium">
-                Link do Vídeo de Apresentação
+                Link do Vídeo de Apresentação* (vídeo com até 3 minutos)
               </label>
               <Controller
                 name="videoUrl"
@@ -335,6 +403,9 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
                       {...field}
                       disabled={isSubmitting}
                     />
+                    <p className="mt-1 text-xs text-gray-500">
+                      O vídeo deve ter no máximo 3 minutos de duração
+                    </p>
                     {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
                   </div>
                 )}
@@ -343,7 +414,7 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
 
             <div className="space-y-2">
               <label htmlFor="repositoryUrl" className="text-sm font-medium">
-                Link do Repositório
+                Link do Repositório (opcional)
               </label>
               <Controller
                 name="repositoryUrl"
@@ -356,6 +427,9 @@ export default function SubmitWorkPage({ params }: DemodaySubmitProps) {
                       {...field}
                       disabled={isSubmitting}
                     />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Se disponível, adicione o link do repositório do seu projeto
+                    </p>
                     {fieldState.error && <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>}
                   </div>
                 )}

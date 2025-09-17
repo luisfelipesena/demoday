@@ -36,7 +36,7 @@ export async function PUT(
       );
     }
 
-    if (!role || !["admin", "user", "professor"].includes(role)) {
+    if (!role || !["admin", "student_ufba", "student_external", "professor"].includes(role)) {
       return NextResponse.json(
         { error: "Role inválido" },
         { status: 400 }

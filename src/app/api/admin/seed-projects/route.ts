@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
           developmentYear: projectData.developmentYear,
           videoUrl: projectData.videoUrl || null,
           repositoryUrl: projectData.repositoryUrl || null,
+          contactEmail: projectData.contactEmail || 'admin@example.com',
+          contactPhone: projectData.contactPhone || '(00) 00000-0000',
+          advisorName: projectData.advisorName || 'Orientador Não Informado',
         });
 
         // Criar a submissão já aprovada

@@ -195,13 +195,16 @@ export async function PUT(
       );
     }
 
-    const { name, phases } = result.data;
+    const { name, phases, maxFinalists } = result.data;
 
     // Atualizar demoday e fases em uma transação
     await db.transaction(async (tx: any) => {
       // Atualizar nome do demoday
       await tx.update(demodays)
-        .set({ name })
+        .set({ 
+          name,
+          maxFinalists: maxFinalists || 5 
+        })
         .where(eq(demodays.id, id));
 
       // Excluir fases existentes
@@ -252,9 +255,9 @@ export async function PUT(
           throw new Error(`Data de fim inválida para a fase ${phase.name}: ${phase.endDate}`);
           }
         
-        // Verificar se a data de início é anterior à data de fim
-        if (startDateObj >= endDateObj) {
-          throw new Error(`Data de início deve ser anterior à data de fim para a fase ${phase.name}`);
+        // Verificar se a data de início não é posterior à data de fim (permite mesmo dia)
+        if (startDateObj > endDateObj) {
+          throw new Error(`Data de início não pode ser posterior à data de fim para a fase ${phase.name}`);
         }
         
         await tx.insert(demoDayPhases).values({
@@ -347,7 +350,7 @@ export async function PATCH(
     // Se estiver atualizando para "canceled", apenas delete o demoday
     if (status === "canceled") {
       await db.delete(demodays).where(eq(demodays.id, id));
-      return NextResponse.json({ message: "Demoday cancelado e excluído com sucesso" });
+      return NextResponse.json({ message: "Demoday excluído com sucesso" });
     }
 
     // Se estiver finalizando um demoday ativo

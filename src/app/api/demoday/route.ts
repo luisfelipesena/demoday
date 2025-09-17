@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, phases } = result.data;
+    const { name, phases, maxFinalists } = result.data;
 
     // Create demoday in a transaction
     const [newDemoday] = await db.transaction(async (tx: any) => {
@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
           createdById: userId,
           active: true,
           status: "active",
+          maxFinalists: maxFinalists || 5,
         })
         .returning();
 
@@ -98,13 +99,33 @@ export async function POST(req: NextRequest) {
 
       // Insert phases
       for (const phase of phases) {
+        // Converter datas com timezone consistente (igual à API de edição)
+        let startDateObj: Date;
+        if (phase.startDate.includes('T')) {
+          startDateObj = new Date(phase.startDate);
+        } else {
+          startDateObj = new Date(`${phase.startDate}T12:00:00.000Z`);
+        }
+
+        let endDateObj: Date;
+        if (phase.endDate.includes('T')) {
+          endDateObj = new Date(phase.endDate);
+        } else {
+          endDateObj = new Date(`${phase.endDate}T12:00:00.000Z`);
+        }
+
+        // Verificar se a data de início não é posterior à data de fim (permite mesmo dia)
+        if (startDateObj > endDateObj) {
+          throw new Error(`Data de início não pode ser posterior à data de fim para a fase ${phase.name}`);
+        }
+
         await tx.insert(demoDayPhases).values({
           demoday_id: createdDemoday.id,
           name: phase.name,
           description: phase.description,
           phaseNumber: phase.phaseNumber,
-          startDate: new Date(phase.startDate),
-          endDate: new Date(phase.endDate),
+          startDate: startDateObj,
+          endDate: endDateObj,
         });
       }
 

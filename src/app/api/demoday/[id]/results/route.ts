@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { demodays, projectCategories, projects, projectSubmissions, votes } from "@/server/db/schema";
+import { demodays, projects, projectSubmissions, votes } from "@/server/db/schema";
 import { and, eq, sum } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -14,23 +14,16 @@ interface ProjectResult {
   submissionId: string;
 }
 
-interface CategoryResult {
-  id: string;
-  name: string;
-  projects: ProjectResult[];
-}
-
 interface DemodayOverallStats {
   totalSubmittedProjects: number;
   totalUniqueParticipants: number;
   totalPopularVotes: number;
   totalFinalVotes: number;
-  // Add more stats as needed, e.g., average evaluations if available
 }
 
 interface DemodayResultsData {
   demodayName: string;
-  categories: CategoryResult[];
+  projects: ProjectResult[];
   overallStats: DemodayOverallStats;
 }
 
@@ -50,44 +43,18 @@ export async function GET(
       return NextResponse.json({ error: "Demoday not found" }, { status: 404 });
     }
 
-    const categories = await db.query.projectCategories.findMany({
-      where: eq(projectCategories.demodayId, demodayId),
-    });
-
     // Buscar TODOS os projetos submetidos no demoday
     const allSubmissions = await db
       .select({
         submissionId: projectSubmissions.id,
         status: projectSubmissions.status,
         project: projects,
-        category: projectCategories,
       })
       .from(projectSubmissions)
       .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
-      .leftJoin(projectCategories, eq(projects.categoryId, projectCategories.id))
       .where(eq(projectSubmissions.demoday_id, demodayId));
 
-    // Agrupar projetos por categoria (incluindo projetos sem categoria)
-    const categoryMap = new Map<string, CategoryResult>();
-    
-    // Inicializar categorias existentes
-    for (const category of categories) {
-      categoryMap.set(category.id, {
-        id: category.id,
-        name: category.name,
-        projects: [],
-      });
-    }
-    
-    // Criar categoria especial para projetos sem categoria
-    const uncategorizedKey = "uncategorized";
-    categoryMap.set(uncategorizedKey, {
-      id: uncategorizedKey,
-      name: "Projetos Gerais",
-      projects: [],
-    });
-
-    const categoryResults: CategoryResult[] = [];
+    const projectResults: ProjectResult[] = [];
 
     for (const sub of allSubmissions) {
       if (!sub.project) continue;
@@ -99,7 +66,7 @@ export async function GET(
         .where(and(eq(votes.projectId, sub.project.id), eq(votes.votePhase, "popular")));
       const popularVoteCount = Number(popularVotes[0]?.value) || 0;
 
-      // Calculate Final Weighted Score (Popular votes + Final votes with weights)
+      // Calculate Final Weighted Score (Popular votes + Final votes - todos com peso 1)
       const allPhaseVotes = await db
         .select({
           weight: votes.weight,
@@ -112,11 +79,11 @@ export async function GET(
       let finalWeightedScore = 0;
       allPhaseVotes.forEach((vote: { phase: "popular" | "final" | null, weight: number | null, role: string | null }) => {
         if (vote.phase === 'popular') {
-          finalWeightedScore += Number(vote.weight) || 1; // Default weight 1 for popular
+          // Todos os votos populares têm peso 1
+          finalWeightedScore += 1;
         } else if (vote.phase === 'final') {
-          // Assuming professor weight is 3 as per vote API logic, others 1
-          const weight = (vote.role === 'professor' || vote.role === 'admin') ? 3 : 1;
-          finalWeightedScore += weight;
+          // Todos os votos finais têm peso 1 (removido o peso diferenciado por role)
+          finalWeightedScore += 1;
         }
       });
 
@@ -131,48 +98,24 @@ export async function GET(
         finalWeightedScore: finalWeightedScore,
       };
 
-      // Determinar a qual categoria o projeto pertence
-      const categoryKey = sub.category?.id || uncategorizedKey;
-      const targetCategory = categoryMap.get(categoryKey);
-      
-      if (targetCategory) {
-        targetCategory.projects.push(projectResult);
-      }
+      projectResults.push(projectResult);
     }
 
-    // Processar cada categoria: ordenar projetos e determinar vencedores
-    for (const [categoryKey, categoryData] of categoryMap.entries()) {
-      // Sort projects within category by finalWeightedScore DESC, then popularVoteCount DESC
-      categoryData.projects.sort((a, b) => {
-        if (b.finalWeightedScore !== a.finalWeightedScore) {
-          return b.finalWeightedScore - a.finalWeightedScore;
-        }
-        return b.popularVoteCount - a.popularVoteCount;
-      });
-
-      // Assign winner status based on sorted order if not already winner (e.g., top 1 for now)
-      if (categoryData.projects.length > 0 && categoryData.projects[0]?.status === 'finalist') {
-        // This is a simplified winner assignment. A more robust system might be needed.
-        // Check if there's already a winner; if not, assign top finalist as winner.
-        const hasExistingWinner = categoryData.projects.some(p => p.status === 'winner');
-        if (!hasExistingWinner) {
-          if (categoryData.projects[0]) {
-            categoryData.projects[0].status = 'winner';
-          }
-        }
+    // Sort projects by finalWeightedScore DESC, then popularVoteCount DESC
+    projectResults.sort((a, b) => {
+      if (b.finalWeightedScore !== a.finalWeightedScore) {
+        return b.finalWeightedScore - a.finalWeightedScore;
       }
+      return b.popularVoteCount - a.popularVoteCount;
+    });
 
-      // Só adicionar categorias que têm projetos
-      if (categoryData.projects.length > 0) {
-        categoryResults.push(categoryData);
-      }
-    }
+    // Results are now determined solely by vote counts, no manual winner assignment
 
     // Calculate Overall Demoday Statistics
     const allSubmissionsForDemoday = await db
       .select({
         projectId: projectSubmissions.projectId,
-        userId: projects.userId, // Assuming projects table has userId of the submitter
+        userId: projects.userId,
       })
       .from(projectSubmissions)
       .innerJoin(projects, eq(projectSubmissions.projectId, projects.id))
@@ -197,7 +140,7 @@ export async function GET(
       if (vote.phase === "popular") {
         totalPopularVotes += Number(vote.weight) || 1;
       } else if (vote.phase === "final") {
-        totalFinalVotes += Number(vote.weight) || 1; // Or apply specific logic for final vote weights
+        totalFinalVotes += Number(vote.weight) || 1;
       }
     });
 
@@ -210,7 +153,7 @@ export async function GET(
 
     const responseData: DemodayResultsData = {
       demodayName: demoday.name,
-      categories: categoryResults,
+      projects: projectResults,
       overallStats,
     };
 

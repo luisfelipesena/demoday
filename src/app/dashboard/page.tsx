@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDemodays, useActiveDemodayPhase } from "@/hooks/useDemoday"
+import { useUserSubmissions, useAllSubmissions } from "@/hooks/useSubmitWork"
 import { isInSubmissionPhase, formatDate, isDemodayFinished } from "@/utils/date-utils"
-import { CalendarIcon, ClockIcon, Loader, Vote, ExternalLink, Trophy, Crown, Sparkles } from "lucide-react"
+import { CalendarIcon, ClockIcon, Loader, Vote, ExternalLink, Trophy, Crown, Sparkles, FileText } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -17,6 +18,14 @@ export default function DashboardPage() {
   const { data: session, isPending: sessionLoading } = useSession()
   const { data: demodays, isLoading } = useDemodays()
   const { data: phaseInfo, isLoading: phaseLoading } = useActiveDemodayPhase()
+  
+  const activeDemoday = demodays?.find((demoday) => demoday.active)
+  const { data: userSubmissions = [], isLoading: isLoadingUserSubmissions } = useUserSubmissions(
+    activeDemoday?.id || null
+  )
+  const { data: allSubmissions = [], isLoading: isLoadingAllSubmissions } = useAllSubmissions(
+    activeDemoday?.id || null
+  )
   
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -43,11 +52,19 @@ export default function DashboardPage() {
     )
   }
 
-  const activeDemoday = demodays?.find((demoday) => demoday.active)
-  const pastDemodays = demodays?.filter((demoday) => !demoday.active && demoday.status === "finished") || []
-
   const submissionEnabled = activeDemoday && isInSubmissionPhase(activeDemoday)
   const demodayFinished = activeDemoday && isDemodayFinished(activeDemoday)
+  
+  // Lógica para mostrar botão de submissões
+  const isAdminOrProfessor = session?.user?.role === "admin" || session?.user?.role === "professor"
+  const hasUserSubmissions = !isLoadingUserSubmissions && userSubmissions.length > 0
+  const hasAnySubmissions = !isLoadingAllSubmissions && allSubmissions.length > 0
+  
+  // Admin/Professor podem ver submissões desde a fase 1 (quando há submissões)
+  // Alunos só veem suas próprias submissões quando tiverem alguma
+  const shouldShowSubmissionsButton = isAdminOrProfessor 
+    ? hasAnySubmissions 
+    : hasUserSubmissions
   
   const getPhaseDisplayInfo = () => {
     if (!phaseInfo?.currentPhase) return null;
@@ -109,7 +126,7 @@ export default function DashboardPage() {
               <Sparkles className="h-6 w-6 text-yellow-600" />
             </CardTitle>
             <CardDescription className="text-yellow-700 text-lg font-medium">
-              O Demoday chegou ao fim! Confira os resultados finais e descubra os projetos vencedores.
+              O Demoday chegou ao fim! Confira a apresentação final e descubra os projetos vencedores.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -122,13 +139,13 @@ export default function DashboardPage() {
               <Link href={`/demoday/${activeDemoday.id}/results`}>
                 <Button className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg px-6 py-3">
                   <Trophy className="mr-2 h-5 w-5" />
-                  Ver Resultados Finais
+                  Ver apresentação final
                   <Crown className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href={`/demoday/${activeDemoday.id}`}>
                 <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-50">
-                  Ver Detalhes do Evento
+                  Ver detalhes do evento
                 </Button>
               </Link>
             </div>
@@ -153,14 +170,14 @@ export default function DashboardPage() {
               <Link href={`/demoday/${activeDemoday.id}/voting`}>
                 <Button className="bg-purple-600 hover:bg-purple-700">
                   <Vote className="mr-2 h-4 w-4" />
-                  Ir para Votação
+                  Ir para votação
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link href={`/demoday/${activeDemoday.id}/results`}>
                 <Button variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50">
                   <Trophy className="mr-2 h-4 w-4" />
-                  Ver Resultados
+                  Ver resultados
                 </Button>
               </Link>
             </div>
@@ -170,7 +187,7 @@ export default function DashboardPage() {
 
       <div>
         <h2 className="mb-4 text-2xl font-semibold">
-          {demodayFinished ? "DemoDay Finalizado" : "DemoDay Ativo"}
+          {demodayFinished ? "Demoday Finalizado" : "Demoday Ativo"}
         </h2>
 
         {activeDemoday ? (
@@ -204,19 +221,19 @@ export default function DashboardPage() {
             <CardContent>
               {demodayFinished ? (
                 <div>
-                  <p className="text-gray-600 mb-4">
-                    Este DemoDay foi concluído com sucesso! Todas as fases foram finalizadas e os resultados estão disponíveis.
-                  </p>
+                                  <p className="text-gray-600 mb-4">
+                  Este Demoday foi concluído com sucesso! Todas as fases foram finalizadas e a apresentação está disponível.
+                </p>
                   <div className="rounded-md p-3 border bg-green-50 border-green-200 mb-4">
                     <p className="font-medium text-green-800">
-                      🎊 Parabéns a todos os participantes! Confira os resultados finais para ver os projetos vencedores.
+                      🎊 Parabéns a todos os participantes! Confira a apresentação final para ver os projetos vencedores.
                     </p>
                   </div>
                 </div>
               ) : (
                 <div>
                   <p className="text-gray-600 mb-4">
-                O DemoDay é um concurso onde você pode submeter seus trabalhos práticos já desenvolvidos 
+                O Demoday é um concurso onde você pode submeter seus trabalhos práticos já desenvolvidos 
                 (ex: Iniciação Científica, TCC, projeto de disciplina) para avaliação.
               </p>
                   
@@ -246,33 +263,48 @@ export default function DashboardPage() {
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               {demodayFinished ? (
+                <>
+                  {shouldShowSubmissionsButton && (
+                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
+                      <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {isAdminOrProfessor ? "Ver submissões" : "Ver minhas submissões"}
+                      </Button>
+                    </Link>
+                  )}
                 <Link href={`/demoday/${activeDemoday.id}/results`}>
                   <Button className="bg-green-600 hover:bg-green-700">
                     <Trophy className="mr-2 h-4 w-4" />
                     Ver Resultados Finais
                   </Button>
                 </Link>
+                </>
               ) : (
                 <>
               {submissionEnabled && (
                 <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
-                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter Trabalho</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter trabalho</Button>
                 </Link>
               )}
+                  {shouldShowSubmissionsButton && (
               <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
-                <Button variant="outline">Ver Submissões</Button>
+                      <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {isAdminOrProfessor ? "Ver submissões" : "Ver minhas submissões"}
+                      </Button>
               </Link>
+                  )}
                 </>
               )}
             </CardFooter>
           </Card>
         ) : (
           <div className="rounded-lg border p-8 text-center bg-gray-50">
-            <p className="text-lg text-gray-600">Nenhum DemoDay ativo no momento.</p>
+            <p className="text-lg text-gray-600">Nenhum Demoday ativo no momento.</p>
             {session?.user?.role === "admin" && (
               <div className="mt-4">
                 <Link href="/dashboard/admin/demoday/new">
-                  <Button className="bg-blue-600 hover:bg-blue-700">Criar Novo DemoDay</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700">Criar novo Demoday</Button>
                 </Link>
               </div>
             )}
@@ -280,45 +312,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div>
-        <h2 className="mb-4 text-2xl font-semibold">Histórico de DemoDays</h2>
 
-        {pastDemodays.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pastDemodays.map((demoday) => (
-              <Card key={demoday.id} className="bg-white">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg font-semibold">{demoday.name}</CardTitle>
-                    <Badge className="bg-blue-500 hover:bg-blue-600">Finalizado</Badge>
-                  </div>
-                  <CardDescription className="flex items-center gap-2 text-gray-500 mt-1">
-                    <ClockIcon className="h-4 w-4" />
-                    <span>Finalizado em {formatDate(demoday.updatedAt)}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="flex justify-end gap-2">
-                  <Link href={`/demoday/${demoday.id}/results`}>
-                    <Button variant="outline" size="sm">
-                      <Trophy className="mr-2 h-4 w-4" />
-                      Resultados
-                    </Button>
-                  </Link>
-                  <Link href={`/demoday/${demoday.id}`}>
-                    <Button variant="outline" size="sm">
-                      Ver Detalhes
-                    </Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border p-8 text-center bg-gray-50">
-            <p className="text-lg text-gray-600">Nenhum DemoDay concluído no histórico.</p>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

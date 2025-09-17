@@ -1,5 +1,5 @@
 import { db } from "../src/server/db";
-import { projectSubmissions, projects, projectCategories } from "../src/server/db/schema";
+import { projectSubmissions, projects } from "../src/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
 async function promoteToFinalist() {

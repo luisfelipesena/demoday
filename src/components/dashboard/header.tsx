@@ -9,8 +9,10 @@ export function DashboardHeader() {
 
   const getRoleDisplayName = (role: string | undefined) => {
     switch (role) {
-      case "user":
-        return "Estudante"
+      case "student_ufba":
+        return "Aluno UFBA"
+      case "student_external":
+        return "Aluno externo à UFBA"
       case "professor":
         return "Professor"
       case "admin":

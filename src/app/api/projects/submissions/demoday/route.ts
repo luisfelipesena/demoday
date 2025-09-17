@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { projectSubmissions, projects, users } from "@/server/db/schema";
+import { projectSubmissions, projects, users, demoDayPhases } from "@/server/db/schema";
 import { projectQuerySchema } from "@/server/db/validators";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { getSessionWithRole } from "@/lib/session-utils";
@@ -39,10 +39,32 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Verificar sessão para permissões (opcionalmente restringir visualização)
+    // Verificar sessão para permissões
     const session = await getSessionWithRole();
     const isAdmin = session?.user?.role === "admin";
     const isProfessor = session?.user?.role === "professor";
+    const userId = session?.user?.id;
+
+    // Verificar em qual fase o demoday está
+    const phases = await db.query.demoDayPhases.findMany({
+      where: eq(demoDayPhases.demoday_id, demodayId),
+      orderBy: demoDayPhases.phaseNumber,
+    });
+
+    const now = new Date();
+    let currentPhase = null;
+    
+    for (const phase of phases) {
+      const startDate = new Date(phase.startDate);
+      const endDate = new Date(phase.endDate);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      if (now >= startDate && now <= endDate) {
+        currentPhase = phase;
+        break;
+      }
+    }
 
     // Construir as condições WHERE para a consulta
     const conditions = [eq(projectSubmissions.demoday_id, demodayId)];
@@ -52,14 +74,33 @@ export async function GET(req: NextRequest) {
       conditions.push(eq(projectSubmissions.status, status));
     }
 
-    // Add categoryId filter if provided
-    if (categoryId) {
-      conditions.push(eq(projects.categoryId, categoryId));
-    }
+    // Implementar regra de visibilidade baseada na fase:
+    // Fases 1 e 2: projetos só aparecem para o dono (exceto admin/professor)
+    // Fases 3 e 4: projetos aparecem para todos
+    const isInVotingPhases = currentPhase && (currentPhase.phaseNumber === 3 || currentPhase.phaseNumber === 4);
+    const shouldFilterByOwner = !isAdmin && !isProfessor && !isInVotingPhases && userId;
 
-    // Se não for admin ou professor, apenas projetos aprovados/finalistas/vencedores
-    // são visíveis para usuários comuns (a menos que o status seja explicitamente definido)
-    if (!isAdmin && !isProfessor && !status) {
+    if (shouldFilterByOwner) {
+      // Nas fases 1 e 2, usuários comuns só veem seus próprios projetos
+      // Buscar IDs dos projetos do usuário
+      const userProjects = await db.query.projects.findMany({
+        columns: { id: true },
+        where: eq(projects.userId, userId),
+      });
+      
+      const userProjectIds = userProjects.map(p => p.id);
+      
+      if (userProjectIds.length > 0) {
+        conditions.push(inArray(projectSubmissions.projectId, userProjectIds));
+      } else {
+        // Se o usuário não tem projetos, retornar array vazio
+        return NextResponse.json([]);
+      }
+    } else if (!isAdmin && !isProfessor && !status && isInVotingPhases) {
+      // Nas fases de votação, usuários comuns só veem projetos aprovados/finalistas
+      conditions.push(inArray(projectSubmissions.status, ["approved", "finalist"]));
+    } else if (!isAdmin && !isProfessor && !status) {
+      // Para outras situações, apenas projetos aprovados/finalistas/vencedores
       conditions.push(inArray(projectSubmissions.status, ["approved", "finalist", "winner"]));
     }
 
@@ -83,6 +124,13 @@ export async function GET(req: NextRequest) {
           description: projects.description,
           userId: projects.userId,
           type: projects.type,
+          videoUrl: projects.videoUrl,
+          repositoryUrl: projects.repositoryUrl,
+          developmentYear: projects.developmentYear,
+          authors: projects.authors,
+          contactEmail: projects.contactEmail,
+          contactPhone: projects.contactPhone,
+          advisorName: projects.advisorName,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
         }
