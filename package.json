@@ -16,7 +16,8 @@
     "dev": "next dev",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "start": "next start"
+    "start": "next start",
+    "create-super-user": "npx tsx scripts/create-super-user.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^0.8.0",
