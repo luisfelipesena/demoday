@@ -7,8 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import { useDemodayDetails } from "@/hooks/useDemoday"
-import { useSelectFinalists } from "@/hooks/useDemodayActions"
-import { Award, CalendarIcon, CheckCircle2, Clock, FileText, ListChecks, Users } from "lucide-react"
+import { Award, CalendarIcon, CheckCircle2, Clock, FileText, Users } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { use } from "react"
@@ -50,8 +49,7 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
   const resolvedParams = use(params)
   const router = useRouter()
   const demodayId = resolvedParams.id
-  const { data: demoday, isLoading: loading, error, refetch: refetchDemodayDetails } = useDemodayDetails(demodayId)
-  const { mutate: selectFinalists, isPending: isSelectingFinalists } = useSelectFinalists()
+  const { data: demoday, isLoading: loading, error } = useDemodayDetails(demodayId)
 
   if (loading) {
     return (
@@ -125,33 +123,7 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
     }).format(date)
   }
 
-  const handleSelectFinalists = () => {
-    if (!demoday) return
 
-    if (!confirm("Are you sure you want to automatically select finalists? This will update project statuses.")) {
-      return
-    }
-
-    selectFinalists(demoday.id, {
-      onSuccess: (data) => {
-        toast({
-          title: "Finalists Selected",
-          description: data.message || "Finalists have been automatically selected and project statuses updated.",
-          variant: "success",
-        })
-        refetchDemodayDetails()
-      },
-      onError: (error) => {
-        toast({
-          title: "Finalist Selection Failed",
-          description: error.message || "An unexpected error occurred.",
-          variant: "destructive",
-        })
-      },
-    })
-  }
-
-  const canSelectFinalists = demoday.active && demoday.currentPhase?.phaseNumber === 3
 
   return (
     <div className="container mx-auto p-6">
@@ -164,7 +136,7 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
         </div>
         <div className="flex items-center gap-2">
           <Badge className={`${demoday.active ? "bg-green-500" : "bg-blue-500"}`}>
-            {demoday.active ? "Ativo" : demoday.status === "finished" ? "Finalizado" : "Cancelado"}
+            {demoday.active ? "Ativo" : demoday.status === "finished" ? "Finalizado" : "Excluído"}
           </Badge>
           <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>
             <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -234,23 +206,9 @@ export default function DemodayDetailsPage({ params }: DemodayPageProps) {
                   <CardHeader>
                     <CardTitle>Ações do Demoday</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button
-                      onClick={handleSelectFinalists}
-                      disabled={isSelectingFinalists || !canSelectFinalists}
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                    >
-                      <ListChecks className="mr-2 h-4 w-4" />
-                      {isSelectingFinalists ? "Selecionando Finalistas..." : "Selecionar Finalistas Automaticamente"}
-                    </Button>
-                    {!canSelectFinalists && demoday.active && (
-                      <p className="text-xs text-muted-foreground mt-1 text-center">
-                        A seleção de finalistas estará disponível ao final da Fase 3 (Votação Popular).
-                        {demoday.currentPhase && ` (Fase Atual: ${demoday.currentPhase.phaseNumber})`}
-                      </p>
-                    )}
+                  <CardContent>
                     <Link href={`/dashboard/admin/demoday/${demodayId}/edit`}>
-                      <Button variant="outline" className="w-full mt-2">
+                      <Button variant="outline" className="w-full">
                         Gerenciar Critérios e Fases
                       </Button>
                     </Link>

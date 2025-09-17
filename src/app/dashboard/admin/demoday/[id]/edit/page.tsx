@@ -72,54 +72,60 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
     )
   }
 
-  const onSubmit = (data: DemodayFormData & { categories?: any[] }) => {
+  const onSubmit = (data: DemodayFormData) => {
     setError(null)
 
-    // Filter out empty criteria and select only necessary fields
-    const validRegistrationCriteria = data.registrationCriteria
-      .filter((c) => c.name.trim() && c.description.trim())
-      .map(({ name, description }) => ({
-        name,
-        description,
-      }))
-
+    // Filter out empty criteria
     const validEvaluationCriteria = data.evaluationCriteria
       .filter((c) => c.name.trim() && c.description.trim())
       .map(({ name, description }) => ({
-        name,
-        description,
+        name: name.trim(),
+        description: description.trim(),
       }))
 
-    if (validRegistrationCriteria.length === 0) {
-      setError("Adicione pelo menos um critério de inscrição")
-      return
-    }
-
-    // Update demoday name and phases
+    // Update demoday name, phases and maxFinalists
     updateDemoday(
       {
         id: demoday.id,
         name: data.name,
         phases: data.phases,
+        maxFinalists: data.maxFinalists,
       },
       {
         onSuccess: () => {
-          // Now update the criteria
-          updateCriteria(
-            {
-              demodayId: demoday.id,
-              registration: validRegistrationCriteria,
-              evaluation: validEvaluationCriteria,
-            },
-            {
-              onSuccess: () => {
-                router.push("/dashboard/admin/demoday")
+          // Update evaluation criteria if any
+          if (validEvaluationCriteria.length > 0) {
+            updateCriteria(
+              {
+                demodayId: demoday.id,
+                criteria: validEvaluationCriteria,
               },
-              onError: (error: ApiError) => {
-                setError(`Demoday atualizado, mas houve um erro ao atualizar critérios: ${error.message}`)
+              {
+                onSuccess: () => {
+                  router.push("/dashboard/admin/demoday")
+                },
+                onError: (error: ApiError) => {
+                  setError(`Demoday atualizado, mas houve um erro ao atualizar critérios: ${error.message}`)
+                },
+              }
+            )
+          } else {
+            // Se não há critérios, ainda precisamos limpar os existentes
+            updateCriteria(
+              {
+                demodayId: demoday.id,
+                criteria: [],
               },
-            }
-          )
+              {
+                onSuccess: () => {
+                  router.push("/dashboard/admin/demoday")
+                },
+                onError: (error: ApiError) => {
+                  setError(`Demoday atualizado, mas houve um erro ao atualizar critérios: ${error.message}`)
+                },
+              }
+            )
+          }
         },
         onError: (error: ApiError) => {
           setError(error.message)
@@ -131,12 +137,20 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
   // Helper function to convert date to YYYY-MM-DD format
   const formatDateForForm = (dateString: string): string => {
     try {
-      const date = new Date(dateString);
+      // Garantir timezone consistente para evitar problema de 1 dia
+      let date: Date;
+      if (dateString.includes('T')) {
+        date = new Date(dateString);
+      } else {
+        date = new Date(dateString + 'T12:00:00.000Z');
+      }
+      
       if (isNaN(date.getTime())) return "";
       
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      // Usar UTC para evitar problemas de timezone
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
       
       return `${year}-${month}-${day}`;
     } catch (error) {
@@ -148,6 +162,7 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
   // Prepare initial data for the form
   const initialData = {
     name: demoday.name,
+    maxFinalists: demoday.maxFinalists || 5,
     phases: demoday.phases.map((phase) => ({
       name: phase.name,
       description: phase.description,
@@ -155,14 +170,8 @@ export default function EditDemodayPage({ params }: DemodayPageProps) {
       startDate: formatDateForForm(phase.startDate),
       endDate: formatDateForForm(phase.endDate),
     })),
-    registrationCriteria:
-      criteriaData?.registration?.map((c) => ({
-        name: c.name,
-        description: c.description,
-        demoday_id: demodayId,
-      })) || [],
     evaluationCriteria:
-      criteriaData?.evaluation?.map((c) => ({
+      criteriaData?.map((c) => ({
         name: c.name,
         description: c.description,
         demoday_id: demodayId,

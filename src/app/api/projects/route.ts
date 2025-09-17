@@ -77,7 +77,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { title, description, type } = result.data;
+    const { 
+      title, 
+      description, 
+      type, 
+      videoUrl, 
+      repositoryUrl, 
+      developmentYear, 
+      authors, 
+      contactEmail, 
+      contactPhone, 
+      advisorName 
+    } = result.data;
 
     // Criar o projeto
     const [newProject] = await db
@@ -87,6 +98,13 @@ export async function POST(req: NextRequest) {
         description,
         type,
         userId,
+        videoUrl,
+        repositoryUrl,
+        developmentYear,
+        authors,
+        contactEmail,
+        contactPhone,
+        advisorName,
       })
       .returning();
 

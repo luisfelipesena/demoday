@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { use, useState, useEffect } from "react";
 import { useDemodayDetails } from "@/hooks/useDemoday";
-import { useCategories, Category } from "@/hooks/useCategories";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,11 +23,7 @@ interface ProjectResult {
   categoryName?: string; // Optional: if grouping by category client-side from a flat list
 }
 
-interface CategoryResult {
-  id: string;
-  name: string;
-  projects: ProjectResult[];
-}
+
 
 interface DemodayOverallStats {
   totalSubmittedProjects: number;
@@ -38,7 +34,7 @@ interface DemodayOverallStats {
 
 interface DemodayResultsData {
   demodayName: string;
-  categories: CategoryResult[];
+  projects: ProjectResult[];
   overallStats: DemodayOverallStats; 
 }
 
@@ -59,8 +55,10 @@ function useDemodayResults(demodayId: string) {
 
 // Component to render individual project result
 function ProjectResultCard({ project, position }: { project: ProjectResult; position: number }) {
-  const isWinner = project.status === 'winner';
-  const isFinalist = project.status === 'finalist';
+  // Determine status based on position in ranking
+  const isChampion = position === 1;
+  const isTopThree = position <= 3;
+  const isTopFive = position <= 5;
   
   const getPositionIcon = () => {
     if (position === 1) return <Crown className="h-6 w-6 text-yellow-500" />;
@@ -70,35 +68,36 @@ function ProjectResultCard({ project, position }: { project: ProjectResult; posi
   };
 
   const getCardStyle = () => {
-    if (isWinner && position === 1) {
+    if (isChampion) {
       return "border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 shadow-lg transform hover:scale-105 transition-all duration-300";
     }
-    if (isWinner || position <= 3) {
+    if (isTopThree) {
       return "border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md transform hover:scale-102 transition-all duration-300";
     }
-    if (isFinalist) {
+    if (isTopFive) {
       return "border border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-sm";
     }
     return "border border-gray-200 bg-white";
   };
 
   const getBadgeStyle = () => {
-    if (isWinner && position === 1) {
+    if (isChampion) {
       return "bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-pulse";
     }
-    if (isWinner) {
+    if (isTopThree) {
       return "bg-gradient-to-r from-blue-500 to-indigo-500 text-white";
-}
-    if (isFinalist) {
+    }
+    if (isTopFive) {
       return "bg-gradient-to-r from-green-500 to-emerald-500 text-white";
     }
     return "bg-gray-500 text-white";
   };
 
   const getStatusText = () => {
-    if (isWinner && position === 1) return "🏆 CAMPEÃO";
-    if (isWinner) return "🥇 VENCEDOR";
-    if (isFinalist) return "🎖️ FINALISTA";
+    if (isChampion) return "🏆 CAMPEÃO";
+    if (position === 2) return "🥈 2º LUGAR";
+    if (position === 3) return "🥉 3º LUGAR";
+    if (isTopFive) return "🎖️ TOP 5";
     return "Participante";
   };
 
@@ -109,7 +108,7 @@ function ProjectResultCard({ project, position }: { project: ProjectResult; posi
           <div className="flex items-center gap-2">
             {getPositionIcon()}
             <div>
-              <CardTitle className={`text-lg ${isWinner ? 'text-yellow-800' : 'text-gray-800'}`}>
+              <CardTitle className={`text-lg ${isChampion ? 'text-yellow-800' : 'text-gray-800'}`}>
                 {project.title}
               </CardTitle>
               <CardDescription className="text-sm text-gray-600">
@@ -133,7 +132,7 @@ function ProjectResultCard({ project, position }: { project: ProjectResult; posi
             <p className="text-gray-600">Pontuação Final</p>
           </div>
         </div>
-        {isWinner && position === 1 && (
+        {isChampion && (
           <div className="mt-3 text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full text-sm font-bold animate-bounce">
               <Sparkles className="h-4 w-4" />
@@ -197,10 +196,9 @@ export default function DemodayResultsPage() {
     );
   }
 
-  // Find the overall winner (highest scoring project across all categories)
-  const allProjects = resultsData.categories.flatMap(cat => cat.projects);
-  const overallWinner = allProjects.find(p => p.status === 'winner') || 
-                       allProjects.sort((a, b) => b.finalWeightedScore - a.finalWeightedScore)[0];
+  // Find the overall winner (highest scoring project across all projects)
+  const allProjects = resultsData.projects || [];
+  const overallWinner = allProjects.sort((a, b) => b.finalWeightedScore - a.finalWeightedScore)[0];
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -291,43 +289,41 @@ export default function DemodayResultsPage() {
         </Card>
       )}
 
-      {/* Results by Category */}
+      {/* All Projects Results */}
       <div className="space-y-8">
         <h2 className="text-2xl font-semibold flex items-center gap-2">
           <ListOrdered className="h-6 w-6" />
-          Resultados por Categoria
+          Todos os Projetos
         </h2>
 
-        {resultsData.categories.map((category) => (
-          <Card key={category.id} className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Award className="h-5 w-5 text-blue-600" />
-                {category.name}
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Award className="h-5 w-5 text-blue-600" />
+              Ranking Geral
             </CardTitle>
-              <CardDescription>
-                {category.projects.length} projeto{category.projects.length !== 1 ? 's' : ''} nesta categoria
-              </CardDescription>
+            <CardDescription>
+              {allProjects.length} projeto{allProjects.length !== 1 ? 's' : ''} participante{allProjects.length !== 1 ? 's' : ''}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            {category.projects.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum projeto nesta categoria.
-                </p>
+            {allProjects.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum projeto encontrado.
+              </p>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {category.projects.map((project, index) => (
-                    <ProjectResultCard 
-                      key={project.id} 
-                      project={project} 
-                      position={index + 1}
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {allProjects.map((project, index) => (
+                  <ProjectResultCard 
+                    key={project.id} 
+                    project={project} 
+                    position={index + 1}
+                  />
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
-      ))}
       </div>
 
       {/* Footer */}

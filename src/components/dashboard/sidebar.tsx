@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "@/lib/auth-client"
-import { Award, BarChart, GraduationCap, Home, LogOut, Settings, Users, Tags, TrendingUp } from "lucide-react"
+import { Award, GraduationCap, Home, LogOut, Settings, Users, TrendingUp } from "lucide-react"
 
 import {
   Sidebar,
@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button"
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
-  const userRole = session?.user?.role || "user"
+  const userRole = session?.user?.role || "student_ufba"
 
   const isActive = (path: string) => {
     return pathname === path
@@ -59,7 +59,7 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Menu de Avaliações - para todos os usuários */}
+        {/* Menu de Triagens - para todos os usuários */}
         <SidebarGroup>
           <SidebarGroupLabel>Participação</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -68,20 +68,10 @@ export function DashboardSidebar() {
                 <SidebarMenuButton asChild isActive={isActive("/dashboard/evaluations")}>
                   <Link href="/dashboard/evaluations">
                     <Award className="mr-2 h-4 w-4" />
-                    <span>Avaliações</span>
+                    <span>Triagens</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {(userRole === "professor" || userRole === "admin") && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/dashboard/reports")}>
-                    <Link href="/dashboard/reports">
-                      <BarChart className="mr-2 h-4 w-4" />
-                      <span>Relatórios</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -108,19 +98,12 @@ export function DashboardSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/dashboard/admin/categories")}>
-                    <Link href="/dashboard/admin/categories">
-                      <Tags className="mr-2 h-4 w-4" />
-                      <span>Categorias</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname.includes("/dashboard/admin/results")}>
                     <Link href="/dashboard/admin/results">
                       <TrendingUp className="mr-2 h-4 w-4" />
-                      <span>Resultados</span>
+                      <span>Apresentação</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

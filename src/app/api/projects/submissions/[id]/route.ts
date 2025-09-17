@@ -208,50 +208,15 @@ export async function PUT(
       }
     }
 
-    // Definir como finalista só pode ser feito na fase 3 (votação para finalistas)
-    if (status === 'finalist' && phases.length >= 3) {
-      const finalistPhase = phases.find((phase: any) => phase.phaseNumber === 3);
-
-      if (finalistPhase) {
-        const startDate = new Date(finalistPhase.startDate);
-        const endDate = new Date(finalistPhase.endDate);
-
-        if (now < startDate || now > endDate) {
-          return NextResponse.json(
-            {
-              error: "Fora do período de seleção de finalistas",
-              period: {
-                start: finalistPhase.startDate,
-                end: finalistPhase.endDate,
-              }
-            },
-            { status: 400 }
-          );
-        }
-      }
-    }
-
-    // Definir como vencedor só pode ser feito na fase 4 (votação para vencedores)
-    if (status === 'winner' && phases.length >= 4) {
-      const winnerPhase = phases.find((phase: any) => phase.phaseNumber === 4);
-
-      if (winnerPhase) {
-        const startDate = new Date(winnerPhase.startDate);
-        const endDate = new Date(winnerPhase.endDate);
-
-        if (now < startDate || now > endDate) {
-          return NextResponse.json(
-            {
-              error: "Fora do período de seleção de vencedores",
-              period: {
-                start: winnerPhase.startDate,
-                end: winnerPhase.endDate,
-              }
-            },
-            { status: 400 }
-          );
-        }
-      }
+    // Prevenir alteração manual para finalista ou vencedor
+    if (status === 'finalist' || status === 'winner') {
+      return NextResponse.json(
+        {
+          error: "Status de finalista e vencedor são determinados automaticamente pelos votos",
+          allowedStatuses: ["submitted", "approved", "rejected"]
+        },
+        { status: 400 }
+      );
     }
 
     // Atualizar o status da submissão

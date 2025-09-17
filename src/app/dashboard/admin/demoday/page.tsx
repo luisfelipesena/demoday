@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { useDemodays, useUpdateDemodayStatus } from "@/hooks/useDemoday"
 import { DotsHorizontalIcon } from "@radix-ui/react-icons"
+import { CalendarIcon, EyeIcon, PlusIcon, SettingsIcon } from "lucide-react"
 import Link from "next/link"
-import InvitePanel from '@/components/admin/InvitePanel'
+
 
 export default function DemodayListPage() {
   const { data: demodays, isLoading, error } = useDemodays()
@@ -27,31 +29,35 @@ export default function DemodayListPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-9 w-36" />
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-32" />
         </div>
-        <div className="overflow-hidden rounded-lg border shadow">
-          <div className="bg-gray-50 p-4">
-            <div className="grid grid-cols-5 gap-4">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-24 ml-auto" />
-            </div>
-          </div>
-          <div className="divide-y divide-gray-200 bg-white">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="grid grid-cols-5 gap-4 p-4">
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-24 ml-auto" />
-              </div>
-            ))}
-          </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+                <div className="flex items-center gap-2 mt-4">
+                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-9 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     )
@@ -73,7 +79,7 @@ export default function DemodayListPage() {
       toast({
         title: "Status atualizado",
         description: `O Demoday foi ${
-          newStatus === "active" ? "ativado" : newStatus === "finished" ? "finalizado" : "cancelado"
+          newStatus === "active" ? "ativado" : newStatus === "finished" ? "finalizado" : "excluído"
         } com sucesso.`,
         variant: "default",
       })
@@ -95,124 +101,137 @@ export default function DemodayListPage() {
 
   const renderStatusBadge = (active: boolean, status: string) => {
     if (active) {
-      return <Badge className="bg-green-500 hover:bg-green-600">Ativo</Badge>
+      return (
+        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200">
+          Ativo
+        </Badge>
+      )
     }
 
     if (status === "finished") {
-      return <Badge className="bg-blue-500 hover:bg-blue-600">Finalizado</Badge>
+      return (
+        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
+          Finalizado
+        </Badge>
+      )
     }
 
-    return <Badge className="bg-gray-500 hover:bg-gray-600">Inativo</Badge>
+    return (
+      <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200">
+        Inativo
+      </Badge>
+    )
   }
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Gerenciar Demodays</h1>
-        {!hasActiveDemoday && (
-          <Link href="/dashboard/admin/demoday/new">
-            <Button className="bg-blue-600 text-white hover:bg-blue-700">Criar Novo Demoday</Button>
-          </Link>
-        )}
-        {hasActiveDemoday && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
-              Existe um Demoday ativo: <strong>{activeDemoday.name}</strong>
-            </span>
-            <Button
-              variant="outline"
-              className="border-blue-500 text-blue-500 hover:bg-blue-50"
-              onClick={() => handleStatusChange(activeDemoday.id, "finished")}
-            >
-              Finalizar Ativo
-            </Button>
-            <Link href="/dashboard/admin/demoday/new">
-              <Button variant="ghost" className="hover:bg-blue-50">
-                Criar Novo
-              </Button>
-            </Link>
-          </div>
-        )}
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900">Gerenciar Demodays</h1>
+          <p className="text-gray-600 mt-1">
+            {hasActiveDemoday 
+              ? `Demoday ativo: ${activeDemoday.name}` 
+              : "Gerencie e organize seus eventos Demoday"}
+          </p>
+        </div>
+        <Link href="/dashboard/admin/demoday/new">
+          <Button className="bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Criar Novo
+          </Button>
+        </Link>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-100 p-4 text-red-700">
-          {error instanceof Error ? error.message : "Erro ao carregar demodays"}
+        <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
+          <div className="text-red-800 text-sm">
+            {error instanceof Error ? error.message : "Erro ao carregar demodays"}
+          </div>
         </div>
       )}
 
       {demodays && demodays.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center">
-          <p className="text-lg text-gray-600">Nenhum demoday encontrado. Crie um novo para começar.</p>
-        </div>
+        <Card className="border-dashed border-2 border-gray-300">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="rounded-full bg-gray-100 p-3 mb-4">
+              <CalendarIcon className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum Demoday encontrado</h3>
+            <p className="text-gray-600 text-center max-w-sm mb-6">
+              Crie seu primeiro Demoday para começar a organizar eventos e receber submissões.
+            </p>
+            <Link href="/dashboard/admin/demoday/new">
+              <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Criar Primeiro Demoday
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="overflow-hidden rounded-lg border shadow">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  Nome
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  Data de Criação
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  Última Atualização
-                </th>
-                <th scope="col" className="relative px-6 py-3">
-                  <span className="sr-only">Ações</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {demodays?.map((demoday) => (
-                <tr key={demoday.id} className={demoday.active ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50"}>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{demoday.name}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm">{renderStatusBadge(demoday.active, demoday.status)}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm text-gray-500">{formatDate(demoday.createdAt)}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm text-gray-500">{formatDate(demoday.updatedAt)}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {demodays?.map((demoday) => (
+            <Card 
+              key={demoday.id} 
+              className={`overflow-hidden transition-all duration-200 hover:shadow-lg ${
+                demoday.active 
+                  ? "ring-2 ring-emerald-100 bg-emerald-50/30" 
+                  : "hover:shadow-md"
+              }`}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg font-semibold text-gray-900 truncate">
+                      {demoday.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-gray-600 mt-1">
+                      Criado em {formatDate(demoday.createdAt)}
+                    </CardDescription>
+                  </div>
+                  {renderStatusBadge(demoday.active, demoday.status)}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
+                    Atualizado em {formatDate(demoday.updatedAt)}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 pt-2">
+                    <Link href={`/dashboard/admin/demoday/${demoday.id}`} className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-gray-200 hover:bg-gray-50 text-gray-700"
+                      >
+                        <EyeIcon className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </Button>
+                    </Link>
+                    
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menu</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 w-9 p-0 border-gray-200 hover:bg-gray-50"
+                        >
+                          <span className="sr-only">Mais opções</span>
                           <DotsHorizontalIcon className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/admin/demoday/${demoday.id}`}>Detalhes</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>Editar</Link>
+                          <Link href={`/dashboard/admin/demoday/${demoday.id}/edit`}>
+                            <SettingsIcon className="h-4 w-4 mr-2" />
+                            Editar
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        {!demoday.active && (
+                        {!demoday.active && demoday.status !== "finished" && (
                           <DropdownMenuItem onClick={() => handleStatusChange(demoday.id, "active")}>
                             Ativar
                           </DropdownMenuItem>
@@ -230,18 +249,13 @@ export default function DemodayListPage() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
-
-      {/* Painel de convites */}
-      <div className="mt-12">
-        <InvitePanel />
-      </div>
     </div>
   )
 }

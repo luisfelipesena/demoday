@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
+import { CheckCircle, XCircle } from "lucide-react"
 
 type Criterion = {
   id: string
@@ -14,13 +15,13 @@ type Criterion = {
 
 type ScoreEntry = {
   criteriaId: string;
-  score: number;
+  approved: boolean;
   comment: string;
 };
 
 type EvaluationFormProps = {
   criteria: Criterion[]
-  onSubmit: (data: { scores: ScoreEntry[]; totalScore: number }) => void
+  onSubmit: (data: { scores: ScoreEntry[]; approvalPercentage: number }) => void
   onCancel: () => void
 }
 
@@ -28,16 +29,16 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
   const [scores, setScores] = useState<ScoreEntry[]>(() =>
     criteria.map((criterion) => ({
       criteriaId: criterion.id,
-      score: 5, // Default score in the middle (scale 0-10)
+      approved: false, // Default to not approved
       comment: "",
     }))
   )
   
-  const handleScoreChange = (index: number, value: number[]) => {
+  const handleApprovalChange = (index: number, approved: boolean) => {
     const newScores = [...scores];
     const currentEntry = newScores[index];
     if (currentEntry) {
-      newScores[index] = { ...currentEntry, score: value[0] ??  0 };
+      newScores[index] = { ...currentEntry, approved };
       setScores(newScores);
     }
   }
@@ -51,64 +52,65 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
     }
   }
   
-  const calculateTotalScore = () => {
-    if (criteria.length === 0) return 0; // Avoid division by zero
-    const sum = scores.reduce((total, scoreEntry) => total + scoreEntry.score, 0)
-    return Math.round((sum / (criteria.length * 10)) * 100) // Calculate percentage
+  const calculateApprovalPercentage = () => {
+    if (criteria.length === 0) return 0;
+    const approvedCount = scores.filter(scoreEntry => scoreEntry.approved).length;
+    return Math.round((approvedCount / criteria.length) * 100);
   }
   
   const handleSubmit = () => {
     onSubmit({
       scores,
-      totalScore: calculateTotalScore(),
+      approvalPercentage: calculateApprovalPercentage(),
     })
   }
 
+  const approvalPercentage = calculateApprovalPercentage();
+  const approvedCount = scores.filter(score => score.approved).length;
+  const totalCount = criteria.length;
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold">Evaluation Criteria</h2>
+      <h2 className="text-xl font-bold">Critérios de Triagem</h2>
       <p className="text-sm text-gray-500">
-        Rate each criterion on a scale of 0-10. You may add optional comments for each criterion.
+        Marque os critérios que o projeto atende. O projeto será aprovado se atingir pelo menos 50% dos critérios.
       </p>
       
       {criteria.map((criterion, index) => (
         <Card key={criterion.id} className="p-4">
-          <div className="mb-2 space-y-1">
+          <div className="mb-4 space-y-1">
             <h3 className="text-base font-medium">{criterion.name}</h3>
             <p className="text-sm text-gray-500">{criterion.description}</p>
           </div>
           
-          <div className="mb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Score:</span>
-              <span className="rounded-full bg-blue-100 px-2 py-1 text-sm font-semibold text-blue-800">
-                {scores[index]?.score ?? 0}/10
-              </span>
-            </div>
-            
-            <Slider
-              defaultValue={[5]}
-              max={10}
-              step={1}
-              value={[scores[index]?.score ?? 0]}
-              onValueChange={(value) => handleScoreChange(index, value)}
-              className="py-4"
+          <div className="mb-4 flex items-center space-x-3">
+            <Checkbox
+              id={`approval-${index}`}
+              checked={scores[index]?.approved ?? false}
+              onCheckedChange={(checked: boolean) => handleApprovalChange(index, checked)}
             />
-            
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>0 - Inadequate</span>
-              <span>5 - Average</span>
-              <span>10 - Excellent</span>
-            </div>
+            <label htmlFor={`approval-${index}`} className="flex items-center space-x-2 text-sm font-medium cursor-pointer">
+              {scores[index]?.approved ? (
+                <>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-green-700">Critério atendido</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 text-red-500" />
+                  <span className="text-red-600">Critério não atendido</span>
+                </>
+              )}
+            </label>
           </div>
           
           <div className="space-y-2">
             <label htmlFor={`comment-${index}`} className="text-sm font-medium">
-              Comments (optional)
+              Comentários (opcional)
             </label>
             <Textarea
               id={`comment-${index}`}
-              placeholder="Add any additional comments or feedback regarding this criterion..."
+              placeholder="Adicione comentários ou feedback sobre este critério..."
               value={scores[index]?.comment ?? ""}
               onChange={(e) => handleCommentChange(index, e.target.value)}
               rows={3}
@@ -117,21 +119,40 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
         </Card>
       ))}
       
-      <div className="rounded-lg bg-gray-50 p-4">
+      <div className={`rounded-lg p-4 ${approvalPercentage >= 50 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-lg font-semibold">Overall Score:</span>
-          <span className="rounded-full bg-blue-100 px-3 py-1 text-lg font-bold text-blue-800">
-            {calculateTotalScore()}%
-          </span>
+          <span className="text-lg font-semibold">Resultado da Triagem:</span>
+          <div className="flex items-center space-x-2">
+            <span className={`rounded-full px-3 py-1 text-lg font-bold ${
+              approvalPercentage >= 50 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {approvedCount}/{totalCount} ({approvalPercentage}%)
+            </span>
+            {approvalPercentage >= 50 ? (
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            ) : (
+              <XCircle className="h-6 w-6 text-red-500" />
+            )}
+          </div>
         </div>
+        <p className={`text-sm font-medium ${
+          approvalPercentage >= 50 ? 'text-green-700' : 'text-red-600'
+        }`}>
+          {approvalPercentage >= 50 
+            ? '✓ Projeto será aprovado na triagem' 
+            : '✗ Projeto será rejeitado na triagem'
+          }
+        </p>
       </div>
       
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          Cancelar
         </Button>
         <Button onClick={handleSubmit}>
-          Submit Evaluation
+          Enviar Triagem
         </Button>
       </div>
     </div>

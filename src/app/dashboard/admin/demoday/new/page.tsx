@@ -2,7 +2,7 @@
 
 import { DemodayForm } from "@/components/dashboard/DemodayForm"
 import { DemodayFormData } from "@/components/dashboard/types"
-import { useSubmitCriteriaBatch } from "@/hooks/useCriteria"
+import { useCreateCriteria } from "@/hooks/useCriteria"
 import { useCreateDemoday } from "@/hooks/useDemoday"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -11,84 +11,46 @@ import { useState } from "react"
 export default function NewDemodayPage() {
   const router = useRouter()
   const { mutate: createDemoday, isPending: isCreatingDemoday } = useCreateDemoday()
-  const { mutate: submitCriteria, isPending: isSubmittingCriteria } = useSubmitCriteriaBatch()
+  const { mutateAsync: createCriteria, isPending: isSubmittingCriteria } = useCreateCriteria()
 
   // Form validation error
   const [error, setError] = useState<string | null>(null)
 
-
-
-  const onSubmit = (data: DemodayFormData & { categories?: any[] }) => {
+  const onSubmit = (data: DemodayFormData) => {
     setError(null)
 
-    // Filter out empty criteria
-    const validRegistrationCriteria = data.registrationCriteria.filter((c) => c.name.trim() && c.description.trim())
-    const validEvaluationCriteria = data.evaluationCriteria.filter((c) => c.name.trim() && c.description.trim())
-
-    if (validRegistrationCriteria.length === 0) {
-      setError("Adicione pelo menos um critério de inscrição")
-      return
-    }
-
-    // Create the demoday (passing only name and phases)
+    // Create the demoday with maxFinalists
     createDemoday(
-      { name: data.name, phases: data.phases },
+      { 
+        name: data.name, 
+        phases: data.phases, 
+        maxFinalists: data.maxFinalists 
+      },
       {
         onSuccess: async (createdDemoday) => {
           try {
-            // Extraia apenas os campos name e description para cada critério
-            const registrationForAPI = validRegistrationCriteria.map(({ name, description }) => ({
-              name,
-              description,
-            }))
+            // Se houver critérios de triagem para submeter
+            if (data.evaluationCriteria && data.evaluationCriteria.length > 0) {
+              const validCriteria = data.evaluationCriteria
+                .filter((c) => c.name.trim() && c.description.trim())
+                .map(({ name, description }) => ({
+                  name: name.trim(),
+                  description: description.trim(),
+                }))
 
-            const evaluationForAPI = validEvaluationCriteria.map(({ name, description }) => ({
-              name,
-              description,
-            }))
-
-            // Salvar categorias se existirem
-            if (data.categories && data.categories.length > 0) {
-              for (const category of data.categories) {
+              if (validCriteria.length > 0) {
                 try {
-                  await fetch("/api/categories", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      ...category,
-                      demodayId: createdDemoday.id,
-                    }),
-                  });
-                } catch (categoryError) {
-                  console.error("Erro ao criar categoria:", categoryError);
+                  await createCriteria({
+                    demodayId: createdDemoday.id,
+                    criteria: validCriteria,
+                  })
+                  console.log("Critérios de triagem adicionados com sucesso")
+                } catch (error) {
+                  console.error("Erro ao adicionar critérios:", error)
                 }
               }
             }
-
-            // Se não houver critérios para submeter, vá direto para a dashboard
-            if (registrationForAPI.length === 0 && evaluationForAPI.length === 0) {
-              router.push("/dashboard/admin/demoday")
-              return
-            }
-
-            // Now submit the criteria with demoday_id
-            submitCriteria(
-              {
-                demodayId: createdDemoday.id,
-                registration: registrationForAPI,
-                evaluation: evaluationForAPI,
-              },
-              {
-                onSuccess: () => {
-                  console.log("Critérios adicionados com sucesso")
-                  router.push("/dashboard/admin/demoday")
-                },
-                onError: (error) => {
-                  console.error("Erro ao adicionar critérios:", error)
-                  setError(`Demoday criado, mas houve um erro ao adicionar critérios: ${error.message}`)
-                },
-              }
-            )
+            router.push("/dashboard/admin/demoday")
           } catch (error) {
             console.error("Erro no processo de criação:", error);
             setError("Erro durante a criação do demoday");

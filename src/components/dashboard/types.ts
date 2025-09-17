@@ -9,11 +9,11 @@ export interface DemodayFormProps {
   initialData?: {
     name: string
     phases: Phase[]
-    registrationCriteria?: { name: string; description: string; demoday_id?: string }[]
+    maxFinalists?: number
     evaluationCriteria?: { name: string; description: string; demoday_id?: string }[]
   }
   demodayId?: string
-  onSubmit: (data: DemodayFormData & { categories?: any[] }) => void
+  onSubmit: (data: DemodayFormData) => void
   isSubmitting: boolean
   error: string | null
   submitButtonText: string

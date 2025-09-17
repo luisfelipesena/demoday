@@ -12,13 +12,13 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { AlertCircle, Search, Users as UsersIcon, UserCheck, Mail, Calendar, Edit, Save, X } from "lucide-react"
-import InvitePanel from "@/components/admin/InvitePanel"
+
 
 interface User {
   id: string
   name: string
   email: string
-  role: "admin" | "user" | "professor"
+  role: "admin" | "student_ufba" | "student_external" | "professor"
   emailVerified: boolean
   createdAt: string
   updatedAt: string
@@ -148,8 +148,10 @@ export default function UsersPage() {
         return "destructive"
       case "professor":
         return "default"
-      case "user":
+      case "student_ufba":
         return "secondary"
+      case "student_external":
+        return "outline"
       default:
         return "outline"
     }
@@ -161,8 +163,10 @@ export default function UsersPage() {
         return "Administrador"
       case "professor":
         return "Professor"
-      case "user":
-        return "Estudante"
+      case "student_ufba":
+        return "Aluno UFBA"
+      case "student_external":
+        return "externo à UFBA"
       default:
         return role
     }
@@ -299,7 +303,8 @@ export default function UsersPage() {
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="professor">Professor</SelectItem>
-                            <SelectItem value="user">Estudante</SelectItem>
+                            <SelectItem value="student_ufba">Aluno UFBA</SelectItem>
+                            <SelectItem value="student_external">Aluno externo à UFBA</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button
@@ -378,7 +383,6 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      <InvitePanel />
     </div>
   )
 } 

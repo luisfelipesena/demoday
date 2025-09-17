@@ -3,11 +3,11 @@
 import { registerSchema } from "@/server/db/validators"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { signUp } from "@/lib/auth-client"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 type RegisterFormData = z.infer<typeof registerSchema>
 
@@ -15,64 +15,35 @@ export default function RegisterForm() {
   const [registerError, setRegisterError] = useState("")
   const [success, setSuccess] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const inviteParam = searchParams.get("invite") || ""
   
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setValue,
-    getValues,
-  } = useForm<RegisterFormData & { inviteCode?: string }>({
+    watch,
+  } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
-      role: "user",
-      inviteCode: inviteParam,
+      role: "student_ufba",
     },
   })
 
-  useEffect(() => {
-    if (inviteParam) setValue("inviteCode", inviteParam)
-  }, [inviteParam, setValue])
+  const selectedRole = watch("role")
 
-  const onSubmit = async (data: RegisterFormData & { inviteCode?: string }) => {
+  const onSubmit = async (data: RegisterFormData) => {
     setRegisterError("")
     setSuccess(false)
     
     try {
-      if (!data.inviteCode) {
-        setRegisterError("Código de convite é obrigatório")
-        return
-      }
-
-      const inviteValidation = await fetch("/api/auth/validate-invite", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inviteCode: data.inviteCode,
-          userEmail: data.email,
-        }),
-      })
-
-      const inviteResult = await inviteValidation.json()
-
-      if (!inviteResult.success) {
-        setRegisterError(inviteResult.message)
-        return
-      }
-
       const registrationData = {
         email: data.email,
         password: data.password,
         name: data.name,
         callbackURL: '/verify-email/success',
-        role: inviteResult.role || data.role,
+        role: data.role,
       }
 
       const result = await signUp.email(registrationData, {
@@ -102,26 +73,17 @@ export default function RegisterForm() {
         return
       }
 
-      await fetch("/api/auth/complete-registration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inviteCode: data.inviteCode,
-        }),
-      })
-
     } catch (err: any) {
       setRegisterError(err.message || "Erro ao cadastrar usuário")
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Nome */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Nome
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+          Nome completo
         </label>
         <input
           type="text"
@@ -130,12 +92,14 @@ export default function RegisterForm() {
           className={`mt-1 block w-full rounded-md border ${
             errors.name ? "border-red-500" : "border-gray-300"
           } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500`}
-          placeholder="Seu nome completo"
+          placeholder="Digite seu nome completo"
         />
         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
       </div>
+
+      {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
           Email
         </label>
         <input
@@ -149,8 +113,10 @@ export default function RegisterForm() {
         />
         {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
       </div>
+
+      {/* Senha */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
           Senha
         </label>
         <input
@@ -160,36 +126,65 @@ export default function RegisterForm() {
           className={`mt-1 block w-full rounded-md border ${
             errors.password ? "border-red-500" : "border-gray-300"
           } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500`}
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
         />
         {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
       </div>
+
+      {/* Tipo de Usuário - Radio Buttons */}
       <div>
-        <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-          Tipo de Usuário
-        </label>
-        <select
-          id="role"
-          {...register("role")}
-          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-        >
-          <option value="user">Usuário</option>
-          <option value="professor">Professor</option>
-        </select>
+        <fieldset>
+          <legend className="block text-sm font-medium text-gray-700 mb-3">
+            Tipo de usuário
+          </legend>
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <input
+                id="student_ufba"
+                type="radio"
+                value="student_ufba"
+                {...register("role")}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              />
+              <label htmlFor="student_ufba" className="ml-3 flex flex-col">
+                <span className="text-sm font-medium text-gray-900">Aluno UFBA</span>
+                <span className="text-xs text-gray-500">Estudante da Universidade Federal da Bahia</span>
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                id="student_external"
+                type="radio"
+                value="student_external"
+                {...register("role")}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              />
+              <label htmlFor="student_external" className="ml-3 flex flex-col">
+                <span className="text-sm font-medium text-gray-900">Aluno externo à UFBA</span>
+                <span className="text-xs text-gray-500">Estudante de outras instituições</span>
+              </label>
+            </div>
+          </div>
+        </fieldset>
+        {errors.role && <p className="mt-1 text-xs text-red-500">{errors.role.message}</p>}
       </div>
-      <div>
-        <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
-          Código de convite
-        </label>
-        <input
-          type="text"
-          id="inviteCode"
-          {...register("inviteCode", { required: true })}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-          placeholder="Digite o código de convite"
-          required
-        />
-        {errors.inviteCode && <p className="mt-1 text-xs text-red-500">{errors.inviteCode.message || "Código de convite obrigatório"}</p>}
+
+      {/* Informação adicional baseada no tipo selecionado */}
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+        <div className="text-sm text-blue-800">
+          {selectedRole === "student_ufba" ? (
+            <>
+              <strong>💡 Aluno UFBA:</strong> Você poderá submeter projetos desenvolvidos em disciplinas, 
+              iniciação científica, TCC, mestrado ou doutorado da UFBA.
+            </>
+          ) : (
+            <>
+              <strong>💡 Aluno externo à UFBA:</strong> Você poderá submeter projetos acadêmicos desenvolvidos 
+              em sua instituição de ensino.
+            </>
+          )}
+        </div>
       </div>
       
       {registerError && (
@@ -213,7 +208,7 @@ export default function RegisterForm() {
           disabled={isSubmitting || success}
           className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
         >
-          {isSubmitting ? "Cadastrando..." : success ? "Redirecionando..." : "Cadastrar"}
+          {isSubmitting ? "Cadastrando..." : success ? "Redirecionando..." : "Criar conta"}
         </button>
       </div>
       
@@ -224,6 +219,15 @@ export default function RegisterForm() {
             Faça login
           </Link>
         </p>
+      </div>
+
+      {/* Informação sobre professores */}
+      <div className="border-t pt-4 mt-6">
+        <div className="text-center text-xs text-gray-500">
+          <p>
+            <strong>Professores:</strong> Entre em contato com a administração para obter suas credenciais de acesso.
+          </p>
+        </div>
       </div>
     </form>
   )

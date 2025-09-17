@@ -1,17 +1,16 @@
 import { db } from "@/server/db";
-import { projects } from "@/server/db/schema";
+import { projects, projectSubmissions, demoDayPhases } from "@/server/db/schema";
 import { projectSchema } from "@/server/db/validators";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionWithRole } from "@/lib/session-utils";
 
-// GET - Buscar um projeto específico pelo ID
+// GET - Obter detalhes de um projeto específico
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Desembrulhar (unwrap) o objeto params antes de acessar suas propriedades
     const params = await context.params;
     const projectId = params.id;
 
@@ -25,52 +24,27 @@ export async function GET(
       );
     }
 
-    const userId = session.user.id;
-
-    if (!projectId) {
-      return NextResponse.json(
-        { error: "ID do projeto é obrigatório" },
-        { status: 400 }
-      );
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "ID de usuário não encontrado" },
-        { status: 401 }
-      );
-    }
-
-    // Buscar o projeto pelo ID
-    // Se o usuário for admin, permitir ver qualquer projeto
-    // Se não, só permite ver projetos do próprio usuário
-    const isAdmin = session.user.role === "admin";
-
-    let project;
-    if (isAdmin) {
-      // Admin pode ver qualquer projeto
-      project = await db.query.projects.findFirst({
-        where: eq(projects.id, projectId),
-      });
-    } else {
-      // Usuário comum só pode ver seus próprios projetos
-      // Primeiro verificamos se o projeto existe
-      const projectExists = await db.query.projects.findFirst({
-        where: eq(projects.id, projectId),
-      });
-
-      // Depois verificamos se pertence ao usuário atual
-      if (projectExists && projectExists.userId === userId) {
-        project = projectExists;
-      } else {
-        project = null;
-      }
-    }
+    // Buscar o projeto
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+    });
 
     if (!project) {
       return NextResponse.json(
         { error: "Projeto não encontrado" },
         { status: 404 }
+      );
+    }
+
+    // Verificar permissões
+    const isOwner = project.userId === session.user.id;
+    const isAdmin = session.user.role === "admin";
+    const isProfessor = session.user.role === "professor";
+
+    if (!isOwner && !isAdmin && !isProfessor) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para ver este projeto" },
+        { status: 403 }
       );
     }
 
@@ -90,7 +64,6 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Desembrulhar (unwrap) o objeto params antes de acessar suas propriedades
     const params = await context.params;
     const projectId = params.id;
 
@@ -104,44 +77,59 @@ export async function PUT(
       );
     }
 
-    const userId = session.user.id;
-
-    if (!projectId) {
-      return NextResponse.json(
-        { error: "ID do projeto é obrigatório" },
-        { status: 400 }
-      );
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "ID de usuário não encontrado" },
-        { status: 401 }
-      );
-    }
-
-    // Verificar se o projeto existe e pertence ao usuário
-    const existingProject = await db.query.projects.findFirst({
+    // Buscar o projeto
+    const project = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
 
-    if (!existingProject) {
+    if (!project) {
       return NextResponse.json(
         { error: "Projeto não encontrado" },
         { status: 404 }
       );
     }
 
-    // Verificar permissões: apenas o proprietário ou um admin pode editar
+    // Verificar se o usuário é o dono do projeto
+    const isOwner = project.userId === session.user.id;
     const isAdmin = session.user.role === "admin";
-    if (existingProject.userId !== userId && !isAdmin) {
+
+    if (!isOwner && !isAdmin) {
       return NextResponse.json(
         { error: "Você não tem permissão para editar este projeto" },
         { status: 403 }
       );
     }
 
-    // Validar os dados recebidos
+    // Se for o dono, verificar se ainda está no período de submissão
+    if (isOwner && !isAdmin) {
+      // Buscar submissões do projeto
+      const submissions = await db.query.projectSubmissions.findMany({
+        where: eq(projectSubmissions.projectId, projectId),
+      });
+
+      // Verificar se ainda está no período de submissão para cada submissão
+      for (const submission of submissions) {
+        const phases = await db.query.demoDayPhases.findMany({
+          where: eq(demoDayPhases.demoday_id, submission.demoday_id),
+        });
+
+        const submissionPhase = phases.find(phase => phase.phaseNumber === 1);
+        
+        if (submissionPhase) {
+          const now = new Date();
+          const endDate = new Date(submissionPhase.endDate);
+          
+          if (now > endDate) {
+            return NextResponse.json(
+              { error: "Período de submissão encerrado. Não é possível editar o projeto." },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
+    // Validar os dados
     const body = await req.json();
     const result = projectSchema.safeParse(body);
 
@@ -152,7 +140,7 @@ export async function PUT(
       );
     }
 
-    const { title, description, type } = result.data;
+    const { title, description, type, videoUrl, repositoryUrl, developmentYear, authors, contactEmail, contactPhone, advisorName } = result.data;
 
     // Atualizar o projeto
     const [updatedProject] = await db
@@ -161,6 +149,13 @@ export async function PUT(
         title,
         description,
         type,
+        videoUrl,
+        repositoryUrl,
+        developmentYear,
+        authors,
+        contactEmail,
+        contactPhone,
+        advisorName,
         updatedAt: new Date(),
       })
       .where(eq(projects.id, projectId))
@@ -171,6 +166,90 @@ export async function PUT(
     console.error("Erro ao atualizar projeto:", error);
     return NextResponse.json(
       { error: "Erro ao atualizar projeto" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Deletar um projeto
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await context.params;
+    const projectId = params.id;
+
+    // Obter a sessão para verificar se o usuário está autenticado
+    const session = await getSessionWithRole();
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 401 }
+      );
+    }
+
+    // Buscar o projeto
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { error: "Projeto não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Verificar se o usuário é o dono do projeto
+    const isOwner = project.userId === session.user.id;
+    const isAdmin = session.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para deletar este projeto" },
+        { status: 403 }
+      );
+    }
+
+    // Se for o dono, verificar se ainda está no período de submissão
+    if (isOwner && !isAdmin) {
+      // Buscar submissões do projeto
+      const submissions = await db.query.projectSubmissions.findMany({
+        where: eq(projectSubmissions.projectId, projectId),
+      });
+
+      // Verificar se ainda está no período de submissão para cada submissão
+      for (const submission of submissions) {
+        const phases = await db.query.demoDayPhases.findMany({
+          where: eq(demoDayPhases.demoday_id, submission.demoday_id),
+        });
+
+        const submissionPhase = phases.find(phase => phase.phaseNumber === 1);
+        
+        if (submissionPhase) {
+          const now = new Date();
+          const endDate = new Date(submissionPhase.endDate);
+          
+          if (now > endDate) {
+            return NextResponse.json(
+              { error: "Período de submissão encerrado. Não é possível deletar o projeto." },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
+    // Deletar o projeto (as submissões serão deletadas automaticamente por cascade)
+    await db.delete(projects).where(eq(projects.id, projectId));
+
+    return NextResponse.json({ message: "Projeto deletado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao deletar projeto:", error);
+    return NextResponse.json(
+      { error: "Erro ao deletar projeto" },
       { status: 500 }
     );
   }
