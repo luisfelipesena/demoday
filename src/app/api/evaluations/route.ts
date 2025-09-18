@@ -222,13 +222,131 @@ export async function POST(request: Request) {
         .where(eq(projectSubmissions.id, submissionId));
     }
 
-    return NextResponse.json({ 
-      message: "Triagem submitted successfully", 
+    return NextResponse.json({
+      message: "Triagem submitted successfully",
       evaluationId: evaluation?.id || "",
       approvalPercentage
     });
   } catch (error) {
     console.error("Error submitting triagem:", error);
     return NextResponse.json({ error: "Failed to submit triagem" }, { status: 500 });
+  }
+}
+
+// Update existing evaluation (admin only during evaluation phase)
+export async function PUT(request: Request) {
+  try {
+    const session = await getSessionWithRole();
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verificar se o usuário é administrador
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Access denied - Admin only" }, { status: 403 });
+    }
+
+    const { evaluationId, scores } = await request.json();
+
+    if (!evaluationId || !scores || !Array.isArray(scores) || scores.length === 0) {
+      return NextResponse.json({ error: "Invalid evaluation data" }, { status: 400 });
+    }
+
+    const existingEvaluation = await db.query.professorEvaluations.findFirst({
+      where: eq(professorEvaluations.id, evaluationId),
+      with: {
+        submission: true,
+      },
+    });
+
+    if (!existingEvaluation) {
+      return NextResponse.json({ error: "Evaluation not found" }, { status: 404 });
+    }
+
+    const activeDemoday = await db.query.demodays.findFirst({
+      where: eq(demodays.id, existingEvaluation.submission.demoday_id),
+    });
+
+    if (!activeDemoday) {
+      return NextResponse.json({ error: "Demoday not found" }, { status: 404 });
+    }
+
+    const phases = await db.query.demoDayPhases.findMany({
+      where: eq(demoDayPhases.demoday_id, activeDemoday.id),
+      orderBy: demoDayPhases.phaseNumber,
+    });
+
+    const evaluationPhase = phases.find((phase: DemoDayPhase) => phase.phaseNumber === 2);
+
+    if (!evaluationPhase) {
+      return NextResponse.json({
+        error: "Triagem phase not configured for this Demoday"
+      }, { status: 400 });
+    }
+
+    const now = new Date();
+    const startDate = new Date(evaluationPhase.startDate);
+    const endDate = new Date(evaluationPhase.endDate);
+
+    if (now < startDate || now > endDate) {
+      return NextResponse.json({
+        error: "Outside triagem period - cannot edit evaluations",
+        period: {
+          start: evaluationPhase.startDate,
+          end: evaluationPhase.endDate,
+        }
+      }, { status: 400 });
+    }
+
+    // Calcular o percentual de aprovação baseado nos critérios aprovados
+    const approvedCount = scores.filter((score: any) => score.approved === true).length;
+    const totalCount = scores.length;
+    const approvalPercentage = Math.round((approvedCount / totalCount) * 100);
+
+    // Update the evaluation
+    await db
+      .update(professorEvaluations)
+      .set({
+        approvalPercentage,
+        updatedAt: new Date(),
+      })
+      .where(eq(professorEvaluations.id, evaluationId));
+
+    // Delete existing scores and insert new ones
+    await db
+      .delete(evaluationScores)
+      .where(eq(evaluationScores.evaluationId, evaluationId));
+
+    for (const scoreData of scores) {
+      await db.insert(evaluationScores).values({
+        evaluationId,
+        criteriaId: scoreData.criteriaId,
+        approved: scoreData.approved,
+        comment: scoreData.comment || null,
+      });
+    }
+
+    // Update project submission status based on new approval percentage
+    if (approvalPercentage >= 50) {
+      await db
+        .update(projectSubmissions)
+        .set({ status: "approved" })
+        .where(eq(projectSubmissions.id, existingEvaluation.submissionId));
+    } else {
+      await db
+        .update(projectSubmissions)
+        .set({ status: "rejected" })
+        .where(eq(projectSubmissions.id, existingEvaluation.submissionId));
+    }
+
+    return NextResponse.json({
+      message: "Triagem updated successfully",
+      evaluationId,
+      approvalPercentage
+    });
+  } catch (error) {
+    console.error("Error updating triagem:", error);
+    return NextResponse.json({ error: "Failed to update triagem" }, { status: 500 });
   }
 } 

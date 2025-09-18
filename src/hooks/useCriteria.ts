@@ -39,7 +39,8 @@ export function useCriteria(demodayId: string | null) {
         throw new Error(errorData.error || "Erro ao buscar critérios");
       }
 
-      return response.json() as Promise<Criteria[]>;
+      const result = await response.json();
+      return result.data as Criteria[];
     },
     enabled: !!demodayId,
   });

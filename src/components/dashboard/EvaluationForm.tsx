@@ -23,16 +23,28 @@ type EvaluationFormProps = {
   criteria: Criterion[]
   onSubmit: (data: { scores: ScoreEntry[]; approvalPercentage: number }) => void
   onCancel: () => void
+  isEditing?: boolean
+  existingEvaluation?: any
 }
 
-export default function EvaluationForm({ criteria, onSubmit, onCancel }: EvaluationFormProps) {
-  const [scores, setScores] = useState<ScoreEntry[]>(() =>
-    criteria.map((criterion) => ({
+export default function EvaluationForm({ criteria, onSubmit, onCancel, isEditing = false, existingEvaluation }: EvaluationFormProps) {
+  const [scores, setScores] = useState<ScoreEntry[]>(() => {
+    if (isEditing && existingEvaluation?.scores) {
+      return criteria.map((criterion) => {
+        const existingScore = existingEvaluation.scores.find((s: any) => s.criteriaId === criterion.id)
+        return {
+          criteriaId: criterion.id,
+          approved: existingScore?.approved ?? false,
+          comment: existingScore?.comment ?? "",
+        }
+      })
+    }
+    return criteria.map((criterion) => ({
       criteriaId: criterion.id,
-      approved: false, // Default to not approved
+      approved: false,
       comment: "",
     }))
-  )
+  })
   
   const handleApprovalChange = (index: number, approved: boolean) => {
     const newScores = [...scores];
@@ -71,9 +83,12 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold">Critérios de Triagem</h2>
+      <h2 className="text-xl font-bold">{isEditing ? "Editar Triagem" : "Critérios de Triagem"}</h2>
       <p className="text-sm text-gray-500">
-        Marque os critérios que o projeto atende. O projeto será aprovado se atingir pelo menos 50% dos critérios.
+        {isEditing
+          ? "Edite os critérios que o projeto atende. O projeto será aprovado se atingir pelo menos 50% dos critérios."
+          : "Marque os critérios que o projeto atende. O projeto será aprovado se atingir pelo menos 50% dos critérios."
+        }
       </p>
       
       {criteria.map((criterion, index) => (
@@ -152,7 +167,7 @@ export default function EvaluationForm({ criteria, onSubmit, onCancel }: Evaluat
           Cancelar
         </Button>
         <Button onClick={handleSubmit}>
-          Enviar Triagem
+          {isEditing ? "Atualizar Triagem" : "Enviar Triagem"}
         </Button>
       </div>
     </div>

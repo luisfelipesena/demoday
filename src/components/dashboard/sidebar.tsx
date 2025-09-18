@@ -59,22 +59,24 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Menu de Triagens - para todos os usuários */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Participação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/evaluations")}>
-                  <Link href="/dashboard/evaluations">
-                    <Award className="mr-2 h-4 w-4" />
-                    <span>Triagens</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Menu de Triagens - apenas para administradores */}
+        {userRole === "admin" && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Participação</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/dashboard/evaluations")}>
+                    <Link href="/dashboard/evaluations">
+                      <Award className="mr-2 h-4 w-4" />
+                      <span>Triagens</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Menu específico para administradores */}
         {userRole === "admin" && (

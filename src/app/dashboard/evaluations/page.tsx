@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/use-toast"
 import { useSession } from "@/lib/auth-client"
-import { AlertCircle, CalendarDays, Check, Clock, ExternalLink, FileText, Info, Vote } from "lucide-react"
+import { AlertCircle, CalendarDays, Check, Clock, ExternalLink, FileText, Info, Vote, Edit } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -75,6 +75,8 @@ export default function EvaluationsPage() {
   const [evaluationsData, setEvaluationsData] = useState<EvaluationsData | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [isEvaluating, setIsEvaluating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingEvaluation, setEditingEvaluation] = useState<any>(null)
 
   useEffect(() => {
     // TODO: Check if user is professor or admin
@@ -120,11 +122,45 @@ export default function EvaluationsPage() {
 
     setSelectedSubmission(submission)
     setIsEvaluating(true)
+    setIsEditing(false)
+  }
+
+  const handleEditEvaluation = async (submission: Submission) => {
+    if (!evaluationsData?.isEvaluationPeriod) {
+      toast({
+        title: "Fora do período de triagem",
+        description: "As triagens só podem ser editadas durante a fase de triagem.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/evaluations/${submission.evaluation?.id}`)
+      if (!response.ok) {
+        throw new Error("Falha ao carregar dados da triagem")
+      }
+
+      const evaluationData = await response.json()
+      setSelectedSubmission(submission)
+      setEditingEvaluation(evaluationData)
+      setIsEditing(true)
+      setIsEvaluating(true)
+    } catch (error) {
+      console.error("Error loading evaluation:", error)
+      toast({
+        title: "Erro",
+        description: "Falha ao carregar dados da triagem. Tente novamente.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleCancelEvaluation = () => {
     setSelectedSubmission(null)
     setIsEvaluating(false)
+    setIsEditing(false)
+    setEditingEvaluation(null)
   }
 
   const handleSubmitEvaluation = async (evaluationData: {
@@ -136,15 +172,18 @@ export default function EvaluationsPage() {
         throw new Error("Nenhuma submissão selecionada")
       }
 
-      const response = await fetch("/api/evaluations", {
-        method: "POST",
+      const url = isEditing ? "/api/evaluations" : "/api/evaluations"
+      const method = isEditing ? "PUT" : "POST"
+      const body = isEditing
+        ? { evaluationId: editingEvaluation?.evaluation?.id, ...evaluationData }
+        : { submissionId: selectedSubmission.id, ...evaluationData }
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          submissionId: selectedSubmission.id,
-          ...evaluationData,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -163,11 +202,13 @@ export default function EvaluationsPage() {
 
       toast({
         title: "Sucesso",
-        description: "Triagem enviada com sucesso",
+        description: isEditing ? "Triagem atualizada com sucesso" : "Triagem enviada com sucesso",
       })
 
       setIsEvaluating(false)
+      setIsEditing(false)
       setSelectedSubmission(null)
+      setEditingEvaluation(null)
       fetchEvaluations()
     } catch (error) {
       console.error("Error submitting evaluation:", error)
@@ -302,6 +343,8 @@ export default function EvaluationsPage() {
                 criteria={evaluationsData.criteria}
                 onSubmit={handleSubmitEvaluation}
                 onCancel={handleCancelEvaluation}
+                isEditing={isEditing}
+                existingEvaluation={editingEvaluation}
               />
       </div>
     )
@@ -485,6 +528,7 @@ export default function EvaluationsPage() {
                         <TableHead>Autores</TableHead>
                         <TableHead>Resultado</TableHead>
                         <TableHead>Data da Triagem</TableHead>
+                        <TableHead className="w-20">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -517,6 +561,18 @@ export default function EvaluationsPage() {
                             <div className="text-sm text-gray-600">
                               {formatEvaluationDate(submission.evaluation)}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {evaluationsData.isEvaluationPeriod && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditEvaluation(submission)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

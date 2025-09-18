@@ -158,43 +158,6 @@ export default function AdminResultsListPage() {
         ))}
       </div>
 
-      {/* Demoday Ativo em Destaque */}
-      {demodays.find(d => d.active) && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">🎯 Demoday Ativo</h2>
-          <Card className="border-2 border-green-200 bg-green-50">
-            <CardContent className="p-6">
-              {(() => {
-                const activeDemoday = demodays.find(d => d.active);
-                return activeDemoday ? (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-green-800">
-                        {activeDemoday.name}
-                      </h3>
-                      <p className="text-green-600">
-                        Este é o Demoday atualmente ativo no sistema
-                      </p>
-                      {activeDemoday.currentPhase && (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          Fase {activeDemoday.currentPhase.phaseNumber}: {activeDemoday.currentPhase.name}
-                        </Badge>
-                      )}
-                    </div>
-                    <Button 
-                      onClick={() => router.push(`/dashboard/admin/results/${activeDemoday.id}`)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <TrendingUp className="mr-2 h-4 w-4" />
-                      Gerenciar Resultados
-                    </Button>
-                  </div>
-                ) : null;
-              })()}
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 } 

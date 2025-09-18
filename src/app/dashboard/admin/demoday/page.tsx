@@ -128,11 +128,6 @@ export default function DemodayListPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900">Gerenciar Demodays</h1>
-          <p className="text-gray-600 mt-1">
-            {hasActiveDemoday 
-              ? `Demoday ativo: ${activeDemoday.name}` 
-              : "Gerencie e organize seus eventos Demoday"}
-          </p>
         </div>
         <Link href="/dashboard/admin/demoday/new">
           <Button className="bg-blue-600 text-white hover:bg-blue-700 shadow-sm">

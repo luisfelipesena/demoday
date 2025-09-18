@@ -2,12 +2,28 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDemodays, useActiveDemodayPhase } from "@/hooks/useDemoday"
 import { useUserSubmissions, useAllSubmissions } from "@/hooks/useSubmitWork"
-import { isInSubmissionPhase, formatDate, isDemodayFinished } from "@/utils/date-utils"
-import { CalendarIcon, ClockIcon, Loader, Vote, ExternalLink, Trophy, Crown, Sparkles, FileText } from "lucide-react"
+import { formatDate, isDemodayFinished } from "@/utils/date-utils"
+import {
+  Calendar,
+  Clock,
+  Loader,
+  Vote,
+  Trophy,
+  Crown,
+  FileText,
+  Users,
+  CheckCircle,
+  Timer,
+  Zap,
+  Star,
+  Target,
+  Award,
+  Sparkles
+} from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -18,7 +34,7 @@ export default function DashboardPage() {
   const { data: session, isPending: sessionLoading } = useSession()
   const { data: demodays, isLoading } = useDemodays()
   const { data: phaseInfo, isLoading: phaseLoading } = useActiveDemodayPhase()
-  
+
   const activeDemoday = demodays?.find((demoday) => demoday.active)
   const { data: userSubmissions = [], isLoading: isLoadingUserSubmissions } = useUserSubmissions(
     activeDemoday?.id || null
@@ -26,7 +42,7 @@ export default function DashboardPage() {
   const { data: allSubmissions = [], isLoading: isLoadingAllSubmissions } = useAllSubmissions(
     activeDemoday?.id || null
   )
-  
+
   useEffect(() => {
     if (!sessionLoading && !session) {
       router.push("/login")
@@ -36,8 +52,8 @@ export default function DashboardPage() {
   if (sessionLoading || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader className="h-12 w-12 rounded-full animate-spin" />
-        <p className="ml-4">Verificando autenticação...</p>
+        <Loader className="h-12 w-12 rounded-full animate-spin text-blue-600" />
+        <p className="ml-4 text-gray-600">Verificando autenticação...</p>
       </div>
     )
   }
@@ -45,274 +61,390 @@ export default function DashboardPage() {
   if (isLoading || phaseLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Skeleton className="h-16 w-16" />
+        <div className="text-center space-y-4">
+          <Skeleton className="h-16 w-16 rounded-full mx-auto" />
+          <Skeleton className="h-4 w-48 mx-auto" />
         </div>
       </div>
     )
   }
 
-  const submissionEnabled = activeDemoday && isInSubmissionPhase(activeDemoday)
+  const userRole = session?.user?.role || "student_ufba"
+  const userName = session?.user?.name || "Usuário"
   const demodayFinished = activeDemoday && isDemodayFinished(activeDemoday)
-  
-  // Lógica para mostrar botão de submissões
-  const isAdminOrProfessor = session?.user?.role === "admin" || session?.user?.role === "professor"
+
   const hasUserSubmissions = !isLoadingUserSubmissions && userSubmissions.length > 0
   const hasAnySubmissions = !isLoadingAllSubmissions && allSubmissions.length > 0
-  
-  // Admin/Professor podem ver submissões desde a fase 1 (quando há submissões)
-  // Alunos só veem suas próprias submissões quando tiverem alguma
-  const shouldShowSubmissionsButton = isAdminOrProfessor 
-    ? hasAnySubmissions 
-    : hasUserSubmissions
-  
-  const getPhaseDisplayInfo = () => {
+
+  const getPhaseInfo = () => {
+    // Se não há informação de fase, mas há um demoday ativo, assumir que estamos na fase de triagem
+    if (!phaseInfo?.currentPhase && activeDemoday && !demodayFinished) {
+      return {
+        name: "Período de Triagem",
+        description: "Projetos estão sendo avaliados pelos administradores",
+        icon: CheckCircle,
+        color: "from-emerald-500 to-teal-600",
+        bgColor: "bg-emerald-50",
+        borderColor: "border-emerald-200",
+        textColor: "text-emerald-800"
+      };
+    }
+
     if (!phaseInfo?.currentPhase) return null;
-    
-    const phaseNames = ["Submissão", "Avaliação", "Votação Popular", "Votação Final"];
-    const phaseName = phaseNames[phaseInfo.currentPhase.phaseNumber - 1] || `Fase ${phaseInfo.currentPhase.phaseNumber}`;
-    
-    if (phaseInfo.currentPhase.phaseNumber === 3) {
-      return {
-        name: phaseName,
-        description: "Vote nos projetos mais interessantes para escolher os finalistas!",
-        color: "bg-purple-100 text-purple-800 border-purple-200",
-        showVoting: true
-      };
-    }
-    
-    if (phaseInfo.currentPhase.phaseNumber === 4) {
-      const isAuthorized = session?.user?.role === 'professor' || session?.user?.role === 'admin';
-      return {
-        name: phaseName,
-        description: isAuthorized 
-          ? "Votação final entre professores para escolher os vencedores!" 
-          : "Professores estão escolhendo os vencedores entre os finalistas.",
-        color: "bg-orange-100 text-orange-800 border-orange-200", 
-        showVoting: true
-      };
-    }
-    
-    if (phaseInfo.currentPhase.phaseNumber === 2) {
-      return {
-        name: phaseName,
-        description: "Avalie os projetos submetidos usando os critérios definidos.",
-        color: "bg-blue-100 text-blue-800 border-blue-200",
-        showVoting: false
-      };
-    }
-    
-    return {
-      name: phaseName,
+
+    const phaseNumber = phaseInfo.currentPhase.phaseNumber;
+    const phaseConfigs = {
+      1: {
+        name: "Período de Submissão",
+        description: "Submeta seus trabalhos práticos para avaliação",
+        icon: FileText,
+        color: "from-blue-500 to-indigo-600",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
+        textColor: "text-blue-800"
+      },
+      2: {
+        name: "Período de Triagem",
+        description: "Projetos estão sendo avaliados pelos administradores",
+        icon: CheckCircle,
+        color: "from-emerald-500 to-teal-600",
+        bgColor: "bg-emerald-50",
+        borderColor: "border-emerald-200",
+        textColor: "text-emerald-800"
+      },
+      3: {
+        name: "Votação Popular",
+        description: "Vote nos projetos mais interessantes!",
+        icon: Vote,
+        color: "from-purple-500 to-violet-600",
+        bgColor: "bg-purple-50",
+        borderColor: "border-purple-200",
+        textColor: "text-purple-800"
+      },
+      4: {
+        name: "Votação Final",
+        description: "Professores escolhem os vencedores finais",
+        icon: Crown,
+        color: "from-amber-500 to-orange-600",
+        bgColor: "bg-amber-50",
+        borderColor: "border-amber-200",
+        textColor: "text-amber-800"
+      }
+    };
+
+    return phaseConfigs[phaseNumber] || {
+      name: `Fase ${phaseNumber}`,
       description: phaseInfo.currentPhase.description || "Fase em andamento",
-      color: "bg-gray-100 text-gray-800 border-gray-200",
-      showVoting: false
+      icon: Timer,
+      color: "from-gray-500 to-gray-600",
+      bgColor: "bg-gray-50",
+      borderColor: "border-gray-200",
+      textColor: "text-gray-800"
     };
   };
 
-  const phaseDisplay = getPhaseDisplayInfo();
+  const currentPhase = getPhaseInfo();
+
+  const getWelcomeMessage = () => {
+    if (demodayFinished) {
+      return {
+        title: `Parabéns, ${userName}! 🎉`,
+        subtitle: "O Demoday foi finalizado com sucesso!"
+      };
+    }
+
+    const roleMessages = {
+      admin: {
+        title: `Olá, ${userName}! 👋`,
+        subtitle: "Gerencie o Demoday e acompanhe o progresso"
+      },
+      professor: {
+        title: `Bem-vindo, Prof. ${userName}! 🎓`,
+        subtitle: "Acompanhe os projetos e participe das votações"
+      },
+      student_ufba: {
+        title: `Olá, ${userName}! 🚀`,
+        subtitle: "Participe do Demoday e mostre seus projetos"
+      }
+    };
+
+    return roleMessages[userRole] || roleMessages.student_ufba;
+  };
+
+  const welcomeMsg = getWelcomeMessage();
+
+  const getQuickActions = () => {
+    const actions = [];
+
+    if (demodayFinished) {
+      actions.push({
+        title: "Ver Resultados Finais",
+        description: "Confira os projetos vencedores",
+        icon: Trophy,
+        href: `/demoday/${activeDemoday.id}/results`,
+        color: "from-yellow-500 to-amber-600",
+        primary: true
+      });
+    } else if (currentPhase) {
+      const phaseNumber = phaseInfo?.currentPhase?.phaseNumber;
+
+      // Submissão
+      if (phaseNumber === 1) {
+        if (userRole !== "admin") {
+          actions.push({
+            title: "Submeter Trabalho",
+            description: "Envie seu projeto para avaliação",
+            icon: FileText,
+            href: `/dashboard/demoday/${activeDemoday.id}/submit`,
+            color: "from-blue-500 to-indigo-600",
+            primary: true
+          });
+        }
+      }
+
+      // Triagem (apenas admins)
+      if (phaseNumber === 2 && userRole === "admin") {
+        actions.push({
+          title: "Avaliar Projetos",
+          description: "Faça a triagem dos projetos submetidos",
+          icon: CheckCircle,
+          href: "/dashboard/evaluations",
+          color: "from-emerald-500 to-teal-600",
+          primary: true
+        });
+      }
+
+      // Votação Popular
+      if (phaseNumber === 3) {
+        actions.push({
+          title: "Votar nos Projetos",
+          description: "Escolha seus projetos favoritos",
+          icon: Vote,
+          href: `/demoday/${activeDemoday.id}/voting`,
+          color: "from-purple-500 to-violet-600",
+          primary: true
+        });
+      }
+
+      // Votação Final (professores e admins)
+      if (phaseNumber === 4 && (userRole === "professor" || userRole === "admin")) {
+        actions.push({
+          title: "Votação Final",
+          description: "Vote nos finalistas",
+          icon: Crown,
+          href: `/demoday/${activeDemoday.id}/voting`,
+          color: "from-amber-500 to-orange-600",
+          primary: true
+        });
+      }
+    }
+
+    // Submissões (sempre disponível se houver)
+    if ((userRole === "admin" || userRole === "professor") && hasAnySubmissions) {
+      actions.push({
+        title: "Ver Todas as Submissões",
+        description: `${allSubmissions.length} projetos submetidos`,
+        icon: Users,
+        href: `/dashboard/demoday/${activeDemoday.id}/submissions`,
+        color: "from-slate-500 to-gray-600"
+      });
+    } else if (hasUserSubmissions) {
+      actions.push({
+        title: "Minhas Submissões",
+        description: `${userSubmissions.length} projeto(s) enviado(s)`,
+        icon: FileText,
+        href: `/dashboard/demoday/${activeDemoday.id}/submissions`,
+        color: "from-slate-500 to-gray-600"
+      });
+    }
+
+    return actions;
+  };
+
+  const quickActions = getQuickActions();
+
+  if (!activeDemoday) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+          <div className="p-8 rounded-full bg-blue-50">
+            <Calendar className="h-16 w-16 text-blue-500" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Nenhum Demoday Ativo</h1>
+            <p className="text-gray-600 text-lg max-w-md">
+              Não há um Demoday ativo no momento. Entre em contato com o administrador para mais informações.
+            </p>
+          </div>
+          {userRole === "admin" && (
+            <Link href="/dashboard/admin/demoday/new">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                <Star className="mr-2 h-5 w-5" />
+                Criar Novo Demoday
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-
-      {/* Seção de Demoday Finalizado - Destaque especial */}
-      {demodayFinished && activeDemoday && (
-        <Card className="border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 via-orange-50 to-red-50 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl text-yellow-800">
-              <Crown className="h-8 w-8 text-yellow-600" />
-              🎉 {activeDemoday.name} - Finalizado!
-              <Sparkles className="h-6 w-6 text-yellow-600" />
-            </CardTitle>
-            <CardDescription className="text-yellow-700 text-lg font-medium">
-              O Demoday chegou ao fim! Confira a apresentação final e descubra os projetos vencedores.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-white/70 rounded-lg p-4 mb-4">
-              <p className="text-gray-700 font-medium">
-                🏆 Todas as fases foram concluídas com sucesso! Os votos foram computados e os vencedores foram determinados.
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <Link href={`/demoday/${activeDemoday.id}/results`}>
-                <Button className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg px-6 py-3">
-                  <Trophy className="mr-2 h-5 w-5" />
-                  Ver apresentação final
-                  <Crown className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href={`/demoday/${activeDemoday.id}`}>
-                <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-50">
-                  Ver detalhes do evento
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Seção de Votação - Destaque especial quando em fase de votação */}
-      {!demodayFinished && phaseDisplay?.showVoting && activeDemoday && (
-        <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-purple-800">
-              <Vote className="h-6 w-6" />
-              {phaseDisplay.name} em Andamento!
-            </CardTitle>
-            <CardDescription className="text-purple-700 text-base">
-              {phaseDisplay.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Link href={`/demoday/${activeDemoday.id}/voting`}>
-                <Button className="bg-purple-600 hover:bg-purple-700">
-                  <Vote className="mr-2 h-4 w-4" />
-                  Ir para votação
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href={`/demoday/${activeDemoday.id}/results`}>
-                <Button variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50">
-                  <Trophy className="mr-2 h-4 w-4" />
-                  Ver resultados
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div>
-        <h2 className="mb-4 text-2xl font-semibold">
-          {demodayFinished ? "Demoday Finalizado" : "Demoday Ativo"}
-        </h2>
-
-        {activeDemoday ? (
-          <Card className={`${demodayFinished 
-            ? "bg-gradient-to-r from-green-50 to-blue-50 border-green-200" 
-            : "bg-gradient-to-r from-blue-50 to-white border-blue-200"
-          }`}>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className={`text-xl font-bold ${demodayFinished ? "text-green-800" : "text-blue-800"}`}>
-                    {activeDemoday.name}
-                  </CardTitle>
-                  <CardDescription className={`flex items-center gap-2 mt-1 ${demodayFinished ? "text-green-600" : "text-blue-600"}`}>
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>Iniciado em {formatDate(activeDemoday.createdAt)}</span>
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={demodayFinished ? "bg-green-500 hover:bg-green-600" : "bg-green-500 hover:bg-green-600"}>
-                    {demodayFinished ? "Finalizado" : "Ativo"}
-                  </Badge>
-                  {phaseDisplay && !demodayFinished && (
-                    <Badge className={phaseDisplay.color}>
-                      {phaseDisplay.name}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {demodayFinished ? (
-                <div>
-                                  <p className="text-gray-600 mb-4">
-                  Este Demoday foi concluído com sucesso! Todas as fases foram finalizadas e a apresentação está disponível.
-                </p>
-                  <div className="rounded-md p-3 border bg-green-50 border-green-200 mb-4">
-                    <p className="font-medium text-green-800">
-                      🎊 Parabéns a todos os participantes! Confira a apresentação final para ver os projetos vencedores.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-gray-600 mb-4">
-                O Demoday é um concurso onde você pode submeter seus trabalhos práticos já desenvolvidos 
-                (ex: Iniciação Científica, TCC, projeto de disciplina) para avaliação.
-              </p>
-                  
-                  {phaseDisplay && (
-                    <div className={`rounded-md p-3 border ${phaseDisplay.color} mb-4`}>
-                      <p className="font-medium">
-                        {phaseDisplay.description}
-                      </p>
-                    </div>
-                  )}
-              
-              {submissionEnabled ? (
-                <div className="mt-4 rounded-md bg-green-50 p-3 border border-green-200">
-                  <p className="text-green-700 font-medium">
-                    Período de submissões aberto! Submeta seu trabalho para concorrer.
-                  </p>
-                </div>
-                  ) : !phaseDisplay?.showVoting && (
-                <div className="mt-4 rounded-md bg-amber-50 p-3 border border-amber-200">
-                  <p className="text-amber-700 font-medium">
-                    O período de submissões não está aberto no momento. Aguarde a fase de submissão.
-                  </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              {demodayFinished ? (
-                <>
-                  {shouldShowSubmissionsButton && (
-                    <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
-                      <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
-                        <FileText className="mr-2 h-4 w-4" />
-                        {isAdminOrProfessor ? "Ver submissões" : "Ver minhas submissões"}
-                      </Button>
-                    </Link>
-                  )}
-                <Link href={`/demoday/${activeDemoday.id}/results`}>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <Trophy className="mr-2 h-4 w-4" />
-                    Ver Resultados Finais
-                  </Button>
-                </Link>
-                </>
-              ) : (
-                <>
-              {submissionEnabled && (
-                <Link href={`/dashboard/demoday/${activeDemoday.id}/submit`}>
-                  <Button className="bg-blue-600 hover:bg-blue-700">Submeter trabalho</Button>
-                </Link>
-              )}
-                  {shouldShowSubmissionsButton && (
-              <Link href={`/dashboard/demoday/${activeDemoday.id}/submissions`}>
-                      <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
-                        <FileText className="mr-2 h-4 w-4" />
-                        {isAdminOrProfessor ? "Ver submissões" : "Ver minhas submissões"}
-                      </Button>
-              </Link>
-                  )}
-                </>
-              )}
-            </CardFooter>
-          </Card>
-        ) : (
-          <div className="rounded-lg border p-8 text-center bg-gray-50">
-            <p className="text-lg text-gray-600">Nenhum Demoday ativo no momento.</p>
-            {session?.user?.role === "admin" && (
-              <div className="mt-4">
-                <Link href="/dashboard/admin/demoday/new">
-                  <Button className="bg-blue-600 hover:bg-blue-700">Criar novo Demoday</Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
+    <div className="container mx-auto p-6 space-y-8">
+      {/* Welcome Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl font-bold text-gray-900">
+          {welcomeMsg.title}
+        </h1>
+        <p className="text-xl text-gray-600">{welcomeMsg.subtitle}</p>
       </div>
 
+      {/* Fase Atual do Demoday */}
+      {currentPhase && !demodayFinished && (
+        <Card className={`border-2 ${currentPhase.borderColor} ${currentPhase.bgColor}`}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className={`p-4 rounded-full bg-gradient-to-r ${currentPhase.color} text-white shadow-lg`}>
+                  <currentPhase.icon className="h-8 w-8" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CardTitle className={`text-2xl font-bold ${currentPhase.textColor}`}>
+                      Fase Atual:
+                    </CardTitle>
+                    <Badge className={`bg-gradient-to-r ${currentPhase.color} text-white px-3 py-1`}>
+                      Ativo
+                    </Badge>
+                  </div>
+                  <CardTitle className={`text-3xl font-bold ${currentPhase.textColor} mb-2`}>
+                    {currentPhase.name}
+                  </CardTitle>
+                  <CardDescription className={`text-lg ${currentPhase.textColor} opacity-90`}>
+                    {currentPhase.description}
+                  </CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
 
+      {/* Demoday Finalizado */}
+      {demodayFinished && (
+        <Card className="border-2 border-yellow-300 bg-yellow-50">
+          <CardHeader className="text-center">
+            <div className="flex justify-center items-center space-x-3 mb-4">
+              <Crown className="h-12 w-12 text-yellow-600" />
+              <Sparkles className="h-8 w-8 text-orange-500" />
+            </div>
+            <CardTitle className="text-3xl font-bold text-yellow-800 mb-2">
+              🎉 {activeDemoday.name} - Finalizado! 🎉
+            </CardTitle>
+            <CardDescription className="text-xl text-yellow-700">
+              Todas as fases foram concluídas com sucesso! Confira os resultados finais.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      {quickActions.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Zap className="mr-2 h-6 w-6 text-blue-600" />
+            Ações Rápidas
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {quickActions.map((action, index) => (
+              <Link key={index} href={action.href}>
+                <Card className={`hover:shadow-lg transition-all duration-200 cursor-pointer group ${
+                  action.primary ? 'border-2 border-blue-200 hover:border-blue-300' : 'hover:shadow-md'
+                }`}>
+                  <CardHeader>
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-3 rounded-full bg-gradient-to-r ${action.color} text-white group-hover:scale-110 transition-transform`}>
+                        <action.icon className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {action.title}
+                        </CardTitle>
+                        <CardDescription className="text-gray-600">
+                          {action.description}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Informações do Demoday */}
+      <Card className="bg-slate-50 border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Award className="h-8 w-8 text-blue-600" />
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-800">
+                  {activeDemoday.name}
+                </CardTitle>
+                <CardDescription className="flex items-center text-slate-600 mt-1">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Iniciado em {formatDate(activeDemoday.createdAt)}
+                </CardDescription>
+              </div>
+            </div>
+            <Badge className={`${demodayFinished ? 'bg-green-500' : 'bg-blue-500'} text-white`}>
+              {demodayFinished ? 'Finalizado' : 'Ativo'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-slate-700 leading-relaxed">
+            O Demoday é um concurso onde você pode submeter seus trabalhos práticos já desenvolvidos
+            (ex: Iniciação Científica, TCC, projeto de disciplina) para avaliação e reconhecimento.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Painel Administrativo */}
+      {userRole === "admin" && (
+        <Card className="border-slate-200 bg-slate-50">
+          <CardHeader>
+            <CardTitle className="text-slate-800 flex items-center">
+              <Target className="mr-2 h-5 w-5" />
+              Painel Administrativo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link href="/dashboard/admin/demoday">
+                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-100">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Gerenciar Demodays
+                </Button>
+              </Link>
+              <Link href="/dashboard/users">
+                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-100">
+                  <Users className="mr-2 h-4 w-4" />
+                  Gerenciar Usuários
+                </Button>
+              </Link>
+              <Link href="/dashboard/admin/results">
+                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-100">
+                  <Trophy className="mr-2 h-4 w-4" />
+                  Resultados
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
