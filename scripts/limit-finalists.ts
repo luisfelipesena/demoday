@@ -1,4 +1,3 @@
-
 import { db } from "../src/server/db";
 import { projectSubmissions } from "../src/server/db/schema";
 import { eq, and } from "drizzle-orm";
