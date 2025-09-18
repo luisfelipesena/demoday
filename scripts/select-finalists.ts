@@ -45,7 +45,7 @@ async function selectFinalists() {
         .select({ count: count() })
         .from(votes)
         .where(and(
-          eq(votes.projectId, submission.project_id),
+          eq(votes.projectId, submission.projectId),
           eq(votes.votePhase, "popular") // Only popular voting counts
         ));
 
