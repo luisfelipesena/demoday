@@ -55,7 +55,7 @@ export function useActiveDemoday() {
   };
 }
 
-// Get current phase info for active demoday
+// Get current phase info for active demoday (PUBLIC ENDPOINT)
 export function useActiveDemodayPhase() {
   return useQuery<{
     demoday: Demoday | null;
@@ -66,34 +66,17 @@ export function useActiveDemodayPhase() {
   }, Error>({
     queryKey: ["activeDemodayPhase"],
     queryFn: async () => {
-      const response = await fetch("/api/evaluations");
+      const response = await fetch("/api/demoday/current-phase");
       if (!response.ok) {
-        // If not authenticated, try to get basic demoday info
-        const demodayResponse = await fetch("/api/demoday");
-        if (!demodayResponse.ok) {
-          throw new Error("Erro ao buscar informações do demoday");
-        }
-        const demodays = await demodayResponse.json() as Demoday[];
-        const activeDemoday = demodays.find(d => d.active) || null;
-        
-        return {
-          demoday: activeDemoday,
-          currentPhase: null,
-          isVotingPhase: false,
-          isFinalVotingPhase: false,
-          phases: []
-        };
+        throw new Error("Erro ao buscar informações da fase atual");
       }
-      
+
       const data = await response.json();
-      const isVotingPhase = data.currentPhase?.phaseNumber === 3;
-      const isFinalVotingPhase = data.currentPhase?.phaseNumber === 4;
-      
       return {
         demoday: data.demoday,
         currentPhase: data.currentPhase,
-        isVotingPhase,
-        isFinalVotingPhase,
+        isVotingPhase: data.isVotingPhase,
+        isFinalVotingPhase: data.isFinalVotingPhase,
         phases: data.phases || []
       };
     },

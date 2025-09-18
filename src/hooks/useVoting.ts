@@ -47,6 +47,11 @@ export function useSubmitVote() {
       // Invalidate queries that might be affected by this vote
       queryClient.invalidateQueries({ queryKey: ["demodayProjects", variables.demodayId] });
       queryClient.invalidateQueries({ queryKey: ["projectVoteStatus", variables.projectId, variables.demodayId] }); // For checking if user has voted
+
+      // For final phase voting, invalidate ALL project vote statuses since user can only vote once
+      if (variables.votePhase === "final") {
+        queryClient.invalidateQueries({ queryKey: ["projectVoteStatus"] });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -79,5 +84,33 @@ export function useProjectVoteStatus(projectId: string | null, demodayId: string
       return response.json();
     },
     enabled: !!projectId && !!demodayId,
+  });
+}
+
+// Hook to check if user has voted in final phase for ANY project
+interface FinalVoteStatus {
+  hasVotedInFinal: boolean;
+  finalVote?: VoteResponse;
+}
+
+export function useFinalVoteStatus(demodayId: string | null) {
+  return useQuery<FinalVoteStatus, Error>({
+    queryKey: ["finalVoteStatus", demodayId],
+    queryFn: async () => {
+      if (!demodayId) {
+        return { hasVotedInFinal: false };
+      }
+      // Check if user has any final vote by checking a dummy project ID
+      const response = await fetch(`/api/projects/vote?projectId=dummy&demodayId=${demodayId}`);
+      if (!response.ok) {
+        return { hasVotedInFinal: false };
+      }
+      const data = await response.json();
+      return {
+        hasVotedInFinal: data.hasVoted && data.vote?.votePhase === "final",
+        finalVote: data.vote?.votePhase === "final" ? data.vote : undefined
+      };
+    },
+    enabled: !!demodayId,
   });
 } 

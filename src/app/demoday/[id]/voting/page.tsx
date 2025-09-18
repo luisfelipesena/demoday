@@ -38,9 +38,10 @@ export default function PublicVotingPage() {
   const { data: session } = useSession();
   const { data: demoday, isLoading: isLoadingDemoday, error: demodayError } = useDemodayDetails(demodayId);
   
-  // Fetch approved or finalist projects for voting
+  // Fetch projects for voting based on current phase
+  const projectStatus = demoday?.currentPhase?.phaseNumber === 4 ? "finalist" : "approved";
   const { data: projects = [], isLoading: isLoadingProjects, error: projectsError } = useDemodayProjects(demodayId, {
-    status: demoday?.currentPhase?.phaseNumber === 4 ? "finalist" : "approved", // or finalist for final voting phase
+    status: projectStatus, // Phase 3: approved, Phase 4: finalist
   });
 
   const { mutate: submitVote, isPending: isSubmittingVote } = useSubmitVote();
@@ -106,15 +107,8 @@ export default function PublicVotingPage() {
   const votingActive = isVotingPhaseActive(demoday) && !demodayFinished;
   const currentVotePhaseForDisplay = getVotePhaseForCurrentDemodayPhase(demoday);
 
-  // Project filtering logic based on voting phase
-  let displayProjects = projects;
-  if (demoday?.currentPhase?.phaseNumber === 3) {
-    // Phase 3: Popular voting - show all approved projects
-    displayProjects = projects.filter(p => p.status === 'approved');
-  } else if (demoday?.currentPhase?.phaseNumber === 4) {
-    // Phase 4: Final voting - show only finalist projects
-    displayProjects = projects.filter(p => p.status === 'finalist');
-  }
+  // Projects are already filtered by status in the API call
+  const displayProjects = projects;
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -216,7 +210,14 @@ export default function PublicVotingPage() {
       {votingActive && !demodayFinished && displayProjects.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayProjects.map((p: any) => (
-            <ProjectVotingCard key={p.id} projectSubmission={p} demodayId={demodayId} onVote={handleVote} currentVotePhaseForLogic={currentVotePhaseForDisplay} />
+            <ProjectVotingCard
+              key={p.id}
+              projectSubmission={p}
+              demodayId={demodayId}
+              onVote={handleVote}
+              currentVotePhaseForLogic={currentVotePhaseForDisplay}
+              allProjects={displayProjects}
+            />
           ))}
         </div>
       )}
@@ -229,27 +230,81 @@ interface ProjectVotingCardProps {
   demodayId: string;
   onVote: (projectId: string) => void;
   currentVotePhaseForLogic: "popular" | "final" | undefined;
+  allProjects: any[];
 }
 
-function ProjectVotingCard({ projectSubmission, demodayId, onVote, currentVotePhaseForLogic }: ProjectVotingCardProps) {
+function ProjectVotingCard({ projectSubmission, demodayId, onVote, currentVotePhaseForLogic, allProjects }: ProjectVotingCardProps) {
   const { project } = projectSubmission;
   const { data: voteStatus, isLoading: isLoadingVoteStatus } = useProjectVoteStatus(project.id, demodayId);
   const { data: session } = useSession();
 
-  const alreadyVotedInPhase = voteStatus?.vote?.votePhase === currentVotePhaseForLogic && voteStatus?.hasVoted;
-  let canVoteInFinalPhase = true;
-  if (currentVotePhaseForLogic === 'final') {
-    canVoteInFinalPhase = session?.user?.role === 'professor' || session?.user?.role === 'admin';
+  // Check if user voted for THIS specific project
+  const votedForThisProject = voteStatus?.vote?.votePhase === currentVotePhaseForLogic &&
+                              voteStatus?.hasVoted &&
+                              voteStatus?.vote?.projectId === project.id;
+
+  // For final phase, check if user has voted for ANY other project
+  // We'll use React Query cache to check other projects' vote status
+  const [hasVotedInFinalPhase, setHasVotedInFinalPhase] = useState(false);
+
+  useEffect(() => {
+    if (currentVotePhaseForLogic === "final" && !votedForThisProject) {
+      // Check all other projects to see if user voted for any of them
+      const otherProjects = allProjects.filter(p => p.project.id !== project.id);
+      const checkVoteStatus = async () => {
+        for (const otherProject of otherProjects) {
+          try {
+            const response = await fetch(`/api/projects/vote?projectId=${otherProject.project.id}&demodayId=${demodayId}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.hasVoted && data.vote?.votePhase === "final") {
+                setHasVotedInFinalPhase(true);
+                return;
+              }
+            }
+          } catch (error) {
+            // Continue checking other projects
+          }
+        }
+        setHasVotedInFinalPhase(false);
+      };
+
+      checkVoteStatus();
+    } else {
+      setHasVotedInFinalPhase(false);
+    }
+  }, [currentVotePhaseForLogic, votedForThisProject, allProjects, project.id, demodayId]);
+
+  const voteButtonDisabled = isLoadingVoteStatus ||
+                            votedForThisProject ||
+                            hasVotedInFinalPhase ||
+                            !session?.user ||
+                            projectSubmission.status === 'rejected';
+
+  let voteButtonText = "Votar";
+  let buttonVariant: "default" | "secondary" | "outline" = "default";
+
+  if (isLoadingVoteStatus) {
+    voteButtonText = "Carregando...";
+  } else if (votedForThisProject) {
+    voteButtonText = "Votado ✓";
+    buttonVariant = "secondary";
+  } else if (hasVotedInFinalPhase) {
+    voteButtonText = "Já votou em outro projeto";
+    buttonVariant = "outline";
+  } else if (!session?.user) {
+    voteButtonText = "Faça Login para Votar";
+  } else if (projectSubmission.status === 'rejected') {
+    voteButtonText = "Não Votável";
   }
 
-  const voteButtonDisabled = isLoadingVoteStatus || alreadyVotedInPhase || !session?.user || !canVoteInFinalPhase || projectSubmission.status === 'rejected';
-  
-  let voteButtonText = "Votar";
-  if (isLoadingVoteStatus) voteButtonText = "Carregando...";
-  else if (alreadyVotedInPhase) voteButtonText = "Votado";
-  else if (!session?.user) voteButtonText = "Faça Login para Votar";
-  else if (!canVoteInFinalPhase && currentVotePhaseForLogic === 'final') voteButtonText = "Apenas Professores";
-  else if (projectSubmission.status === 'rejected') voteButtonText = "Não Votável";
+  const handleVoteClick = () => {
+    if (hasVotedInFinalPhase) {
+      // The button is already disabled, but just in case
+      return;
+    }
+    onVote(project.id);
+  };
 
   return (
     <Card className={`flex flex-col ${projectSubmission.status === 'rejected' ? 'opacity-50' : ''}`}>
@@ -266,12 +321,19 @@ function ProjectVotingCard({ projectSubmission, demodayId, onVote, currentVotePh
         </p>
       </CardContent>
       <CardFooter className="border-t pt-4">
-        <Button 
-          onClick={() => onVote(project.id)} 
+        <Button
+          onClick={handleVoteClick}
           disabled={voteButtonDisabled}
+          variant={buttonVariant}
           className="w-full"
         >
-          {alreadyVotedInPhase ? <CheckCircle className="mr-2 h-4 w-4" /> : <ThumbsUp className="mr-2 h-4 w-4" />}
+          {votedForThisProject ? (
+            <CheckCircle className="mr-2 h-4 w-4" />
+          ) : hasVotedInFinalPhase ? (
+            <AlertCircle className="mr-2 h-4 w-4" />
+          ) : (
+            <ThumbsUp className="mr-2 h-4 w-4" />
+          )}
           {voteButtonText}
         </Button>
       </CardFooter>

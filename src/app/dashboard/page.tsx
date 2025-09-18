@@ -77,19 +77,6 @@ export default function DashboardPage() {
   const hasAnySubmissions = !isLoadingAllSubmissions && allSubmissions.length > 0
 
   const getPhaseInfo = () => {
-    // Se não há informação de fase, mas há um demoday ativo, assumir que estamos na fase de triagem
-    if (!phaseInfo?.currentPhase && activeDemoday && !demodayFinished) {
-      return {
-        name: "Período de Triagem",
-        description: "Projetos estão sendo avaliados pelos administradores",
-        icon: CheckCircle,
-        color: "from-emerald-500 to-teal-600",
-        bgColor: "bg-emerald-50",
-        borderColor: "border-emerald-200",
-        textColor: "text-emerald-800"
-      };
-    }
-
     if (!phaseInfo?.currentPhase) return null;
 
     const phaseNumber = phaseInfo.currentPhase.phaseNumber;
@@ -132,7 +119,7 @@ export default function DashboardPage() {
       }
     };
 
-    return phaseConfigs[phaseNumber] || {
+    return phaseConfigs[phaseNumber as keyof typeof phaseConfigs] || {
       name: `Fase ${phaseNumber}`,
       description: phaseInfo.currentPhase.description || "Fase em andamento",
       icon: Timer,
@@ -168,7 +155,7 @@ export default function DashboardPage() {
       }
     };
 
-    return roleMessages[userRole] || roleMessages.student_ufba;
+    return roleMessages[userRole as keyof typeof roleMessages] || roleMessages.student_ufba;
   };
 
   const welcomeMsg = getWelcomeMessage();
@@ -181,7 +168,7 @@ export default function DashboardPage() {
         title: "Ver Resultados Finais",
         description: "Confira os projetos vencedores",
         icon: Trophy,
-        href: `/demoday/${activeDemoday.id}/results`,
+        href: `/demoday/${activeDemoday?.id}/results`,
         color: "from-yellow-500 to-amber-600",
         primary: true
       });
@@ -195,7 +182,7 @@ export default function DashboardPage() {
             title: "Submeter Trabalho",
             description: "Envie seu projeto para avaliação",
             icon: FileText,
-            href: `/dashboard/demoday/${activeDemoday.id}/submit`,
+            href: `/dashboard/demoday/${activeDemoday?.id}/submit`,
             color: "from-blue-500 to-indigo-600",
             primary: true
           });
@@ -214,25 +201,25 @@ export default function DashboardPage() {
         });
       }
 
-      // Votação Popular
+      // Votação Popular (TODOS podem votar)
       if (phaseNumber === 3) {
         actions.push({
           title: "Votar nos Projetos",
           description: "Escolha seus projetos favoritos",
           icon: Vote,
-          href: `/demoday/${activeDemoday.id}/voting`,
+          href: `/demoday/${activeDemoday?.id}/voting`,
           color: "from-purple-500 to-violet-600",
           primary: true
         });
       }
 
-      // Votação Final (professores e admins)
-      if (phaseNumber === 4 && (userRole === "professor" || userRole === "admin")) {
+      // Votação Final (TODOS podem votar)
+      if (phaseNumber === 4) {
         actions.push({
           title: "Votação Final",
           description: "Vote nos finalistas",
           icon: Crown,
-          href: `/demoday/${activeDemoday.id}/voting`,
+          href: `/demoday/${activeDemoday?.id}/voting`,
           color: "from-amber-500 to-orange-600",
           primary: true
         });
@@ -245,7 +232,7 @@ export default function DashboardPage() {
         title: "Ver Todas as Submissões",
         description: `${allSubmissions.length} projetos submetidos`,
         icon: Users,
-        href: `/dashboard/demoday/${activeDemoday.id}/submissions`,
+        href: `/dashboard/demoday/${activeDemoday?.id}/submissions`,
         color: "from-slate-500 to-gray-600"
       });
     } else if (hasUserSubmissions) {
@@ -253,7 +240,7 @@ export default function DashboardPage() {
         title: "Minhas Submissões",
         description: `${userSubmissions.length} projeto(s) enviado(s)`,
         icon: FileText,
-        href: `/dashboard/demoday/${activeDemoday.id}/submissions`,
+        href: `/dashboard/demoday/${activeDemoday?.id}/submissions`,
         color: "from-slate-500 to-gray-600"
       });
     }

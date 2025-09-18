@@ -30,13 +30,60 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Verificar se o usuário já votou neste projeto
-    const userVote = await db.query.votes.findFirst({
-      where: and(
-        eq(votes.userId, userId as string),
-        eq(votes.projectId, projectId)
-      ),
+    const demodayId = searchParams.get("demodayId");
+
+    if (!demodayId) {
+      return NextResponse.json(
+        { error: "ID do demoday é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    // Get current phase to determine voting logic
+    const phases = await db.query.demoDayPhases.findMany({
+      where: eq(demoDayPhases.demoday_id, demodayId),
+      orderBy: demoDayPhases.phaseNumber
     });
+
+    const now = new Date();
+    let currentPhase = null;
+    for (const phase of phases) {
+      const startDate = new Date(phase.startDate);
+      const endDate = new Date(phase.endDate);
+      if (now >= startDate && now <= endDate) {
+        currentPhase = phase;
+        break;
+      }
+    }
+
+    if (!currentPhase) {
+      return NextResponse.json(
+        { error: "Fase não encontrada" },
+        { status: 400 }
+      );
+    }
+
+    const isCurrentlyFinalPhase = currentPhase.phaseNumber === 4;
+
+    let userVote;
+    if (isCurrentlyFinalPhase) {
+      // For final phase, check if user voted for ANY project in final phase
+      userVote = await db.query.votes.findFirst({
+        where: and(
+          eq(votes.userId, userId as string),
+          eq(votes.votePhase, "final")
+        ),
+      });
+    } else {
+      // For popular phase, check if user voted for this specific project
+      userVote = await db.query.votes.findFirst({
+        where: and(
+          eq(votes.userId, userId as string),
+          eq(votes.projectId, projectId),
+          eq(votes.votePhase, "popular")
+        ),
+      });
+    }
 
     return NextResponse.json({
       hasVoted: !!userVote,
@@ -186,20 +233,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar se o usuário já votou neste projeto nesta fase
-    const existingVote = await db.query.votes.findFirst({
-      where: and(
-        eq(votes.userId, userId as string),
-        eq(votes.projectId, projectId),
-        eq(votes.votePhase, votePhase)
-      ),
-    });
+    // For final phase, check if user has already voted for ANY project in this phase
+    // For popular phase, check if user has already voted for THIS SPECIFIC project
+    let existingVote;
+    if (votePhase === "final") {
+      // In final voting, user can only vote ONCE total (for any project)
+      existingVote = await db.query.votes.findFirst({
+        where: and(
+          eq(votes.userId, userId as string),
+          eq(votes.votePhase, "final")
+        ),
+      });
 
-    if (existingVote) {
-      return NextResponse.json(
-        { error: `Você já votou neste projeto na votação ${votePhase === 'popular' ? 'popular' : 'final'}` },
-        { status: 400 }
-      );
+      if (existingVote) {
+        return NextResponse.json(
+          { error: "Você já votou na votação final - apenas um voto é permitido" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // In popular voting, user can vote for multiple projects but not the same project twice
+      existingVote = await db.query.votes.findFirst({
+        where: and(
+          eq(votes.userId, userId as string),
+          eq(votes.projectId, projectId),
+          eq(votes.votePhase, "popular")
+        ),
+      });
+
+      if (existingVote) {
+        return NextResponse.json(
+          { error: "Você já votou neste projeto na votação popular" },
+          { status: 400 }
+        );
+      }
     }
 
     // Todos os votos têm peso 1 (removido o sistema de peso diferenciado)
