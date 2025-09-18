@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
-import { hash } from "bcryptjs";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { hashPassword } from "better-auth/crypto";
 
 const createUserSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Email já cadastrado" }, { status: 400 });
     }
 
-    // Cria hash da senha
-    const hashedPassword = await hash(password, 12);
+    // Cria hash da senha usando Better Auth
+    const hashedPassword = await hashPassword(password);
 
     // Insere o usuário diretamente no banco (emailVerified = true)
     const insertedUsers = await db.insert(users).values({
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Erro ao criar usuário" }, { status: 500 });
     }
 
-    // Precisa também criar o registro na tabela accounts para o better-auth
+    // Cria registro na tabela accounts com hash da Better Auth
     const { accounts } = await import("@/server/db/schema");
     await db.insert(accounts).values({
       userId: newUser.id,
@@ -76,19 +76,19 @@ export async function POST(req: NextRequest) {
       password: hashedPassword,
     });
 
-    return Response.json({ 
-      message: "Usuário criado com sucesso", 
-      user: newUser 
+    return Response.json({
+      message: "Usuário criado com sucesso",
+      user: newUser
     }, { status: 201 });
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return Response.json({ 
-        error: "Dados inválidos", 
-        details: error.errors 
+      return Response.json({
+        error: "Dados inválidos",
+        details: error.errors
       }, { status: 400 });
     }
-    
+
     console.error("Erro ao criar usuário:", error);
     return Response.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -131,10 +131,10 @@ export async function PUT(req: NextRequest) {
       return Response.json({ error: "Erro ao atualizar usuário" }, { status: 500 });
     }
 
-    // Se senha foi fornecida, atualiza na tabela accounts
+    // Se senha foi fornecida, usa Better Auth para hash
     if (password) {
-      const hashedPassword = await hash(password, 12);
       const { accounts } = await import("@/server/db/schema");
+      const hashedPassword = await hashPassword(password);
       await db.update(accounts)
         .set({ password: hashedPassword })
         .where(eq(accounts.userId, id));
