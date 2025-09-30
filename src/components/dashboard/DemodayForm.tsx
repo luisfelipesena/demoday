@@ -53,7 +53,7 @@ export function DemodayForm({
     },
     {
       name: "Votação para a final",
-      description: "Votação popular para escolher os projetos finalistas.",
+      description: "Votação popular dos projetos finalistas.",
       phaseNumber: 3,
       startDate: "",
       endDate: "",
