@@ -32,7 +32,7 @@ async function createTestUsers() {
 
     let adminId: string;
     if (adminUser.length === 0) {
-      const [newAdmin] = await db
+      const result = await db
         .insert(users)
         .values({
           name: 'Admin Test',
@@ -42,12 +42,20 @@ async function createTestUsers() {
         })
         .returning();
 
+      const newAdmin = result[0];
+      if (!newAdmin) {
+        throw new Error('Failed to create admin user');
+      }
       adminId = newAdmin.id;
       console.log('✅ Admin user created successfully!');
       console.log('📧 Email: admin@test.com');
       console.log('👤 User ID:', newAdmin.id);
     } else {
-      adminId = adminUser[0].id;
+      const existingAdmin = adminUser[0];
+      if (!existingAdmin) {
+        throw new Error('Admin user query failed');
+      }
+      adminId = existingAdmin.id;
       console.log('✅ Admin user already exists');
       console.log('📧 Email: admin@test.com');
     }
@@ -62,7 +70,7 @@ async function createTestUsers() {
 
     let professorId: string;
     if (professorUser.length === 0) {
-      const [newProfessor] = await db
+      const result = await db
         .insert(users)
         .values({
           name: 'Professor Test',
@@ -72,12 +80,20 @@ async function createTestUsers() {
         })
         .returning();
 
+      const newProfessor = result[0];
+      if (!newProfessor) {
+        throw new Error('Failed to create professor user');
+      }
       professorId = newProfessor.id;
       console.log('✅ Professor user created successfully!');
       console.log('📧 Email: professor@test.com');
       console.log('👤 User ID:', newProfessor.id);
     } else {
-      professorId = professorUser[0].id;
+      const existingProfessor = professorUser[0];
+      if (!existingProfessor) {
+        throw new Error('Professor user query failed');
+      }
+      professorId = existingProfessor.id;
       console.log('✅ Professor user already exists');
       console.log('📧 Email: professor@test.com');
     }
@@ -92,7 +108,7 @@ async function createTestUsers() {
 
     let studentId: string;
     if (studentUser.length === 0) {
-      const [newStudent] = await db
+      const result = await db
         .insert(users)
         .values({
           name: 'Student Test',
@@ -102,12 +118,20 @@ async function createTestUsers() {
         })
         .returning();
 
+      const newStudent = result[0];
+      if (!newStudent) {
+        throw new Error('Failed to create student user');
+      }
       studentId = newStudent.id;
       console.log('✅ Student UFBA user created successfully!');
       console.log('📧 Email: student@test.com');
       console.log('👤 User ID:', newStudent.id);
     } else {
-      studentId = studentUser[0].id;
+      const existingStudent = studentUser[0];
+      if (!existingStudent) {
+        throw new Error('Student user query failed');
+      }
+      studentId = existingStudent.id;
       console.log('✅ Student UFBA user already exists');
       console.log('📧 Email: student@test.com');
     }
@@ -121,7 +145,7 @@ async function createTestUsers() {
       .limit(1);
 
     if (externalUser.length === 0) {
-      const [newExternal] = await db
+      const result = await db
         .insert(users)
         .values({
           name: 'External Student',
@@ -130,6 +154,11 @@ async function createTestUsers() {
           role: 'student_external',
         })
         .returning();
+
+      const newExternal = result[0];
+      if (!newExternal) {
+        throw new Error('Failed to create external user');
+      }
 
       console.log('✅ External student user created successfully!');
       console.log('📧 Email: external@test.com');
@@ -170,7 +199,7 @@ async function createTestUsers() {
 
     let demodayId: string;
     if (existingDemoday.length === 0) {
-      const [newDemoday] = await db
+      const result = await db
         .insert(demodays)
         .values({
           name: 'Demoday Test E2E',
@@ -181,11 +210,19 @@ async function createTestUsers() {
         })
         .returning();
 
+      const newDemoday = result[0];
+      if (!newDemoday) {
+        throw new Error('Failed to create demoday');
+      }
       demodayId = newDemoday.id;
       console.log('✅ Test Demoday created');
       console.log('🏆 Demoday ID:', demodayId);
     } else {
-      demodayId = existingDemoday[0].id;
+      const existing = existingDemoday[0];
+      if (!existing) {
+        throw new Error('Demoday query failed');
+      }
+      demodayId = existing.id;
       console.log('✅ Test Demoday already exists');
     }
 
@@ -198,7 +235,7 @@ async function createTestUsers() {
       .limit(1);
 
     if (existingProject.length === 0) {
-      const [newProject] = await db
+      const result = await db
         .insert(projects)
         .values({
           title: 'Test Project E2E',
@@ -214,6 +251,11 @@ async function createTestUsers() {
           advisorName: 'Professor Test',
         })
         .returning();
+
+      const newProject = result[0];
+      if (!newProject) {
+        throw new Error('Failed to create project');
+      }
 
       // Submit the project to the demoday
       await db.insert(projectSubmissions).values({
