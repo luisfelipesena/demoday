@@ -46,3 +46,5 @@ next-env.d.ts
 data/
 
 .claude/*
+test-results/
+playwright-report/
