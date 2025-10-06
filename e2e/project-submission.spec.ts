@@ -143,7 +143,7 @@ test.describe('Public Demoday Pages', () => {
 
     // Voting might require authentication
     // Check if we're redirected or can see the page
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 
     const url = page.url();
     // Should either stay on voting or redirect to login

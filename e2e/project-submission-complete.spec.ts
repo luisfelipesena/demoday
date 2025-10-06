@@ -19,7 +19,7 @@ async function loginAsStudent(page: any) {
   await page.getByRole('button', { name: 'Entrar' }).click();
 
   // Aguardar navegação ou erro
-  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(3000);
 }
 
 test.describe('Fluxo Completo de Submissão de Projeto no Demoday', () => {
@@ -62,7 +62,7 @@ test.describe('Fluxo Completo de Submissão de Projeto no Demoday', () => {
           console.log('✅ Clicou no botão de submissão');
 
           // Aguardar navegação para formulário
-          await page.waitForLoadState('networkidle');
+          await page.waitForTimeout(3000);
 
           // Verificar se estamos no formulário de submissão
           const formTitle = page.locator('h1, h2').filter({ hasText: /Submeter|Submissão/i });
@@ -109,7 +109,7 @@ test.describe('Fluxo Completo de Submissão de Projeto no Demoday', () => {
           console.log('✅ Projeto submetido');
 
           // Aguardar resposta
-          await page.waitForLoadState('networkidle');
+          await page.waitForTimeout(3000);
 
           // Verificar redirecionamento ou mensagem de sucesso
           const successMessage = page.locator('[role="alert"]').or(
@@ -145,7 +145,7 @@ test.describe('Fluxo Completo de Submissão de Projeto no Demoday', () => {
 
         // Submeter registro
         await page.getByRole('button', { name: /Cadastrar|Registrar|Criar conta/i }).click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(3000);
 
         console.log('✅ Tentativa de registro realizada');
       }
